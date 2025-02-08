@@ -15,7 +15,7 @@ using namespace Vulkan;
 
 std::map<vk::Device, vk::DescriptorSetLayout > nullDescriptors;
 
-vk::DynamicLoader NCL::Rendering::Vulkan::dynamicLoader;
+vk::detail::DynamicLoader NCL::Rendering::Vulkan::dynamicLoader;
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 

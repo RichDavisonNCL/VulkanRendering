@@ -10,7 +10,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 namespace NCL::Rendering::Vulkan {
 	class VulkanTexture;
 
-	extern vk::DynamicLoader dynamicLoader;
+	extern vk::detail::DynamicLoader dynamicLoader;
 
 	void SetNullDescriptor(vk::Device device, vk::DescriptorSetLayout layout);
 	vk::DescriptorSetLayout GetNullDescriptor(vk::Device device);

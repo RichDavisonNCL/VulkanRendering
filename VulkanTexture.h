@@ -46,12 +46,18 @@ namespace NCL::Rendering::Vulkan {
 								vk::ImageLayout endLayout = vk::ImageLayout::eShaderReadOnlyOptimal, 
 								vk::PipelineStageFlags2 endFlags = vk::PipelineStageFlagBits2::eFragmentShader);
 
-		static size_t GetMaxMips(Vector2i dimensions) {
-			return (size_t)std::floor(log2(float(std::min(dimensions.x, dimensions.y)))) + 1;
-		}
+		//static size_t GetMaxMips(Vector2i dimensions) {
+		//	return (size_t)std::floor(log2(float(std::min(dimensions.x, dimensions.y)))) + 1;
+		//}
 
-		static size_t GetMaxMips(Vector2ui dimensions) {
-			return (size_t)std::floor(log2(float(std::min(dimensions.x, dimensions.y)))) + 1;
+		//static size_t GetMaxMips(Vector2ui dimensions) {
+		//	return (size_t)std::floor(log2(float(std::min(dimensions.x, dimensions.y)))) + 1;
+		//}
+
+		template <typename T, uint32_t n>
+		static constexpr size_t GetMaxMips(const VectorTemplate<T, n>& texDims) {
+			T m = Vector::GetMaxElement(texDims);
+			return (size_t)std::floor(log2((float(m)))) + 1;
 		}
 
 	protected:

@@ -186,7 +186,7 @@ UniqueVulkanTexture TextureBuilder::BuildFromFile(const std::string& filename) {
     char* texData = nullptr;
     Vector3ui dimensions(0, 0, 1);
     uint32_t channels    = 0;
-    int flags       = 0;
+    uint32_t flags       = 0;
     TextureLoader::LoadTexture(filename, texData, dimensions.x, dimensions.y, channels, flags);
 
     vk::UniqueCommandBuffer	uniqueBuffer;
@@ -236,7 +236,7 @@ UniqueVulkanTexture TextureBuilder::BuildCubemapFromFile(
 
     Vector3ui dimensions[6]{ Vector3ui(0, 0, 1) };
     uint32_t channels[6] = { 0 };
-    int flags[6] = { 0 };
+    uint32_t flags[6] = { 0 };
 
     const std::string* filenames[6] = {
         &negativeXFile,

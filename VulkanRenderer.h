@@ -188,10 +188,10 @@ namespace NCL::Rendering::Vulkan {
 		uint32_t	InitBufferChain(vk::CommandBuffer  cmdBuffer);
 
 		static VkBool32 DebugCallbackFunction(
-			VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
-			VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
-			const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-			void* pUserData);
+			vk::DebugUtilsMessageSeverityFlagBitsEXT			messageSeverity,
+			vk::DebugUtilsMessageTypeFlagsEXT					messageTypes,
+			const vk::DebugUtilsMessengerCallbackDataEXT*		pCallbackData,
+			void*												pUserData);
 
 		bool	InitDeviceQueueIndices();
 		bool	CreateDefaultFrameBuffers();

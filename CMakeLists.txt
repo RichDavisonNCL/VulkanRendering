@@ -99,7 +99,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     INTERPROCEDURAL_OPTIMIZATION_RELEASE "TRUE"
 )
 
-add_compile_definitions(VULKAN_HPP_DISPATCH_LOADER_DYNAMIC)
+add_compile_definitions(VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
+add_compile_definitions(VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL=1)
 add_compile_definitions(VK_NO_PROTOTYPES)
 add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS)
 

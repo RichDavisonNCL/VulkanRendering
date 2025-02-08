@@ -376,8 +376,8 @@ void	VulkanRenderer::InitCommandPools() {
 
 void	VulkanRenderer::InitMemoryAllocator(const VulkanInitialisation& vkInit) {
 	VmaVulkanFunctions funcs = {};
-	funcs.vkGetInstanceProcAddr = ::vk::defaultDispatchLoaderDynamic.vkGetInstanceProcAddr;
-	funcs.vkGetDeviceProcAddr   = ::vk::defaultDispatchLoaderDynamic.vkGetDeviceProcAddr;
+	funcs.vkGetInstanceProcAddr = ::vk::detail::defaultDispatchLoaderDynamic.vkGetInstanceProcAddr;
+	funcs.vkGetDeviceProcAddr   = ::vk::detail::defaultDispatchLoaderDynamic.vkGetDeviceProcAddr;
 
 	allocatorInfo.physicalDevice = gpu;
 	allocatorInfo.device	= device;
@@ -755,11 +755,10 @@ void	VulkanRenderer::BeginDefaultRendering(vk::CommandBuffer  cmds) {
 }
 
 VkBool32 VulkanRenderer::DebugCallbackFunction(
-	VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
-	VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
-	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-	void* pUserData) {
-
+	vk::DebugUtilsMessageSeverityFlagBitsEXT			messageSeverity,
+	vk::DebugUtilsMessageTypeFlagsEXT					messageTypes,
+	const vk::DebugUtilsMessengerCallbackDataEXT*		pCallbackData,
+	void*												pUserData) {
 
 	return false;
 }
