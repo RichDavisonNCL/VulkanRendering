@@ -57,6 +57,8 @@ namespace NCL::Rendering::Vulkan {
 
 	vk::UniqueDescriptorSet CreateDescriptorSet(vk::Device device, vk::DescriptorPool pool, vk::DescriptorSetLayout  layout, uint32_t variableDescriptorCount = 0);
 
+	vk::UniqueSemaphore		CreateTimelineSemaphore(vk::Device device, uint64_t initialValue = 0);
+
 	void	WriteDescriptor(vk::Device device, vk::WriteDescriptorSet setInfo, vk::DescriptorBufferInfo bufferInfo);
 	void	WriteDescriptor(vk::Device device, vk::WriteDescriptorSet setInfo, vk::DescriptorImageInfo imageInfo);
 

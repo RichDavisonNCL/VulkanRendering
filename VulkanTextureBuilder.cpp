@@ -65,7 +65,6 @@ TextureBuilder& TextureBuilder::WithLayerCount(uint32_t layers) {
     return *this;
 }
 
-
 TextureBuilder& TextureBuilder::WithMips(bool inMips) {
     generateMips = inMips;
     return *this;

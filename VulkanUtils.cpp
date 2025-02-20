@@ -370,6 +370,17 @@ vk::UniqueDescriptorSet Vulkan::CreateDescriptorSet(vk::Device device, vk::Descr
 	return std::move(device.allocateDescriptorSetsUnique(allocateInfo)[0]);
 }
 
+vk::UniqueSemaphore Vulkan::CreateTimelineSemaphore(vk::Device device, uint64_t initialValue = 0) {
+	vk::SemaphoreTypeCreateInfo typeCreateInfo{
+		.semaphoreType = vk::SemaphoreType::eTimeline,
+		.initialValue = initialValue
+	};
+	vk::SemaphoreCreateInfo createInfo{
+		.pNext = &typeCreateInfo
+	};
+	return std::move(device.createSemaphoreUnique(createInfo));
+}
+
 /*Descriptor Buffer Writing*/
 void Vulkan::WriteBufferDescriptor(vk::Device device,
 	const vk::PhysicalDeviceDescriptorBufferPropertiesEXT& props,
