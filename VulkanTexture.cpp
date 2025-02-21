@@ -42,6 +42,7 @@ void VulkanTexture::GenerateMipMaps(vk::CommandBuffer  buffer, vk::ImageLayout e
 				.setMipLevel(mip - 1)
 				.setBaseArrayLayer(layer)
 				.setLayerCount(1);
+
 			blitData.srcOffsets[0] = vk::Offset3D(0, 0, 0);
 			blitData.srcOffsets[1].x = std::max(dimensions.x >> (mip - 1), (uint32_t)1);
 			blitData.srcOffsets[1].y = std::max(dimensions.y >> (mip - 1), (uint32_t)1);
@@ -49,23 +50,40 @@ void VulkanTexture::GenerateMipMaps(vk::CommandBuffer  buffer, vk::ImageLayout e
 
 			blitData.dstSubresource.setAspectMask(vk::ImageAspectFlagBits::eColor)
 				.setMipLevel(mip)
-				.setLayerCount(1)
-				.setBaseArrayLayer(layer);
+				.setBaseArrayLayer(layer)
+				.setLayerCount(1);
+
 			blitData.dstOffsets[0] = vk::Offset3D(0, 0, 0);
 			blitData.dstOffsets[1].x = std::max(dimensions.x >> mip, (uint32_t)1);
 			blitData.dstOffsets[1].y = std::max(dimensions.y >> mip, (uint32_t)1);
 			blitData.dstOffsets[1].z = 1;
 
-			ImageTransitionBarrier(buffer, image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, aspectType, vk::PipelineStageFlagBits2::eHost, vk::PipelineStageFlagBits2::eTransfer, mip, 1, layer, 1);
+			ImageTransitionBarrier(buffer, image, 
+				vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, 
+				aspectType, 
+				vk::PipelineStageFlagBits2::eBlit, vk::PipelineStageFlagBits2::eBlit, 
+				mip, 1, layer, 1);
 			
 			buffer.blitImage(image, vk::ImageLayout::eTransferSrcOptimal, image, vk::ImageLayout::eTransferDstOptimal, blitData, vk::Filter::eLinear);
-			ImageTransitionBarrier(buffer, image, vk::ImageLayout::eTransferSrcOptimal, endLayout, aspectType, vk::PipelineStageFlagBits2::eTransfer, endFlags, mip - 1, 1, layer, 1);
+			ImageTransitionBarrier(buffer, image, 
+				vk::ImageLayout::eTransferSrcOptimal, endLayout, 
+				aspectType, 
+				vk::PipelineStageFlagBits2::eBlit, endFlags, 
+				mip - 1, 1, layer, 1);
 
 			if (mip < this->mipCount - 1) {
-				ImageTransitionBarrier(buffer, image, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eTransferSrcOptimal, aspectType, vk::PipelineStageFlagBits2::eTransfer, vk::PipelineStageFlagBits2::eTransfer, mip, 1, layer, 1);
+				ImageTransitionBarrier(buffer, image, 
+					vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eTransferSrcOptimal, 
+					aspectType, 
+					vk::PipelineStageFlagBits2::eBlit, vk::PipelineStageFlagBits2::eBlit, 
+					mip, 1, layer, 1);
 			}
 			else {
-				ImageTransitionBarrier(buffer, image, vk::ImageLayout::eTransferDstOptimal, endLayout, aspectType, vk::PipelineStageFlagBits2::eTransfer, endFlags, mip, 1, layer, 1);
+				ImageTransitionBarrier(buffer, image, 
+					vk::ImageLayout::eTransferDstOptimal, endLayout, 
+					aspectType, 
+					vk::PipelineStageFlagBits2::eBlit, endFlags, 
+					mip, 1, layer, 1);
 			}
 		}
 	}
