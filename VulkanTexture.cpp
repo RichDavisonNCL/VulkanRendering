@@ -31,7 +31,7 @@ VulkanTexture::~VulkanTexture() {
 void VulkanTexture::GenerateMipMaps(vk::CommandBuffer  buffer, vk::ImageLayout endLayout, vk::PipelineStageFlags2 endFlags) {
 	for (int layer = 0; layer < layerCount; ++layer) {	
 		ImageTransitionBarrier(buffer, image, 
-			vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eTransferSrcOptimal, 
+			vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferSrcOptimal, 
 			aspectType, 
 			vk::PipelineStageFlagBits2::eAllCommands, vk::PipelineStageFlagBits2::eTransfer, 
 			0, 1, layer, 1);
@@ -77,10 +77,10 @@ void VulkanTexture::GenerateMipMaps(vk::CommandBuffer  buffer, vk::ImageLayout e
 			blitData.srcSubresource = blitData.dstSubresource;
 		}
 		//Now that this layer's mipchain is complete, transition the whole lot to final layout
-			ImageTransitionBarrier(buffer, image, 
-					vk::ImageLayout::eTransferSrcOptimal, endLayout,
-					aspectType, 
-					vk::PipelineStageFlagBits2::eBlit, endFlags, 
-					0, mipCount, layer, 1);
+		ImageTransitionBarrier(buffer, image, 
+				vk::ImageLayout::eTransferSrcOptimal, endLayout,
+				aspectType, 
+				vk::PipelineStageFlagBits2::eBlit, endFlags, 
+				0, mipCount, layer, 1);
 	}
 }

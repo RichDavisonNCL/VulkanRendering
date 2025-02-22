@@ -99,6 +99,7 @@ void	Vulkan::ImageTransitionBarrier(vk::CommandBuffer  cmdBuffer, vk::Image imag
 	vk::ImageAspectFlags aspect, 
 	vk::PipelineStageFlags2 srcStage, vk::PipelineStageFlags2 dstStage, 
 	uint32_t mipLevel, uint32_t mipCount, uint32_t layer, uint32_t layerCount) {
+
 	vk::ImageMemoryBarrier2 memoryBarrier2 = {
 		.srcStageMask = srcStage,	
 		.dstStageMask = dstStage,

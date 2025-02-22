@@ -208,12 +208,12 @@ bool VulkanRenderer::InitGPUDevice(const VulkanInitialisation& vkInit) {
 
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(device);
 
-	vk::DebugUtilsMessengerCreateInfoEXT debugInfo;
-	debugInfo.pfnUserCallback = DebugCallbackFunction;
-	debugInfo.messageSeverity = vk::FlagTraits<vk::DebugUtilsMessageSeverityFlagBitsEXT>::allFlags;
-	debugInfo.messageType = vk::FlagTraits<vk::DebugUtilsMessageTypeFlagBitsEXT>::allFlags;
+	//vk::DebugUtilsMessengerCreateInfoEXT debugInfo;
+	//debugInfo.pfnUserCallback = DebugCallbackFunction;
+	//debugInfo.messageSeverity = vk::FlagTraits<vk::DebugUtilsMessageSeverityFlagBitsEXT>::allFlags;
+	//debugInfo.messageType = vk::FlagTraits<vk::DebugUtilsMessageTypeFlagBitsEXT>::allFlags;
 
-	debugMessenger = instance.createDebugUtilsMessengerEXT(debugInfo);
+	//debugMessenger = instance.createDebugUtilsMessengerEXT(debugInfo);
 
 	return true;
 }
