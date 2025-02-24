@@ -58,8 +58,28 @@ DynamicRenderBuilder& DynamicRenderBuilder::WithDepthAttachment(
 	return *this;
 }
 
-DynamicRenderBuilder& DynamicRenderBuilder::WithRenderArea(vk::Rect2D area) {
+DynamicRenderBuilder& DynamicRenderBuilder::WithRenderArea(vk::Rect2D area, bool useAutoViewstate) {
 	renderInfo.setRenderArea(area);
+	usingAutoViewstate = useAutoViewstate;
+	return *this;
+}
+
+DynamicRenderBuilder& DynamicRenderBuilder::WithRenderArea(int32_t offsetX, int32_t offsetY, uint32_t extentX, uint32_t extentY, bool useAutoViewstate) {
+	vk::Rect2D area = {
+		.offset{offsetX, offsetY},
+		.extent{extentX, extentY}
+	};
+	
+	renderInfo.setRenderArea(area);
+	usingAutoViewstate = useAutoViewstate;
+	return *this;
+}
+
+DynamicRenderBuilder& DynamicRenderBuilder::WithRenderArea(vk::Offset2D offset, vk::Extent2D extent, bool useAutoViewstate) {
+	vk::Rect2D area = { offset, extent };
+
+	renderInfo.setRenderArea(area);
+	usingAutoViewstate = useAutoViewstate;
 	return *this;
 }
 
@@ -96,4 +116,13 @@ const vk::RenderingInfoKHR& DynamicRenderBuilder::Build() {
 
 void DynamicRenderBuilder::BeginRendering(vk::CommandBuffer cmdBuffer) {
 	cmdBuffer.beginRendering(Build());
+	if (usingAutoViewstate) {
+
+		vk::Extent2D	extent		= renderInfo.renderArea.extent;
+		vk::Viewport	viewport	= vk::Viewport(0.0f, (float)extent.height, (float)extent.width, -(float)extent.height, 0.0f, 1.0f);
+		vk::Rect2D		scissor		= vk::Rect2D(vk::Offset2D(0, 0), extent);
+
+		cmdBuffer.setViewport(0, 1, &viewport);
+		cmdBuffer.setScissor( 0, 1, &scissor);
+	}
 }

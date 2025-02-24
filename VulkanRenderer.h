@@ -42,7 +42,9 @@ namespace NCL::Rendering::Vulkan {
 		};
 	};
 
-	struct FrameState {		
+	struct FrameState {
+		vk::Device			device;
+		vk::DescriptorPool  descriptorPool;
 		vk::CommandBuffer	cmdBuffer;
 
 		vk::Semaphore		acquireSempaphore;

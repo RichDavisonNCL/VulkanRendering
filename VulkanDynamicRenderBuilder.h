@@ -14,6 +14,9 @@ namespace NCL::Rendering::Vulkan {
 
 	Build returns one of these structs, and the class is designed to be used
 	as an anonymous instantiation as the parameter to vkCmdBeginRenderingKHR
+
+	BeginRendering will call vkCmdBeginRenderingKHR and can optionally also
+	set up the viewport and scissor state to match the render area...
 	*/
 	class DynamicRenderBuilder	{
 	public:
@@ -37,7 +40,11 @@ namespace NCL::Rendering::Vulkan {
 
 		DynamicRenderBuilder& WithColourAttachment(vk::RenderingAttachmentInfoKHR const & info);
 		DynamicRenderBuilder& WithDepthAttachment(vk::RenderingAttachmentInfoKHR const& info);
-		DynamicRenderBuilder& WithRenderArea(vk::Rect2D area);
+
+		DynamicRenderBuilder& WithRenderArea(vk::Rect2D area, bool useAutoViewstate = true);
+		DynamicRenderBuilder& WithRenderArea(vk::Offset2D offset, vk::Extent2D extent, bool useAutoViewstate = true);
+		DynamicRenderBuilder& WithRenderArea(int32_t offsetX, int32_t offsetY, uint32_t extentX, uint32_t extentY, bool useAutoViewstate = true);
+
 		DynamicRenderBuilder& WithRenderingFlags(vk::RenderingFlags flags);
 		DynamicRenderBuilder& WithViewMask(uint32_t viewMask);
 		DynamicRenderBuilder& WithLayerCount(int count);
@@ -51,5 +58,6 @@ namespace NCL::Rendering::Vulkan {
 		std::vector< vk::RenderingAttachmentInfoKHR > colourAttachments;
 		vk::RenderingAttachmentInfoKHR depthAttachment;
 		bool		usingStencil;
+		bool		usingAutoViewstate;
 	};
 }
