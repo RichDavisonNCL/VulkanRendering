@@ -42,17 +42,10 @@ namespace NCL::Rendering::Vulkan {
 			return format;
 		}
 
-		void GenerateMipMaps(vk::CommandBuffer  buffer, 
-								vk::ImageLayout endLayout = vk::ImageLayout::eShaderReadOnlyOptimal, 
+		void GenerateMipMaps(	vk::CommandBuffer  buffer, 
+								vk::ImageLayout startLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+								vk::ImageLayout endLayout	= vk::ImageLayout::eShaderReadOnlyOptimal, 
 								vk::PipelineStageFlags2 endFlags = vk::PipelineStageFlagBits2::eFragmentShader);
-
-		//static size_t GetMaxMips(Vector2i dimensions) {
-		//	return (size_t)std::floor(log2(float(std::min(dimensions.x, dimensions.y)))) + 1;
-		//}
-
-		//static size_t GetMaxMips(Vector2ui dimensions) {
-		//	return (size_t)std::floor(log2(float(std::min(dimensions.x, dimensions.y)))) + 1;
-		//}
 
 		template <typename T, uint32_t n>
 		static constexpr size_t GetMaxMips(const VectorTemplate<T, n>& texDims) {
@@ -65,14 +58,16 @@ namespace NCL::Rendering::Vulkan {
 
 		vk::UniqueImageView		defaultView;
 		vk::Image				image; //Don't use 'Unique', uses VMA
-		vk::Format				format;
+		vk::Format				format = vk::Format::eUndefined;
 		vk::ImageAspectFlags	aspectType;
 
-		VmaAllocation			allocationHandle;
-		VmaAllocationInfo		allocationInfo;
-		VmaAllocator			allocator;
+		vk::UniqueSemaphore		workSemaphore;
 
-		uint32_t mipCount;
-		uint32_t layerCount;
+		VmaAllocation			allocationHandle	= {};
+		VmaAllocationInfo		allocationInfo		= {};
+		VmaAllocator			allocator			= {};
+
+		uint32_t mipCount	= 0;
+		uint32_t layerCount = 0;
 	};
 }

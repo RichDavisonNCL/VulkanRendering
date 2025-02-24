@@ -28,7 +28,7 @@ namespace NCL::Rendering::Vulkan {
 		void UploadToGPU(RendererBase* renderer) override;
 
 		void UploadToGPU(RendererBase* renderer, vk::BufferUsageFlags extraUses);
-		void UploadToGPU(VulkanRenderer* renderer, VkQueue queue, vk::CommandBuffer buffer, VulkanBuffer& stagingBuffer, vk::BufferUsageFlags extraUses = {});
+		void UploadToGPU(VulkanRenderer* renderer, VkQueue queue, vk::CommandBuffer buffer, const VulkanBuffer& stagingBuffer, vk::BufferUsageFlags extraUses = {});
 
 		uint32_t	GetAttributeMask() const;
 		size_t		CalculateGPUAllocationSize() const;

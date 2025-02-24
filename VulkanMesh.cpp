@@ -59,12 +59,14 @@ void VulkanMesh::UploadToGPU(RendererBase* r, vk::BufferUsageFlags extraUses) {
 
 	size_t allocationSize = CalculateGPUAllocationSize();
 
-	VulkanBuffer stagingBuffer = BufferBuilder(renderer->GetDevice(), renderer->GetMemoryAllocator())
-		.WithBufferUsage(vk::BufferUsageFlagBits::eTransferSrc)
-		.WithHostVisibility()
-		.Build(allocationSize, "Staging Buffer");
+	//VulkanBuffer stagingBuffer = BufferBuilder(renderer->GetDevice(), renderer->GetMemoryAllocator())
+	//	.WithBufferUsage(vk::BufferUsageFlagBits::eTransferSrc)
+	//	.WithHostVisibility()
+	//	.Build(allocationSize, "Staging Buffer");
 
-	UploadToGPU(renderer, gfxQueue, *cmdBuffer, stagingBuffer, extraUses);
+	const VulkanBuffer* stagingBuffer = renderer->GetStagingBuffers().GetStagingBuffer(allocationSize);
+
+	UploadToGPU(renderer, gfxQueue, *cmdBuffer, *stagingBuffer, extraUses);
 
 	CmdBufferEndSubmitWait(*cmdBuffer, device, gfxQueue);
 	//The staging buffer is auto destroyed, but that's fine!
@@ -76,7 +78,7 @@ void VulkanMesh::UploadToGPU(RendererBase* r)  {
 	UploadToGPU(r, {});
 }
 
-void VulkanMesh::UploadToGPU(VulkanRenderer* renderer, VkQueue queue, vk::CommandBuffer cmdBuffer, VulkanBuffer& stagingBuffer, vk::BufferUsageFlags extraUses) {
+void VulkanMesh::UploadToGPU(VulkanRenderer* renderer, VkQueue queue, vk::CommandBuffer cmdBuffer, const VulkanBuffer& stagingBuffer, vk::BufferUsageFlags extraUses) {
 	usedAttributes.clear();
 	attributeBindings.clear();
 	attributeDescriptions.clear();

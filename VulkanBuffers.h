@@ -62,16 +62,16 @@ namespace NCL::Rendering::Vulkan {
 		//validation errors
 		void	CopyData(void* data, size_t size);
 
-		void*	Data();
+		void*	Data() const;
 
-		void*	Map();
+		void*	Map() const;
 		template<typename T>
-		T* Map() {
+		T* Map() const {
 			void* data = Map();
 			return static_cast<T*>(data);
 		}
 
-		void	Unmap();
+		void	Unmap() const;
 
 		//Convenience function so we can use this struct in place of a vkBuffer when necessary
 		operator vk::Buffer() const {

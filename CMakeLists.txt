@@ -30,6 +30,7 @@ set(Header_Files
 	"VulkanRTShader.h" 
 	"VulkanRayTracingPipelineBuilder.h"	
 	"VulkanShaderBindingTableBuilder.h"
+    "VulkanStagingBuffers.h"
 )
 source_group("Header Files" FILES ${Header_Files})
 
@@ -54,6 +55,7 @@ set(Source_Files
 	"VulkanRTShader.cpp"   
 	"VulkanRayTracingPipelineBuilder.cpp"
 	"VulkanShaderBindingTableBuilder.cpp"	
+    "VulkanStagingBuffers.cpp"
 )
 source_group("Source Files" FILES ${Source_Files})
 

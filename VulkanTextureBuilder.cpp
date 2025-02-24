@@ -93,11 +93,6 @@ UniqueVulkanTexture TextureBuilder::Build(const std::string& debugName) {
     vk::CommandBuffer	    usingBuffer;
     BeginTexture(debugName, uniqueBuffer, usingBuffer);
 
-    if (generateMips) {
-        usages |= vk::ImageUsageFlagBits::eTransferSrc;
-        usages |= vk::ImageUsageFlagBits::eTransferDst;
-    }
-
     UniqueVulkanTexture tex = GenerateTexture(usingBuffer, requestedSize, false, debugName);
 
     //ImageTransitionBarrier(usingBuffer, tex->GetImage(), vk::ImageLayout::eUndefined, layout, aspects, vk::PipelineStageFlagBits::eTopOfPipe, pipeFlags);
@@ -113,11 +108,6 @@ UniqueVulkanTexture TextureBuilder::BuildFromData(void* dataSrc, size_t byteCoun
     vk::UniqueCommandBuffer	uniqueBuffer;
     vk::CommandBuffer	    usingBuffer;
     BeginTexture(debugName, uniqueBuffer, usingBuffer);
-
-    if (generateMips) {
-        usages |= vk::ImageUsageFlagBits::eTransferSrc;
-        usages |= vk::ImageUsageFlagBits::eTransferDst;
-    }
 
     UniqueVulkanTexture tex = GenerateTexture(usingBuffer, requestedSize, false, debugName);
 
@@ -160,7 +150,7 @@ void TextureBuilder::EndTexture(const std::string& debugName, vk::UniqueCommandB
         int mipCount = VulkanTexture::GetMaxMips(t->GetDimensions());
         if (mipCount > 1) {
             t->mipCount = mipCount;
-            t->GenerateMipMaps(usingBuffer);
+            t->GenerateMipMaps(usingBuffer, job.endLayout);
         }
     }
 
@@ -196,10 +186,6 @@ UniqueVulkanTexture TextureBuilder::BuildFromFile(const std::string& filename) {
     vk::ImageUsageFlags	realUsages = usages;
 
     usages |= vk::ImageUsageFlagBits::eTransferDst;
-
-    if (generateMips) {
-        usages |= vk::ImageUsageFlagBits::eTransferSrc;
-    }
 
     UniqueVulkanTexture tex = GenerateTexture(usingBuffer, dimensions, false, filename);
 
@@ -259,12 +245,7 @@ UniqueVulkanTexture TextureBuilder::BuildCubemapFromFile(
 
     usages |= vk::ImageUsageFlagBits::eTransferDst;
 
-    if (generateMips) {
-        usages |= vk::ImageUsageFlagBits::eTransferSrc;
-    }
-
     uint32_t dataWidth = sizeof(char) * channels[0];
-
 
     job.faceByteCount = dimensions[0].x * dimensions[0].y * dimensions[0].z * channels[0] * sizeof(char);
     job.dimensions = dimensions[0];
@@ -302,11 +283,18 @@ UniqueVulkanTexture	TextureBuilder::GenerateTexture(vk::CommandBuffer cmdBuffer,
 
     uint32_t genLayerCount = isCube ? layerCount * 6: layerCount;
 
+    vk::ImageUsageFlags creationUsages = usages;
+
+    if (generateMips) {
+        creationUsages |= vk::ImageUsageFlagBits::eTransferSrc;
+        creationUsages |= vk::ImageUsageFlagBits::eTransferDst;
+    }
+
     auto createInfo = vk::ImageCreateInfo()
         .setImageType(dimensions.z > 1 ? vk::ImageType::e3D : vk::ImageType::e2D)
         .setExtent(vk::Extent3D(dimensions.x, dimensions.y, dimensions.z))
         .setFormat(format)
-        .setUsage(usages)
+        .setUsage(creationUsages)
         .setMipLevels(generateMips ? mipCount : 1)
         //.setInitialLayout(layout)
         .setArrayLayers(genLayerCount);
@@ -368,7 +356,7 @@ void TextureBuilder::UploadTextureData(vk::CommandBuffer cmdBuffer, TextureJob& 
         vk::BufferImageCopy{
             .imageSubresource = {
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
-                .mipLevel = 0,
+                .mipLevel   = 0,
                 .layerCount = job.faceCount
             },
             .imageExtent{job.dimensions.x, job.dimensions.y, job.dimensions.z},          

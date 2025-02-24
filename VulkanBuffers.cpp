@@ -25,7 +25,7 @@ void VulkanBuffer::CopyData(void* data, size_t size) {
 	}
 }
 
-void* VulkanBuffer::Map() {
+void* VulkanBuffer::Map() const {
 	if (allocationInfo.pMappedData) {
 		return allocationInfo.pMappedData;
 	}
@@ -34,10 +34,10 @@ void* VulkanBuffer::Map() {
 	return mappedData;
 }
 
-void	VulkanBuffer::Unmap() {
+void	VulkanBuffer::Unmap() const {
 	vmaUnmapMemory(allocator, allocationHandle);
 }
 
-void* VulkanBuffer::Data() {
+void* VulkanBuffer::Data() const{
 	return allocationInfo.pMappedData;
 }

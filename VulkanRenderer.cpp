@@ -44,6 +44,8 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 	InitGPUDevice(vkInit);
 	InitMemoryAllocator(vkInit);
 
+	stagingBuffers = std::make_unique<VulkanStagingBuffers>(GetDevice(), GetMemoryAllocator());
+
 	InitCommandPools();
 	InitDefaultDescriptorPool();
 	InitDefaultDescriptorSetLayouts();
@@ -53,6 +55,8 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 	pipelineCache = device.createPipelineCache(vk::PipelineCacheCreateInfo());
 
 	frameCmds = swapChainList[currentSwap]->cmdBuffer;
+
+
 }
 
 VulkanRenderer::~VulkanRenderer() {
@@ -572,6 +576,7 @@ void	VulkanRenderer::EndFrame() {
 }
 
 void VulkanRenderer::SwapBuffers() {
+	stagingBuffers->Update();
 	if (!hostWindow.IsMinimised()) {
 		vk::CommandPool gfxPool		= commandPools[CommandType::Graphics];
 		vk::Queue		gfxQueue	= queues[CommandType::Graphics];

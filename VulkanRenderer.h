@@ -10,6 +10,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 #include "../NCLCoreClasses/Maths.h"
 
 #include "VulkanPipeline.h"
+#include "VulkanStagingBuffers.h"
 #include "SmartTypes.h"
 #include "vma/vk_mem_alloc.h"
 using std::string;
@@ -139,6 +140,10 @@ namespace NCL::Rendering::Vulkan {
 			return depthBuffer;
 		}
 
+		VulkanStagingBuffers& GetStagingBuffers() {
+			return *stagingBuffers;
+		}
+
 		void	BeginDefaultRenderPass(vk::CommandBuffer cmds);
 		void	BeginDefaultRendering(vk::CommandBuffer  cmds);
 
@@ -170,6 +175,9 @@ namespace NCL::Rendering::Vulkan {
 		vk::CommandPool			commandPools[CommandType::Type::MAX_COMMAND_TYPES];
 		vk::Queue				queues[CommandType::Type::MAX_COMMAND_TYPES];
 		uint32_t				queueFamilies[CommandType::Type::MAX_COMMAND_TYPES];
+
+
+		std::unique_ptr<VulkanStagingBuffers>  stagingBuffers;
 
 		vk::CommandBuffer		frameCmds;
 
