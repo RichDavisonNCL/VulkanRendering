@@ -347,6 +347,9 @@ uint32_t VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 				.commandBufferCount = 1
 			}
 		);
+
+		chain->device = GetDevice();
+		chain->descriptorPool = GetDescriptorPool();
 		 
 		chain->cmdBuffer = buffers[0];
 
