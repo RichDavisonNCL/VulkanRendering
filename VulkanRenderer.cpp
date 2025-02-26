@@ -24,6 +24,7 @@ using namespace NCL::Win32Code;
 using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
+
 VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkInitInfo) : RendererBase(window)
 {
 	PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = Vulkan::dynamicLoader.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
@@ -50,7 +51,7 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 	InitDefaultDescriptorPool();
 
 	OnWindowResize(window.GetScreenSize().x, window.GetScreenSize().y);
-	InitFrameStates(3);
+	InitFrameStates(vkInit.framesInFlight);
 
 	pipelineCache = device.createPipelineCache(vk::PipelineCacheCreateInfo());
 
@@ -347,6 +348,8 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 		chain.acquireSempaphore = device.createSemaphore({});
 		chain.acquireFence		= device.createFence({});
 
+		chain.swapCmds = CmdBufferCreate(device, GetCommandPool(CommandType::Graphics), "Window swap cmds").release();
+
 		chain.colourImage = images[i];
 
 		ImageTransitionBarrier(cmdBuffer, chain.colourImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageAspectFlagBits::eColor, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput);
@@ -524,7 +527,7 @@ void	VulkanRenderer::BeginFrame() {
 
 	//block on the waiting frame's timeline semaphore
 	if (globalFrameID >= frameContexts.size()) {
-		uint64_t waitValue = globalFrameID - frameContexts.size();
+		uint64_t waitValue = globalFrameID;
 		vk::SemaphoreWaitInfo waitInfo{
 			.semaphoreCount = 1,
 			.pSemaphores = &*(frameContexts[waitFrameContext].workSempaphore),
@@ -575,7 +578,7 @@ void	VulkanRenderer::EndFrame() {
 	if (vkInit.autoBeginDynamicRendering) {
 		frameCmds.endRendering();
 	}
-
+	TransitionColourToPresent(frameCmds, frameContexts[currentFrameContext].colourImage);
 	if (hostWindow.IsMinimised()) {
 		CmdBufferEndSubmitWait(frameCmds, device, queues[CommandType::Graphics]);
 	}
@@ -583,39 +586,27 @@ void	VulkanRenderer::EndFrame() {
 		CmdBufferEndSubmit(frameCmds, queues[CommandType::Graphics]);
 	}
 
+	uint64_t signalValue = globalFrameID + frameContexts.size();
+	vk::TimelineSemaphoreSubmitInfo tlSubmit;
+	tlSubmit.signalSemaphoreValueCount = 1;
+	tlSubmit.pSignalSemaphoreValues = &signalValue;
+
+	vk::SubmitInfo queueSubmit;
+	queueSubmit.pNext = &tlSubmit;
+	queueSubmit.signalSemaphoreCount = 1;
+	queueSubmit.pSignalSemaphores = &*frameContexts[currentFrameContext].workSempaphore;
+
+	queues[CommandType::Graphics].submit(queueSubmit);
+
 	globalFrameID++;
 }
 
 void VulkanRenderer::SwapBuffers() {
 	stagingBuffers->Update();
 	if (!hostWindow.IsMinimised()) {
-		vk::CommandPool gfxPool		= commandPools[CommandType::Graphics];
 		vk::Queue		gfxQueue	= queues[CommandType::Graphics];
-
-		vk::UniqueCommandBuffer cmds = CmdBufferCreateBegin(device, gfxPool, "Window swap cmds");
-
-		TransitionColourToPresent(*cmds, swapStates[currentSwap].colourImage);
-
-		CmdBufferEndSubmitWait(*cmds, device, gfxQueue);
-
-		vk::TimelineSemaphoreSubmitInfo workSemaphoreSubmitInfo{
-			.signalSemaphoreValueCount = 1,
-			.pSignalSemaphoreValues = &globalFrameID
-		};
-		vk::SubmitInfo timelineSubmitInfo{
-			.pNext = &workSemaphoreSubmitInfo,
-			.signalSemaphoreCount = 1,
-			.pSignalSemaphores = &*frameContexts[currentFrameContext].workSempaphore
-		};
-
-		gfxQueue.submit(timelineSubmitInfo);
-
 		vk::Result presentResult = gfxQueue.presentKHR(
 			{
-				//.pNext = &workSemaphoreSubmitInfo,
-				//.waitSemaphoreCount = 1,
-				//.signalSemaphoreCount = 1,
-				//.pSignalSemaphores = &frameContexts[currentFrameContext].workSempaphore,
 				.swapchainCount = 1,
 				.pSwapchains = &swapChain,
 				.pImageIndices = &currentSwap

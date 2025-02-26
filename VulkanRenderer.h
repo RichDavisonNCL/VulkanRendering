@@ -72,6 +72,8 @@ namespace NCL::Rendering::Vulkan {
 		vk::Format			colourFormat;
 		vk::Semaphore		acquireSempaphore;
 		vk::Fence			acquireFence;
+
+		vk::CommandBuffer	swapCmds;
 	};
 
 	struct VulkanInitialisation {
@@ -82,6 +84,8 @@ namespace NCL::Rendering::Vulkan {
 
 		int majorVersion = 1;
 		int minorVersion = 1;
+
+		uint32_t	framesInFlight = 3;
 
 		std::vector<void*> features;
 
@@ -186,6 +190,7 @@ namespace NCL::Rendering::Vulkan {
 		std::unique_ptr<VulkanStagingBuffers>  stagingBuffers;
 
 		vk::CommandBuffer		frameCmds;
+		//vk::CommandBuffer		swapCmds;
 
 		UniqueVulkanTexture depthBuffer;
 
