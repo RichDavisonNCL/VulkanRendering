@@ -43,13 +43,12 @@ namespace NCL::Rendering::Vulkan {
 		};
 	};
 
-	struct FrameState {
+	struct FrameContext {
 		vk::Device			device;
 		vk::DescriptorPool  descriptorPool;
 		vk::CommandBuffer	cmdBuffer;
 
-		vk::Semaphore		acquireSempaphore;
-		vk::Fence			acquireFence;
+		vk::UniqueSemaphore	workSempaphore;
 
 		vk::Image			colourImage;
 		vk::ImageView		colourView;
@@ -60,8 +59,19 @@ namespace NCL::Rendering::Vulkan {
 		vk::Format			depthFormat;
 
 		vk::Viewport		defaultViewport;
-		vk::Rect2D			defaultScissor;
 		vk::Rect2D			defaultScreenRect;
+
+		vk::CommandPool			commandPools[CommandType::Type::MAX_COMMAND_TYPES];
+		vk::Queue				queues[CommandType::Type::MAX_COMMAND_TYPES];
+	};
+
+	struct ChainState {
+		vk::Framebuffer		frameBuffer;
+		vk::Image			colourImage;
+		vk::ImageView		colourView;
+		vk::Format			colourFormat;
+		vk::Semaphore		acquireSempaphore;
+		vk::Fence			acquireFence;
 	};
 
 	struct VulkanInitialisation {
@@ -130,12 +140,8 @@ namespace NCL::Rendering::Vulkan {
 			return defaultDescriptorPool;
 		}
 
-		FrameState const& GetFrameState() const {
-			return *(swapChainList[currentSwap]);
-		}
-
-		vk::DescriptorSetLayout GetDefaultLayout(DefaultSetLayouts::Type layout) {
-			return defaultLayouts[layout];
+		FrameContext const& GetFrameContext() const {
+			return frameContexts[currentFrameContext];
 		}
 
 		UniqueVulkanTexture const & GetDepthBuffer() const {
@@ -163,9 +169,7 @@ namespace NCL::Rendering::Vulkan {
 
 		virtual void WaitForSwapImage();
 
-	protected:
-		vk::DescriptorSetLayout defaultLayouts[DefaultSetLayouts::MAX_SIZE];		
-		vk::ClearValue			defaultClearValues[2];
+	protected:	
 		vk::Viewport			defaultViewport;
 		vk::Rect2D				defaultScissor;	
 		vk::Rect2D				defaultScreenRect;			
@@ -190,12 +194,14 @@ namespace NCL::Rendering::Vulkan {
 		VulkanInitialisation vkInit;
 	private: 
 		void	InitCommandPools();
-		bool	InitInstance(const VulkanInitialisation& vkInit);
-		bool	InitPhysicalDevice(const VulkanInitialisation& vkInit);
-		bool	InitGPUDevice(const VulkanInitialisation& vkInit);
+		bool	InitInstance();
+		bool	InitPhysicalDevice();
+		bool	InitGPUDevice();
 		bool	InitSurface();
-		void	InitMemoryAllocator(const VulkanInitialisation& vkInit);
-		uint32_t	InitBufferChain(vk::CommandBuffer  cmdBuffer);
+		void	InitMemoryAllocator();
+		void	InitBufferChain(vk::CommandBuffer  cmdBuffer);
+
+		void	InitFrameStates(uint32_t framesInFlight);
 
 		static VkBool32 DebugCallbackFunction(
 			vk::DebugUtilsMessageSeverityFlagBitsEXT			messageSeverity,
@@ -204,11 +210,6 @@ namespace NCL::Rendering::Vulkan {
 			void*												pUserData);
 
 		bool	InitDeviceQueueIndices();
-		bool	CreateDefaultFrameBuffers();
-
-		void	AcquireSwapImage();
-
-		void InitDefaultDescriptorSetLayouts();
 
 		vk::Instance		instance;	//API Instance
 		vk::PhysicalDevice	gpu;		//GPU in use
@@ -225,17 +226,20 @@ namespace NCL::Rendering::Vulkan {
 
 		vk::DebugUtilsMessengerEXT debugMessenger;
 
-		uint32_t			numFrameBuffers			= 0;
+		std::vector<FrameContext>	frameContexts;
+		std::vector<ChainState>		swapStates;
 
-		std::vector<FrameState*> swapChainList;
-		uint32_t				currentSwap = 0;
-		uint32_t				swapCycle = 0;
-		vk::Framebuffer* frameBuffers = nullptr;
+		uint32_t				waitFrameContext	= 0; //We need to wait for this to complete at start of frame
+		uint32_t				currentFrameContext	= 0; //Frame context for this frame
+		uint32_t				currentSwap			= 0; //To index our swapchain 
 
-		std::vector<vk::Semaphore>	swapSemaphores;
-		std::vector<vk::Fence>		swapFences;
+		uint64_t				globalFrameID		= 0;
+
+		vk::Fence			currentSwapFence;
 
 		vk::SwapchainKHR	swapChain;
 		VmaAllocator		memoryAllocator;
+
+	
 	};
 }

@@ -37,48 +37,40 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 		queueFamilies[i] = -1;
 	}
 
-	InitInstance(vkInit);
+	InitInstance();
 
-	InitPhysicalDevice(vkInit);
+	InitPhysicalDevice();
 
-	InitGPUDevice(vkInit);
-	InitMemoryAllocator(vkInit);
+	InitGPUDevice();
+	InitMemoryAllocator();
 
 	stagingBuffers = std::make_unique<VulkanStagingBuffers>(GetDevice(), GetMemoryAllocator());
 
 	InitCommandPools();
 	InitDefaultDescriptorPool();
-	InitDefaultDescriptorSetLayouts();
 
 	OnWindowResize(window.GetScreenSize().x, window.GetScreenSize().y);
+	InitFrameStates(3);
 
 	pipelineCache = device.createPipelineCache(vk::PipelineCacheCreateInfo());
 
-	frameCmds = swapChainList[currentSwap]->cmdBuffer;
-
-
+	frameCmds = frameContexts[currentSwap].cmdBuffer;
 }
 
 VulkanRenderer::~VulkanRenderer() {
 	device.waitIdle();
 	depthBuffer.reset();
 
-	for (auto& i : swapChainList) {
-		device.destroyImageView(i->colourView);
+	for (auto& i : frameContexts) {
+		device.destroyImageView(i.colourView);
 	};
 
-	for (unsigned int i = 0; i < numFrameBuffers; ++i) {
-		device.destroyFramebuffer(frameBuffers[i]);
-		device.destroySemaphore(swapSemaphores[i]);
-		device.destroyFence(swapFences[i]);
+	for(ChainState & c : swapStates) {
+		device.destroyFramebuffer(c.frameBuffer);
+		device.destroySemaphore(c.acquireSempaphore);
+		device.destroyFence(c.acquireFence);
+		device.destroyImageView(c.colourView);
 	}
-
-	for (unsigned int i = 0; i < DefaultSetLayouts::MAX_SIZE; ++i) {
-		if (defaultLayouts[i]) {
-			device.destroyDescriptorSetLayout(defaultLayouts[i]);
-		}
-	}
-
 	vmaDestroyAllocator(memoryAllocator);
 	device.destroyDescriptorPool(defaultDescriptorPool);
 	device.destroySwapchainKHR(swapChain);
@@ -93,11 +85,9 @@ VulkanRenderer::~VulkanRenderer() {
 
 	instance.destroySurfaceKHR(surface);
 	instance.destroy();
-
-	delete[] frameBuffers;
 }
 
-bool VulkanRenderer::InitInstance(const VulkanInitialisation& vkInit) {
+bool VulkanRenderer::InitInstance() {
 	vk::ApplicationInfo appInfo = {
 		.pApplicationName = this->hostWindow.GetTitle().c_str(),
 		.apiVersion = VK_MAKE_VERSION(vkInit.majorVersion, vkInit.minorVersion, 0)
@@ -105,10 +95,10 @@ bool VulkanRenderer::InitInstance(const VulkanInitialisation& vkInit) {
 		
 	vk::InstanceCreateInfo instanceInfo = {
 		.flags = {},
-		.pApplicationInfo = &appInfo,
-		.enabledLayerCount = (uint32_t)vkInit.instanceLayers.size(),
-		.ppEnabledLayerNames = vkInit.instanceLayers.data(),
-		.enabledExtensionCount = (uint32_t)vkInit.instanceExtensions.size(),
+		.pApplicationInfo		 = &appInfo,
+		.enabledLayerCount		 = (uint32_t)vkInit.instanceLayers.size(),
+		.ppEnabledLayerNames	 = vkInit.instanceLayers.data(),
+		.enabledExtensionCount	 = (uint32_t)vkInit.instanceExtensions.size(),
 		.ppEnabledExtensionNames = vkInit.instanceExtensions.data()
 	};
 		
@@ -119,7 +109,7 @@ bool VulkanRenderer::InitInstance(const VulkanInitialisation& vkInit) {
 	return true;
 }
 
-bool	VulkanRenderer::InitPhysicalDevice(const VulkanInitialisation& vkInit) {
+bool	VulkanRenderer::InitPhysicalDevice() {
 	auto enumResult = instance.enumeratePhysicalDevices();
 
 	if (enumResult.empty()) {
@@ -142,7 +132,7 @@ bool	VulkanRenderer::InitPhysicalDevice(const VulkanInitialisation& vkInit) {
 	return true;
 }
 
-bool VulkanRenderer::InitGPUDevice(const VulkanInitialisation& vkInit) {
+bool VulkanRenderer::InitGPUDevice() {
 	InitSurface();
 	InitDeviceQueueIndices();
 
@@ -249,10 +239,45 @@ bool VulkanRenderer::InitSurface() {
 	return formats.size() > 0;
 }
 
-uint32_t VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
+void	VulkanRenderer::InitFrameStates(uint32_t framesInFlight) {
+	frameContexts.resize(framesInFlight);
+
+	auto buffers = device.allocateCommandBuffers(
+		{
+			.commandPool = commandPools[CommandType::Graphics],
+			.level = vk::CommandBufferLevel::ePrimary,
+			.commandBufferCount = framesInFlight
+		}
+	);
+
+	uint32_t index = 0;
+	for (FrameContext& context : frameContexts) {
+		context.device = GetDevice();
+		context.descriptorPool = GetDescriptorPool();
+
+		context.cmdBuffer = buffers[index];
+
+		context.workSempaphore = Vulkan::CreateTimelineSemaphore(GetDevice());
+
+		context.defaultViewport	= defaultViewport;
+		context.defaultScreenRect = defaultScreenRect;
+
+		context.colourFormat = surfaceFormat;
+
+		context.depthImage = depthBuffer->GetImage();
+		context.depthView = depthBuffer->GetDefaultView();
+		context.depthFormat = depthBuffer->GetFormat();
+
+		for (int i = 0; i < CommandType::Type::MAX_COMMAND_TYPES; ++i) {
+			context.commandPools[i] = commandPools[i];
+			context.queues[i] = queues[i];
+		}
+		index++;
+	}
+}
+
+void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 	vk::SwapchainKHR oldChain					= swapChain;
-	std::vector<FrameState*> oldSwapChainList	= swapChainList;
-	swapChainList.clear();
 
 	vk::SurfaceCapabilitiesKHR surfaceCaps = gpu.getSurfaceCapabilitiesKHR(surface);
 
@@ -302,10 +327,10 @@ uint32_t VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 
 	swapChain = device.createSwapchainKHR(swapInfo);
 
-	if (!oldSwapChainList.empty()) {
-		for (unsigned int i = 0; i < numFrameBuffers; ++i) {
-			device.destroyImageView(oldSwapChainList[i]->colourView);
-			delete oldSwapChainList[i];
+	if (!swapStates.empty()) {
+		for (unsigned int i = 0; i < swapStates.size(); ++i) {
+			device.destroyImageView(swapStates[i].colourView);
+			device.destroyFramebuffer(swapStates[i].frameBuffer);
 		}
 	}
 	if (oldChain) {
@@ -314,60 +339,41 @@ uint32_t VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 
 	auto images = device.getSwapchainImagesKHR(swapChain);
 
-	if (!swapFences.empty()) {
-		device.resetFences(swapFences);
-	}
+	swapStates.resize(images.size());
 
-	for (int i = swapSemaphores.size(); i < images.size(); i++) {
-		swapSemaphores.push_back(device.createSemaphore({}));
-		swapFences.push_back(device.createFence({}));
-	}
+	for(int i = 0; i < swapStates.size(); ++i) {
+		ChainState& chain = swapStates[i];
 
-	for (auto& i : images) {
-		FrameState* chain = new FrameState();
+		chain.acquireSempaphore = device.createSemaphore({});
+		chain.acquireFence		= device.createFence({});
 
-		chain->colourImage = i;
+		chain.colourImage = images[i];
 
-		ImageTransitionBarrier(cmdBuffer, i, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageAspectFlagBits::eColor, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput);
+		ImageTransitionBarrier(cmdBuffer, chain.colourImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageAspectFlagBits::eColor, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput);
 
-		chain->colourView = device.createImageView(
+		chain.colourView = device.createImageView(
 			vk::ImageViewCreateInfo()
 			.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
 			.setFormat(surfaceFormat)
-			.setImage(i)
+			.setImage(chain.colourImage)
 			.setViewType(vk::ImageViewType::e2D)	
 		);
 
-		swapChainList.push_back(chain);
+		vk::ImageView attachments[2];
 
-		auto buffers = device.allocateCommandBuffers(	
-			{
-				.commandPool = commandPools[CommandType::Graphics],
-				.level = vk::CommandBufferLevel::ePrimary,
-				.commandBufferCount = 1
-			}
-		);
+		vk::FramebufferCreateInfo createInfo = vk::FramebufferCreateInfo()
+			.setWidth(hostWindow.GetScreenSize().x)
+			.setHeight(hostWindow.GetScreenSize().y)
+			.setLayers(1)
+			.setAttachmentCount(2)
+			.setPAttachments(attachments)
+			.setRenderPass(defaultRenderPass);
 
-		chain->device = GetDevice();
-		chain->descriptorPool = GetDescriptorPool();
-		 
-		chain->cmdBuffer = buffers[0];
-
-		chain->acquireSempaphore = swapSemaphores[swapCycle];
-		chain->acquireFence		 = swapFences[swapCycle];
-
-		chain->defaultViewport		= defaultViewport;
-		chain->defaultScissor		= defaultScissor;
-		chain->defaultScreenRect	= defaultScreenRect;
-		
-		chain->colourFormat = surfaceFormat;
-
-		chain->depthImage	= depthBuffer->GetImage();
-		chain->depthView	= depthBuffer->GetDefaultView();
-		chain->depthFormat	= depthBuffer->GetFormat();
+		attachments[0] = chain.colourView;
+		attachments[1] = *depthBuffer->defaultView;
+		chain.frameBuffer = device.createFramebuffer(createInfo);
 	}
-	swapCycle = 1;
-	return (int)images.size();
+	currentSwap = 0; //??
 }
 
 void	VulkanRenderer::InitCommandPools() {	
@@ -381,7 +387,7 @@ void	VulkanRenderer::InitCommandPools() {
 	}
 }
 
-void	VulkanRenderer::InitMemoryAllocator(const VulkanInitialisation& vkInit) {
+void	VulkanRenderer::InitMemoryAllocator() {
 	VmaVulkanFunctions funcs = {};
 	funcs.vkGetInstanceProcAddr = ::vk::detail::defaultDispatchLoaderDynamic.vkGetInstanceProcAddr;
 	funcs.vkGetDeviceProcAddr   = ::vk::detail::defaultDispatchLoaderDynamic.vkGetDeviceProcAddr;
@@ -470,9 +476,6 @@ void VulkanRenderer::OnWindowResize(int width, int height) {
 
 	defaultScissor	= vk::Rect2D(vk::Offset2D(0, 0), vk::Extent2D(windowSize.x, windowSize.y));
 
-	defaultClearValues[0] = vk::ClearValue(vk::ClearColorValue(std::array<float, 4>{0.2f, 0.2f, 0.2f, 1.0f}));
-	defaultClearValues[1] = vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0));
-
 	std::cout << __FUNCTION__ << " New dimensions: " << windowSize.x << " , " << windowSize.y << "\n";
 
 	device.waitIdle();
@@ -489,11 +492,10 @@ void VulkanRenderer::OnWindowResize(int width, int height) {
 		.WithMips(false)
 		.Build("Depth Buffer");
 
-	vk::UniqueCommandBuffer cmds = CmdBufferCreateBegin(device, commandPools[CommandType::Graphics], "Window resize cmds");
-	numFrameBuffers = InitBufferChain(*cmds);
-
 	InitDefaultRenderPass();
-	CreateDefaultFrameBuffers();
+
+	vk::UniqueCommandBuffer cmds = CmdBufferCreateBegin(device, commandPools[CommandType::Graphics], "Window resize cmds");
+	InitBufferChain(*cmds);
 
 	device.waitIdle();
 
@@ -509,41 +511,45 @@ void VulkanRenderer::CompleteResize() {
 }
 
 void VulkanRenderer::WaitForSwapImage() {
-	TransitionUndefinedToColour(frameCmds, swapChainList[currentSwap]->colourImage);
-
 	if (!hostWindow.IsMinimised()) {
-		vk::Result waitResult = device.waitForFences(swapChainList[currentSwap]->acquireFence, true, ~0);
+		vk::Result waitResult = device.waitForFences(currentSwapFence, true, ~0);
 	}
-}
-
-void	VulkanRenderer::AcquireSwapImage() {
-	device.resetFences(swapChainList[currentSwap]->acquireFence);
-
-	currentSwap = device.acquireNextImageKHR(swapChain, UINT64_MAX, swapSemaphores[swapCycle], swapFences[swapCycle]).value;	//Get swap image
-
-	swapChainList[currentSwap]->acquireSempaphore = swapSemaphores[swapCycle];
-	swapChainList[currentSwap]->acquireFence = swapFences[swapCycle];
-
-	swapChainList[currentSwap]->defaultViewport		= defaultViewport;
-	swapChainList[currentSwap]->defaultScissor		= defaultScissor;
-	swapChainList[currentSwap]->defaultScreenRect	= defaultScreenRect;
-
-	swapChainList[currentSwap]->colourFormat = surfaceFormat;
-	swapChainList[currentSwap]->depthFormat  = depthBuffer->GetFormat();
-
-	swapCycle = (swapCycle + 1) % swapSemaphores.size();
-
-	defaultBeginInfo = vk::RenderPassBeginInfo()
-		.setRenderPass(defaultRenderPass)
-		.setFramebuffer(frameBuffers[currentSwap])
-		.setRenderArea(defaultScissor)
-		.setClearValueCount(sizeof(defaultClearValues) / sizeof(vk::ClearValue))
-		.setPClearValues(defaultClearValues);
+	TransitionUndefinedToColour(frameCmds, swapStates[currentSwap].colourImage);
 }
 
 void	VulkanRenderer::BeginFrame() {
-	AcquireSwapImage();
-	frameCmds = swapChainList[currentSwap]->cmdBuffer;
+	//First we need to prevent the renderer from going too far ahead of the frames in flight max
+	waitFrameContext	= (currentFrameContext + frameContexts.size() - 1) % frameContexts.size();
+	currentFrameContext = (currentFrameContext + 1) % frameContexts.size();
+
+	//block on the waiting frame's timeline semaphore
+	if (globalFrameID >= frameContexts.size()) {
+		uint64_t waitValue = globalFrameID - frameContexts.size();
+		vk::SemaphoreWaitInfo waitInfo{
+			.semaphoreCount = 1,
+			.pSemaphores = &*(frameContexts[waitFrameContext].workSempaphore),
+			.pValues = &waitValue
+		};
+		vk::Result wait = device.waitSemaphores(waitInfo, UINT64_MAX);
+	}
+
+	//Acquire our next swap image
+	currentSwapFence = swapStates[currentSwap].acquireFence;
+	device.resetFences(currentSwapFence);
+	currentSwap = device.acquireNextImageKHR(swapChain, UINT64_MAX, VK_NULL_HANDLE, currentSwapFence).value;	//Get swap image
+
+	//Now we know the swap image, we can fill out our current frame state...
+	//Our current frame
+
+	frameContexts[currentFrameContext].defaultViewport		= defaultViewport;
+	frameContexts[currentFrameContext].defaultScreenRect	= defaultScreenRect;
+
+	frameContexts[currentFrameContext].colourImage		= swapStates[currentSwap].colourImage;
+	frameContexts[currentFrameContext].colourView		= swapStates[currentSwap].colourView;
+	frameContexts[currentFrameContext].colourFormat		= surfaceFormat;
+
+	frameContexts[currentFrameContext].depthFormat		= depthBuffer->GetFormat();
+	frameCmds = frameContexts[currentFrameContext].cmdBuffer;
 	frameCmds.reset({});
 
 	frameCmds.begin(vk::CommandBufferBeginInfo());
@@ -576,6 +582,8 @@ void	VulkanRenderer::EndFrame() {
 	else {
 		CmdBufferEndSubmit(frameCmds, queues[CommandType::Graphics]);
 	}
+
+	globalFrameID++;
 }
 
 void VulkanRenderer::SwapBuffers() {
@@ -586,14 +594,28 @@ void VulkanRenderer::SwapBuffers() {
 
 		vk::UniqueCommandBuffer cmds = CmdBufferCreateBegin(device, gfxPool, "Window swap cmds");
 
-		TransitionColourToPresent(*cmds, swapChainList[currentSwap]->colourImage);
+		TransitionColourToPresent(*cmds, swapStates[currentSwap].colourImage);
 
 		CmdBufferEndSubmitWait(*cmds, device, gfxQueue);
 
+		vk::TimelineSemaphoreSubmitInfo workSemaphoreSubmitInfo{
+			.signalSemaphoreValueCount = 1,
+			.pSignalSemaphoreValues = &globalFrameID
+		};
+		vk::SubmitInfo timelineSubmitInfo{
+			.pNext = &workSemaphoreSubmitInfo,
+			.signalSemaphoreCount = 1,
+			.pSignalSemaphores = &*frameContexts[currentFrameContext].workSempaphore
+		};
+
+		gfxQueue.submit(timelineSubmitInfo);
+
 		vk::Result presentResult = gfxQueue.presentKHR(
 			{
-				.waitSemaphoreCount = 1,
-				.pWaitSemaphores = &swapChainList[currentSwap]->acquireSempaphore,
+				//.pNext = &workSemaphoreSubmitInfo,
+				//.waitSemaphoreCount = 1,
+				//.signalSemaphoreCount = 1,
+				//.pSignalSemaphores = &frameContexts[currentFrameContext].workSempaphore,
 				.swapchainCount = 1,
 				.pSwapchains = &swapChain,
 				.pImageIndices = &currentSwap
@@ -644,42 +666,6 @@ void	VulkanRenderer::InitDefaultRenderPass() {
 	defaultRenderPass = device.createRenderPass(renderPassInfo);
 }
 
-bool VulkanRenderer::CreateDefaultFrameBuffers() {
-	if (frameBuffers) {
-		for (unsigned int i = 0; i < numFrameBuffers; ++i) {
-			device.destroyFramebuffer(frameBuffers[i]);
-		}
-	}
-	else {
-		frameBuffers = new vk::Framebuffer[numFrameBuffers];
-	}
-
-	vk::ImageView attachments[2];
-	
-	vk::FramebufferCreateInfo createInfo = vk::FramebufferCreateInfo()
-		.setWidth(hostWindow.GetScreenSize().x)
-		.setHeight(hostWindow.GetScreenSize().y)
-		.setLayers(1)
-		.setAttachmentCount(2)
-		.setPAttachments(attachments)
-		.setRenderPass(defaultRenderPass);
-
-	for (uint32_t i = 0; i < numFrameBuffers; ++i) {
-		attachments[0]	= swapChainList[i]->colourView;
-		attachments[1]	= *depthBuffer->defaultView;
-		frameBuffers[i] = device.createFramebuffer(createInfo);
-	}
-
-	defaultBeginInfo = vk::RenderPassBeginInfo()
-		.setRenderPass(defaultRenderPass)
-		.setFramebuffer(frameBuffers[currentSwap])
-		.setRenderArea(defaultScissor)
-		.setClearValueCount(sizeof(defaultClearValues) / sizeof(vk::ClearValue))
-		.setPClearValues(defaultClearValues);
-
-	return true;
-}
-
 void	VulkanRenderer::InitDefaultDescriptorPool(uint32_t maxSets) {
 	vk::DescriptorPoolSize poolSizes[] = {
 		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, maxSets),
@@ -705,32 +691,8 @@ void	VulkanRenderer::InitDefaultDescriptorPool(uint32_t maxSets) {
 	defaultDescriptorPool = device.createDescriptorPool(poolCreate);
 }
 
-void VulkanRenderer::InitDefaultDescriptorSetLayouts() {
-	defaultLayouts[DefaultSetLayouts::Single_Texture] = DescriptorSetLayoutBuilder(GetDevice())
-		.WithImageSamplers(0, 1, vk::ShaderStageFlagBits::eAll)
-		.Build("Default Single Texture Layout").release();
-
-	defaultLayouts[DefaultSetLayouts::Single_UBO] = DescriptorSetLayoutBuilder(GetDevice())
-		.WithUniformBuffers(0, 1, vk::ShaderStageFlagBits::eAll)
-		.Build("Default Single UBO Layout").release();
-
-	defaultLayouts[DefaultSetLayouts::Single_SSBO] = DescriptorSetLayoutBuilder(GetDevice())
-		.WithStorageBuffers(0, 1, vk::ShaderStageFlagBits::eAll)
-		.Build("Default Single SSBO Layout").release();
-
-	defaultLayouts[DefaultSetLayouts::Single_Storage_Image] = DescriptorSetLayoutBuilder(GetDevice())
-		.WithStorageImages(0, 1, vk::ShaderStageFlagBits::eAll)
-		.Build("Default Single Storage Image Layout").release();
-
-	//defaultLayouts[InbuiltDescriptorSetLayouts::Single_TLAS] = DescriptorSetLayoutBuilder(GetDevice())
-	//	.WithSamplers(1, vk::ShaderStageFlagBits::eAll)
-	//	.Build("Default Single Texture Layout").release();
-}
-
 void	VulkanRenderer::BeginDefaultRenderPass(vk::CommandBuffer  cmds) {
 	cmds.beginRenderPass(defaultBeginInfo, vk::SubpassContents::eInline);
-	//cmds.setViewport(0, 1, &defaultViewport);
-	//cmds.setScissor(0, 1, &defaultScissor);
 }
 
 void	VulkanRenderer::BeginDefaultRendering(vk::CommandBuffer  cmds) {
@@ -738,7 +700,7 @@ void	VulkanRenderer::BeginDefaultRendering(vk::CommandBuffer  cmds) {
 	renderInfo.layerCount = 1;
 
 	vk::RenderingAttachmentInfoKHR colourAttachment;
-	colourAttachment.setImageView(swapChainList[currentSwap]->colourView)
+	colourAttachment.setImageView(frameContexts[currentFrameContext].colourView)
 		.setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
 		.setLoadOp(vk::AttachmentLoadOp::eClear)
 		.setStoreOp(vk::AttachmentStoreOp::eStore)
