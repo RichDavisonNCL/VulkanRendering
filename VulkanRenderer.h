@@ -71,6 +71,8 @@ namespace NCL::Rendering::Vulkan {
 		vk::Semaphore		acquireSempaphore;
 		vk::Fence			acquireFence;
 
+		vk::Semaphore		frameFinishedSemaphore;
+
 		vk::CommandBuffer	swapCmds;
 	};
 

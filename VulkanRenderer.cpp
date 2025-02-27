@@ -350,6 +350,8 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 		chain.acquireSempaphore = device.createSemaphore({});
 		chain.acquireFence		= device.createFence({});
 
+		chain.frameFinishedSemaphore = device.createSemaphore({});
+
 		chain.swapCmds = CmdBufferCreate(device, GetCommandPool(CommandType::Graphics), "Window swap cmds").release();
 
 		chain.colourImage = images[i];
@@ -583,10 +585,11 @@ void	VulkanRenderer::EndFrame() {
 	}
 	TransitionColourToPresent(frameCmds, frameContexts[currentFrameContext].colourImage);
 	if (hostWindow.IsMinimised()) {
+		//TODO - signal frameFinishedSemaphore?
 		CmdBufferEndSubmitWait(frameCmds, device, queues[CommandType::Graphics]);
 	}
 	else {
-		CmdBufferEndSubmit(frameCmds, queues[CommandType::Graphics]);
+		CmdBufferEndSubmit(frameCmds, queues[CommandType::Graphics], {}, {}, swapStates[currentSwap].frameFinishedSemaphore);
 	}
 
 	Vulkan::TimelineSemaphoreQueueSignal(queues[CommandType::Graphics], *globalFrameSemaphore, globalFrameID);
@@ -598,11 +601,14 @@ void VulkanRenderer::SwapBuffers() {
 	stagingBuffers->Update();
 	if (!hostWindow.IsMinimised()) {
 		vk::Queue		gfxQueue	= queues[CommandType::Graphics];
+
 		vk::Result presentResult = gfxQueue.presentKHR(
 			{
-				.swapchainCount = 1,
-				.pSwapchains = &swapChain,
-				.pImageIndices = &currentSwap
+				.waitSemaphoreCount = 1,
+				.pWaitSemaphores	= &swapStates[currentSwap].frameFinishedSemaphore,
+				.swapchainCount		= 1,
+				.pSwapchains		= &swapChain,
+				.pImageIndices		= &currentSwap,				
 			}
 		);	
 	}
