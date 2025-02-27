@@ -48,8 +48,6 @@ namespace NCL::Rendering::Vulkan {
 		vk::DescriptorPool  descriptorPool;
 		vk::CommandBuffer	cmdBuffer;
 
-		vk::UniqueSemaphore	workSempaphore;
-
 		vk::Image			colourImage;
 		vk::ImageView		colourView;
 		vk::Format			colourFormat;
@@ -61,8 +59,8 @@ namespace NCL::Rendering::Vulkan {
 		vk::Viewport		defaultViewport;
 		vk::Rect2D			defaultScreenRect;
 
-		vk::CommandPool			commandPools[CommandType::Type::MAX_COMMAND_TYPES];
-		vk::Queue				queues[CommandType::Type::MAX_COMMAND_TYPES];
+		vk::CommandPool		commandPools[CommandType::Type::MAX_COMMAND_TYPES];
+		vk::Queue			queues[CommandType::Type::MAX_COMMAND_TYPES];
 	};
 
 	struct ChainState {
@@ -234,11 +232,10 @@ namespace NCL::Rendering::Vulkan {
 		std::vector<FrameContext>	frameContexts;
 		std::vector<ChainState>		swapStates;
 
-		uint32_t				waitFrameContext	= 0; //We need to wait for this to complete at start of frame
 		uint32_t				currentFrameContext	= 0; //Frame context for this frame
 		uint32_t				currentSwap			= 0; //To index our swapchain 
 
-		uint64_t				globalFrameID		= 0;
+		uint64_t				globalFrameID		= 1;
 
 		vk::Fence			currentSwapFence;
 
@@ -246,5 +243,6 @@ namespace NCL::Rendering::Vulkan {
 		VmaAllocator		memoryAllocator;
 
 	
+		vk::UniqueSemaphore globalFrameSemaphore;
 	};
 }

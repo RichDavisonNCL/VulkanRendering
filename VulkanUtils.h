@@ -59,6 +59,12 @@ namespace NCL::Rendering::Vulkan {
 
 	vk::UniqueSemaphore		CreateTimelineSemaphore(vk::Device device, uint64_t initialValue = 0);
 
+	vk::Result		TimelineSemaphoreHostWait(vk::Device device, vk::Semaphore semaphore, uint64_t waitVal, uint64_t waitTime = UINT64_MAX);
+	void			TimelineSemaphoreHostSignal(vk::Device device, vk::Semaphore semaphore,uint64_t signalVal);
+
+	void			TimelineSemaphoreQueueWait(vk::Queue queue, vk::Semaphore semaphore, uint64_t waitVal, vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eAllCommands);
+	void			TimelineSemaphoreQueueSignal(vk::Queue queue, vk::Semaphore semaphore, uint64_t signalVal);
+
 	void	WriteDescriptor(vk::Device device, vk::WriteDescriptorSet setInfo, vk::DescriptorBufferInfo bufferInfo);
 	void	WriteDescriptor(vk::Device device, vk::WriteDescriptorSet setInfo, vk::DescriptorImageInfo imageInfo);
 

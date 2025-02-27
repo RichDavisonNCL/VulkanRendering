@@ -56,6 +56,8 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 	pipelineCache = device.createPipelineCache(vk::PipelineCacheCreateInfo());
 
 	frameCmds = frameContexts[currentSwap].cmdBuffer;
+
+	globalFrameSemaphore = Vulkan::CreateTimelineSemaphore(GetDevice());
 }
 
 VulkanRenderer::~VulkanRenderer() {
@@ -245,8 +247,8 @@ void	VulkanRenderer::InitFrameStates(uint32_t framesInFlight) {
 
 	auto buffers = device.allocateCommandBuffers(
 		{
-			.commandPool = commandPools[CommandType::Graphics],
-			.level = vk::CommandBufferLevel::ePrimary,
+			.commandPool		= commandPools[CommandType::Graphics],
+			.level				= vk::CommandBufferLevel::ePrimary,
 			.commandBufferCount = framesInFlight
 		}
 	);
@@ -258,20 +260,20 @@ void	VulkanRenderer::InitFrameStates(uint32_t framesInFlight) {
 
 		context.cmdBuffer = buffers[index];
 
-		context.workSempaphore = Vulkan::CreateTimelineSemaphore(GetDevice());
+		//context.workSempaphore		= Vulkan::CreateTimelineSemaphore(GetDevice());
 
-		context.defaultViewport	= defaultViewport;
-		context.defaultScreenRect = defaultScreenRect;
+		context.defaultViewport		= defaultViewport;
+		context.defaultScreenRect	= defaultScreenRect;
 
-		context.colourFormat = surfaceFormat;
+		context.colourFormat		= surfaceFormat;
 
-		context.depthImage = depthBuffer->GetImage();
-		context.depthView = depthBuffer->GetDefaultView();
-		context.depthFormat = depthBuffer->GetFormat();
+		context.depthImage			= depthBuffer->GetImage();
+		context.depthView			= depthBuffer->GetDefaultView();
+		context.depthFormat			= depthBuffer->GetFormat();
 
 		for (int i = 0; i < CommandType::Type::MAX_COMMAND_TYPES; ++i) {
 			context.commandPools[i] = commandPools[i];
-			context.queues[i] = queues[i];
+			context.queues[i]		= queues[i];
 		}
 		index++;
 	}
@@ -521,20 +523,21 @@ void VulkanRenderer::WaitForSwapImage() {
 }
 
 void	VulkanRenderer::BeginFrame() {
-	//First we need to prevent the renderer from going too far ahead of the frames in flight max
-	waitFrameContext	= (currentFrameContext + frameContexts.size() - 1) % frameContexts.size();
 	currentFrameContext = (currentFrameContext + 1) % frameContexts.size();
 
 	//block on the waiting frame's timeline semaphore
-	if (globalFrameID >= frameContexts.size()) {
-		uint64_t waitValue = globalFrameID;
-		vk::SemaphoreWaitInfo waitInfo{
-			.semaphoreCount = 1,
-			.pSemaphores = &*(frameContexts[waitFrameContext].workSempaphore),
-			.pValues = &waitValue
-		};
-		vk::Result wait = device.waitSemaphores(waitInfo, UINT64_MAX);
+	if (globalFrameID >= frameContexts.size()+1) {
+		uint64_t waitValue = globalFrameID - frameContexts.size();
+		//The host has to wait for the frame n-framesInFlight to have been definitely completed!
+		Vulkan::TimelineSemaphoreHostWait(GetDevice(), *globalFrameSemaphore, waitValue);
 	}
+	////And don't let any more queue work be submitted just yet...
+	if (globalFrameID > 1) {
+		uint64_t waitValue = globalFrameID - 1;
+		Vulkan::TimelineSemaphoreQueueWait(GetQueue(CommandType::Graphics), *globalFrameSemaphore, waitValue);
+	}
+
+	//device.waitIdle();
 
 	//Acquire our next swap image
 	currentSwapFence = swapStates[currentSwap].acquireFence;
@@ -586,17 +589,7 @@ void	VulkanRenderer::EndFrame() {
 		CmdBufferEndSubmit(frameCmds, queues[CommandType::Graphics]);
 	}
 
-	uint64_t signalValue = globalFrameID + frameContexts.size();
-	vk::TimelineSemaphoreSubmitInfo tlSubmit;
-	tlSubmit.signalSemaphoreValueCount = 1;
-	tlSubmit.pSignalSemaphoreValues = &signalValue;
-
-	vk::SubmitInfo queueSubmit;
-	queueSubmit.pNext = &tlSubmit;
-	queueSubmit.signalSemaphoreCount = 1;
-	queueSubmit.pSignalSemaphores = &*frameContexts[currentFrameContext].workSempaphore;
-
-	queues[CommandType::Graphics].submit(queueSubmit);
+	Vulkan::TimelineSemaphoreQueueSignal(queues[CommandType::Graphics], *globalFrameSemaphore, globalFrameID);
 
 	globalFrameID++;
 }
