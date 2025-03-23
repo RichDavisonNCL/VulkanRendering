@@ -17,8 +17,8 @@ namespace NCL::Rendering::Vulkan {
 	*/
 	class DescriptorSetLayoutBuilder {
 	public:
-		DescriptorSetLayoutBuilder(vk::Device device) {
-			sourceDevice = device;
+		DescriptorSetLayoutBuilder(vk::Device m_device) {
+			m_sourceDevice = m_device;
 		};
 		~DescriptorSetLayoutBuilder() {};
 
@@ -47,7 +47,7 @@ namespace NCL::Rendering::Vulkan {
 		vk::UniqueDescriptorSetLayout Build(const std::string& debugName = "");
 
 	protected:
-		vk::Device sourceDevice;
+		vk::Device m_sourceDevice;
 
 		std::vector< vk::DescriptorSetLayoutBinding>	addedBindings;
 		std::vector< vk::DescriptorBindingFlags>		addedFlags;

@@ -64,7 +64,7 @@ int MakeMultipleOf(int input, int multiple) {
 	return count * multiple;
 }
 
-ShaderBindingTable VulkanShaderBindingTableBuilder::Build(vk::Device device, VmaAllocator allocator) {
+ShaderBindingTable VulkanShaderBindingTableBuilder::Build(vk::Device m_device, VmaAllocator m_allocator) {
 	assert(pipeCreateInfo);
 	assert(pipeline);
 
@@ -83,7 +83,7 @@ ShaderBindingTable VulkanShaderBindingTableBuilder::Build(vk::Device device, Vma
 	uint32_t totalHandleSize	= numShaderGroups * handleSize;
 
 	std::vector<uint8_t> handles(totalHandleSize);
-	auto result = device.getRayTracingShaderGroupHandlesKHR(pipeline, 0, numShaderGroups, totalHandleSize, handles.data());
+	auto result = m_device.getRayTracingShaderGroupHandlesKHR(pipeline, 0, numShaderGroups, totalHandleSize, handles.data());
 
 	uint32_t bufferSize = 0;
 
@@ -94,7 +94,7 @@ ShaderBindingTable VulkanShaderBindingTableBuilder::Build(vk::Device device, Vma
 	}
 	table.regions[0].stride = table.regions[0].size;
 
-	table.tableBuffer = BufferBuilder(device, allocator)
+	table.tableBuffer = BufferBuilder(m_device, m_allocator)
 		.WithBufferUsage(vk::BufferUsageFlagBits::eTransferSrc | 
 						 vk::BufferUsageFlagBits::eShaderDeviceAddressKHR | 
 						 vk::BufferUsageFlagBits::eShaderBindingTableKHR)
@@ -102,7 +102,7 @@ ShaderBindingTable VulkanShaderBindingTableBuilder::Build(vk::Device device, Vma
 		.WithHostVisibility()
 		.Build(bufferSize, debugName + " SBT Buffer");
 
-	vk::DeviceAddress bufferAddress = device.getBufferAddress({ .buffer = table.tableBuffer.buffer });
+	vk::DeviceAddress bufferAddress = m_device.getBufferAddress({ .buffer = table.tableBuffer.buffer });
 
 	char* bufferData = (char*)table.tableBuffer.Map();
 	int dataOffset = 0;

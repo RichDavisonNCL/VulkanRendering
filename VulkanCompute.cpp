@@ -12,13 +12,13 @@ using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-VulkanCompute::VulkanCompute(vk::Device device, const std::string& filename) : localThreadSize{ 0,0,0 } {
+VulkanCompute::VulkanCompute(vk::Device m_device, const std::string& filename) : m_localThreadSize{ 0,0,0 } {
 	char* data;
 	size_t dataSize = 0;
 	Assets::ReadBinaryFile(Assets::SHADERDIR + "VK/" + filename, &data, dataSize);
 
 	if (dataSize > 0) {
-		computeModule = device.createShaderModuleUnique(//vk::ShaderModuleCreateInfo(
+		m_computeModule = m_device.createShaderModuleUnique(//vk::ShaderModuleCreateInfo(
 			{
 				.flags = {},
 				.codeSize = dataSize,
@@ -32,16 +32,16 @@ VulkanCompute::VulkanCompute(vk::Device device, const std::string& filename) : l
 		std::cout << __FUNCTION__ << " Problem loading shader file " << filename << "!\n";
 		return;
 	}
-	info.stage	= vk::ShaderStageFlagBits::eCompute;
-	info.module = *computeModule;
-	info.pName	= "main";
+	m_createInfo.stage	= vk::ShaderStageFlagBits::eCompute;
+	m_createInfo.module = *m_computeModule;
+	m_createInfo.pName	= "main";
 
 	AddReflectionData(dataSize, data, vk::ShaderStageFlagBits::eCompute);
-	BuildLayouts(device);
+	BuildLayouts(m_device);
 
 	delete data;
 }
 
 void	VulkanCompute::FillShaderStageCreateInfo(vk::ComputePipelineCreateInfo& pipeInfo) const {
-	pipeInfo.setStage(info);
+	pipeInfo.setStage(m_createInfo);
 }

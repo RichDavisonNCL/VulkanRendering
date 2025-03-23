@@ -16,20 +16,20 @@ namespace NCL::Rendering::Vulkan {
 	class DescriptorBufferWriter {
 	public:
 		DescriptorBufferWriter(vk::Device inDevice, vk::DescriptorSetLayout inLayout, VulkanBuffer& inBuffer)
-		 : destBuffer(inBuffer) {
-			device = inDevice;
-			layout = inLayout;
-			descriptorBufferMemory = destBuffer.Map();
+		 : m_destBuffer(inBuffer) {
+			m_device = inDevice;
+			m_layout = inLayout;
+			m_descriptorBufferMemory = m_destBuffer.Map();
 		}
 
 		~DescriptorBufferWriter() {
-			if (descriptorBufferMemory) {
+			if (m_descriptorBufferMemory) {
 				Finish();
 			}
 		}
 
 		DescriptorBufferWriter& SetProperties(vk::PhysicalDeviceDescriptorBufferPropertiesEXT* inProps) {
-			props = inProps;
+			m_props = inProps;
 			return *this;
 		}
 
@@ -44,9 +44,9 @@ namespace NCL::Rendering::Vulkan {
 				.data = &descriptorAddress
 			};
 
-			vk::DeviceSize		offset = device.getDescriptorSetLayoutBindingOffsetEXT(layout, binding);
+			vk::DeviceSize		offset = m_device.getDescriptorSetLayoutBindingOffsetEXT(m_layout, binding);
 
-			device.getDescriptorEXT(&getInfo, Vulkan::GetDescriptorSize(type, *props), ((char*)descriptorBufferMemory) + offset);
+			m_device.getDescriptorEXT(&getInfo, Vulkan::GetDescriptorSize(type, *m_props), ((char*)m_descriptorBufferMemory) + offset);
 
 			return *this;
 		}
@@ -70,15 +70,15 @@ namespace NCL::Rendering::Vulkan {
 		//}
 
 		void Finish() {
-			destBuffer.Unmap();
-			descriptorBufferMemory = nullptr;
+			m_destBuffer.Unmap();
+			m_descriptorBufferMemory = nullptr;
 		}
 
 	protected:
-		vk::Device device;
-		VulkanBuffer& destBuffer;
-		void* descriptorBufferMemory;
-		vk::DescriptorSetLayout layout;
-		vk::PhysicalDeviceDescriptorBufferPropertiesEXT* props;
+		vk::Device				m_device;
+		VulkanBuffer&			m_destBuffer;
+		void*					m_descriptorBufferMemory;
+		vk::DescriptorSetLayout m_layout;
+		vk::PhysicalDeviceDescriptorBufferPropertiesEXT* m_props;
 	};
 };

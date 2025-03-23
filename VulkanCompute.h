@@ -14,16 +14,19 @@ namespace NCL::Rendering::Vulkan {
 	*/
 	class VulkanCompute : public VulkanShaderBase	{
 	public:
-		VulkanCompute(vk::Device sourceDevice, const std::string& filename);
+		VulkanCompute(vk::Device m_sourceDevice, const std::string& filename);
 		~VulkanCompute() {}
 
-		Maths::Vector3i GetThreadCount() const { return localThreadSize; }
+		Maths::Vector3i GetThreadCount() const { return m_localThreadSize; }
 
 		void	FillShaderStageCreateInfo(vk::ComputePipelineCreateInfo& info) const;
 
 	protected:
-		Maths::Vector3i localThreadSize;
-		vk::PipelineShaderStageCreateInfo info;
-		vk::UniqueShaderModule	computeModule;
+		Maths::Vector3i						m_localThreadSize;
+		vk::PipelineShaderStageCreateInfo	m_createInfo;
+		vk::UniqueShaderModule				m_computeModule;
 	};
+
+	using UniqueVulkanCompute = std::unique_ptr<VulkanCompute>;
+	using SharedVulkanCompute = std::shared_ptr<VulkanCompute>;
 }

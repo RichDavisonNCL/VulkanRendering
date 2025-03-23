@@ -12,18 +12,18 @@ License: MIT (see LICENSE file at the top of the source tree)
 namespace NCL::Rendering::Vulkan {
 	class TextureBuilder	{
 	public:
-		TextureBuilder(vk::Device device, VmaAllocator allocator);
+		TextureBuilder(vk::Device m_device, VmaAllocator m_allocator);
 		~TextureBuilder() {}
 
-		TextureBuilder& WithFormat(vk::Format format);
-		TextureBuilder& WithLayout(vk::ImageLayout layout);
-		TextureBuilder& WithAspects(vk::ImageAspectFlags aspects);
-		TextureBuilder& WithUsages(vk::ImageUsageFlags usages);
+		TextureBuilder& WithFormat(vk::Format m_format);
+		TextureBuilder& WithLayout(vk::ImageLayout m_layout);
+		TextureBuilder& WithAspects(vk::ImageAspectFlags m_aspects);
+		TextureBuilder& WithUsages(vk::ImageUsageFlags m_usages);
 		TextureBuilder& WithPipeFlags(vk::PipelineStageFlags2 flags);
 
 		TextureBuilder& WithCommandBuffer(vk::CommandBuffer buffer);
-		TextureBuilder& UsingQueue(vk::Queue queue);
-		TextureBuilder& UsingPool(vk::CommandPool pool);
+		TextureBuilder& UsingQueue(vk::Queue m_queue);
+		TextureBuilder& UsingPool(vk::CommandPool m_pool);
 
 		TextureBuilder& WithMips(bool state);
 		TextureBuilder& WithDimension(uint32_t width, uint32_t height, uint32_t depth = 1);
@@ -95,27 +95,27 @@ namespace NCL::Rendering::Vulkan {
 		void BeginTexture(const std::string& debugName, vk::UniqueCommandBuffer& uniqueBuffer, vk::CommandBuffer& usingBuffer);
 		void EndTexture(const std::string& debugName, vk::UniqueCommandBuffer& uniqueBuffer, vk::CommandBuffer& usingBuffer, TextureJob& job, UniqueVulkanTexture& t);
 
-		UniqueVulkanTexture	GenerateTexture(vk::CommandBuffer cmdBuffer, Maths::Vector3ui dimensions, bool isCube, const std::string& debugName);
+		UniqueVulkanTexture	GenerateTexture(vk::CommandBuffer m_cmdBuffer, Maths::Vector3ui dimensions, bool isCube, const std::string& debugName);
 
 		void UploadTextureData(vk::CommandBuffer buffer, TextureJob& job);
 
-		NCL::Maths::Vector3ui	requestedSize;
-		uint32_t				layerCount;
-		bool					generateMips;
+		NCL::Maths::Vector3ui	m_requestedSize;
+		uint32_t				m_layerCount;
+		bool					m_generateMips;
 
-		vk::Format				format;
-		vk::ImageLayout			layout;
-		vk::ImageAspectFlags	aspects;
-		vk::ImageUsageFlags		usages;
-		vk::PipelineStageFlags2	pipeFlags;
+		vk::Format				m_format;
+		vk::ImageLayout			m_layout;
+		vk::ImageAspectFlags	m_aspects;
+		vk::ImageUsageFlags		m_usages;
+		vk::PipelineStageFlags2	m_pipeFlags;
 
-		vk::Device			sourceDevice;
-		VmaAllocator		sourceAllocator;
+		vk::Device			m_sourceDevice;
+		VmaAllocator		m_sourceAllocator;
 
-		vk::Queue			queue;
-		vk::CommandPool		pool;
-		vk::CommandBuffer	cmdBuffer;
+		vk::Queue			m_queue;
+		vk::CommandPool		m_pool;
+		vk::CommandBuffer	m_cmdBuffer;
 
-		std::vector<TextureJob> activeJobs;
+		std::vector<TextureJob> m_activeJobs;
 	};
 }

@@ -13,43 +13,43 @@ using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-BufferBuilder::BufferBuilder(vk::Device device, VmaAllocator allocator) {
-	sourceDevice	= device;
-	sourceAllocator = allocator;
-	vmaInfo = {};
-	vmaInfo.usage		= VMA_MEMORY_USAGE_AUTO;
+BufferBuilder::BufferBuilder(vk::Device m_device, VmaAllocator m_allocator) {
+	m_sourceDevice	= m_device;
+	m_sourceAllocator = m_allocator;
+	m_vmaCreateInfo = {};
+	m_vmaCreateInfo.usage		= VMA_MEMORY_USAGE_AUTO;
 }
 
-BufferBuilder::BufferBuilder(VkDevice device, VmaAllocator allocator) {
-	sourceDevice = device;
-	sourceAllocator = allocator;
-	vmaInfo = {};
-	vmaInfo.usage = VMA_MEMORY_USAGE_AUTO;
+BufferBuilder::BufferBuilder(VkDevice m_device, VmaAllocator m_allocator) {
+	m_sourceDevice = m_device;
+	m_sourceAllocator = m_allocator;
+	m_vmaCreateInfo = {};
+	m_vmaCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
 }
 
 BufferBuilder& BufferBuilder::WithBufferUsage(vk::BufferUsageFlags flags) {
-	vkInfo.usage = flags;
+	m_vkCreateInfo.usage = flags;
 	return *this;
 }
 
 BufferBuilder& BufferBuilder::WithBufferUsage(VkBufferUsageFlags flags) {
-	vkInfo.usage = vk::BufferUsageFlags(flags);
+	m_vkCreateInfo.usage = vk::BufferUsageFlags(flags);
 	return *this;
 }
 
 BufferBuilder& BufferBuilder::WithMemoryProperties(vk::MemoryPropertyFlags flags) {
-	vmaInfo.requiredFlags = (VkMemoryPropertyFlags)flags;
+	m_vmaCreateInfo.requiredFlags = (VkMemoryPropertyFlags)flags;
 	return *this;
 }
 
 BufferBuilder& BufferBuilder::WithMemoryProperties(VkMemoryPropertyFlags flags) {
-	vmaInfo.requiredFlags = flags;
+	m_vmaCreateInfo.requiredFlags = flags;
 	return *this;
 }
 
 BufferBuilder& BufferBuilder::WithHostVisibility() {
-	vmaInfo.requiredFlags |= (VkMemoryPropertyFlags)vk::MemoryPropertyFlagBits::eHostVisible;
-	vmaInfo.flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+	m_vmaCreateInfo.requiredFlags |= (VkMemoryPropertyFlags)vk::MemoryPropertyFlagBits::eHostVisible;
+	m_vmaCreateInfo.flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
 
 	return *this;
 }
@@ -60,24 +60,24 @@ you might want to store IN the buffer, while this is an intrinsic
 property OF the buffer(i.e it has an address, it doesn't store addresses)
 */
 BufferBuilder& BufferBuilder::WithDeviceAddress() {
-	vkInfo.usage |= vk::BufferUsageFlagBits::eShaderDeviceAddress;
+	m_vkCreateInfo.usage |= vk::BufferUsageFlagBits::eShaderDeviceAddress;
 	return *this;
 }
 
 BufferBuilder& BufferBuilder::WithPersistentMapping() {
-	vmaInfo.requiredFlags |= (VkMemoryPropertyFlags)vk::MemoryPropertyFlagBits::eHostCoherent;
+	m_vmaCreateInfo.requiredFlags |= (VkMemoryPropertyFlags)vk::MemoryPropertyFlagBits::eHostCoherent;
 
-	vmaInfo.flags |= (VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT);
+	m_vmaCreateInfo.flags |= (VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT);
 	return *this;
 }
 
 BufferBuilder& BufferBuilder::WithUniqueAllocation() {
-	vmaInfo.flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+	m_vmaCreateInfo.flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 	return *this;
 }
 
 BufferBuilder& BufferBuilder::WithConcurrentSharing() {
-	vkInfo.sharingMode = vk::SharingMode::eConcurrent;
+	m_vkCreateInfo.sharingMode = vk::SharingMode::eConcurrent;
 	return *this;
 }
 
@@ -85,14 +85,14 @@ VulkanBuffer BufferBuilder::Build(size_t byteSize, const std::string& debugName)
 	VulkanBuffer	outputBuffer;
 
 	outputBuffer.size = byteSize;
-	vkInfo.size = byteSize;
+	m_vkCreateInfo.size = byteSize;
 
-	outputBuffer.allocator = sourceAllocator;
+	outputBuffer.m_allocator = m_sourceAllocator;
 
-	vmaCreateBuffer(sourceAllocator, (VkBufferCreateInfo*)&vkInfo, &vmaInfo, (VkBuffer*)&(outputBuffer.buffer), &outputBuffer.allocationHandle, &outputBuffer.allocationInfo);
+	vmaCreateBuffer(m_sourceAllocator, (VkBufferCreateInfo*)&m_vkCreateInfo, &m_vmaCreateInfo, (VkBuffer*)&(outputBuffer.buffer), &outputBuffer.allocationHandle, &outputBuffer.allocationInfo);
 
-	if (vkInfo.usage & vk::BufferUsageFlagBits::eShaderDeviceAddress) {
-		outputBuffer.deviceAddress = sourceDevice.getBufferAddress(
+	if (m_vkCreateInfo.usage & vk::BufferUsageFlagBits::eShaderDeviceAddress) {
+		outputBuffer.deviceAddress = m_sourceDevice.getBufferAddress(
 			{
 				.buffer = outputBuffer.buffer
 			}
@@ -100,7 +100,7 @@ VulkanBuffer BufferBuilder::Build(size_t byteSize, const std::string& debugName)
 	}
 
 	if (!debugName.empty()) {
-		SetDebugName(sourceDevice, vk::ObjectType::eBuffer, GetVulkanHandle(outputBuffer.buffer), debugName);
+		SetDebugName(m_sourceDevice, vk::ObjectType::eBuffer, GetVulkanHandle(outputBuffer.buffer), debugName);
 	}
 
 	return outputBuffer;

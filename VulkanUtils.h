@@ -12,8 +12,8 @@ namespace NCL::Rendering::Vulkan {
 
 	extern vk::detail::DynamicLoader dynamicLoader;
 
-	void SetNullDescriptor(vk::Device device, vk::DescriptorSetLayout layout);
-	vk::DescriptorSetLayout GetNullDescriptor(vk::Device device);
+	void SetNullDescriptor(vk::Device m_device, vk::DescriptorSetLayout m_layout);
+	vk::DescriptorSetLayout GetNullDescriptor(vk::Device m_device);
 
 	void SetDescriptorSizes(vk::Device, vk::PhysicalDeviceDescriptorBufferPropertiesEXT& props);
 
@@ -31,17 +31,17 @@ namespace NCL::Rendering::Vulkan {
 	public:
 		ScopedDebugArea(vk::CommandBuffer inBuffer, const std::string& inName) {
 			Vulkan::BeginDebugArea(inBuffer, inName);
-			cmdBuffer = inBuffer;
+			m_cmdBuffer = inBuffer;
 		}
 		~ScopedDebugArea() {
-			Vulkan::EndDebugArea(cmdBuffer);
+			Vulkan::EndDebugArea(m_cmdBuffer);
 		}
 	private:
-		vk::CommandBuffer cmdBuffer;
+		vk::CommandBuffer m_cmdBuffer;
 	};
 
 	void ImageTransitionBarrier(vk::CommandBuffer  buffer, vk::Image i, vk::ImageMemoryBarrier2 barrier);
-	void ImageTransitionBarrier(vk::CommandBuffer  buffer, vk::Image i, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, vk::ImageAspectFlags aspect, vk::PipelineStageFlags2 srcStage, vk::PipelineStageFlags2 dstStage, uint32_t firstMip = 0, uint32_t mipCount = VK_REMAINING_MIP_LEVELS, uint32_t firstLayer = 0, uint32_t layerCount = VK_REMAINING_ARRAY_LAYERS);
+	void ImageTransitionBarrier(vk::CommandBuffer  buffer, vk::Image i, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, vk::ImageAspectFlags aspect, vk::PipelineStageFlags2 srcStage, vk::PipelineStageFlags2 dstStage, uint32_t firstMip = 0, uint32_t mipCount = VK_REMAINING_MIP_LEVELS, uint32_t firstLayer = 0, uint32_t m_layerCount = VK_REMAINING_ARRAY_LAYERS);
 
 	void TransitionUndefinedToColour(vk::CommandBuffer  buffer, vk::Image t);
 	void TransitionColourToPresent(vk::CommandBuffer  buffer, vk::Image t);
@@ -55,33 +55,33 @@ namespace NCL::Rendering::Vulkan {
 	vk::AccessFlags	 DefaultAccessFlags(vk::ImageLayout forLayout);
 	vk::AccessFlags2 DefaultAccessFlags2(vk::ImageLayout forLayout);
 
-	vk::UniqueDescriptorSet CreateDescriptorSet(vk::Device device, vk::DescriptorPool pool, vk::DescriptorSetLayout  layout, uint32_t variableDescriptorCount = 0);
+	vk::UniqueDescriptorSet CreateDescriptorSet(vk::Device m_device, vk::DescriptorPool m_pool, vk::DescriptorSetLayout  m_layout, uint32_t variableDescriptorCount = 0);
 
-	vk::UniqueSemaphore		CreateTimelineSemaphore(vk::Device device, uint64_t initialValue = 0);
+	vk::UniqueSemaphore		CreateTimelineSemaphore(vk::Device m_device, uint64_t initialValue = 0);
 
-	void	WriteDescriptor(vk::Device device, vk::WriteDescriptorSet setInfo, vk::DescriptorBufferInfo bufferInfo);
-	void	WriteDescriptor(vk::Device device, vk::WriteDescriptorSet setInfo, vk::DescriptorImageInfo imageInfo);
+	void	WriteDescriptor(vk::Device m_device, vk::WriteDescriptorSet setInfo, vk::DescriptorBufferInfo bufferInfo);
+	void	WriteDescriptor(vk::Device m_device, vk::WriteDescriptorSet setInfo, vk::DescriptorImageInfo imageInfo);
 
-	void	WriteBufferDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::DescriptorType bufferType, vk::Buffer buff, size_t offset = 0, size_t range = VK_WHOLE_SIZE);
-	void	WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout layout = vk::ImageLayout::eShaderReadOnlyOptimal);
-	void	WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, uint32_t subIndex, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout layout = vk::ImageLayout::eShaderReadOnlyOptimal);
-	void	WriteStorageImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout layout = vk::ImageLayout::eShaderReadOnlyOptimal);
-	void	WriteTLASDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::AccelerationStructureKHR tlas);
+	void	WriteBufferDescriptor(vk::Device m_device, vk::DescriptorSet set, uint32_t bindingSlot, vk::DescriptorType bufferType, vk::Buffer buff, size_t offset = 0, size_t range = VK_WHOLE_SIZE);
+	void	WriteImageDescriptor(vk::Device m_device, vk::DescriptorSet set, uint32_t bindingSlot, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
+	void	WriteImageDescriptor(vk::Device m_device, vk::DescriptorSet set, uint32_t bindingSlot, uint32_t subIndex, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
+	void	WriteStorageImageDescriptor(vk::Device m_device, vk::DescriptorSet set, uint32_t bindingSlot, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
+	void	WriteTLASDescriptor(vk::Device m_device, vk::DescriptorSet set, uint32_t bindingSlot, vk::AccelerationStructureKHR tlas);
 
-	vk::UniqueCommandBuffer	CmdBufferCreate(vk::Device device, vk::CommandPool fromPool, const std::string& debugName = "");
-	vk::UniqueCommandBuffer	CmdBufferCreateBegin(vk::Device device, vk::CommandPool fromPool, const std::string& debugName = "");
+	vk::UniqueCommandBuffer	CmdBufferCreate(vk::Device m_device, vk::CommandPool fromPool, const std::string& debugName = "");
+	vk::UniqueCommandBuffer	CmdBufferCreateBegin(vk::Device m_device, vk::CommandPool fromPool, const std::string& debugName = "");
 
 	void	CmdBufferResetBegin(vk::CommandBuffer  buffer);
 	void	CmdBufferResetBegin(const vk::UniqueCommandBuffer&  buffer);
 
-	void	CmdBufferEndSubmit(vk::CommandBuffer  buffer, vk::Queue queue, vk::Fence fence = {}, vk::Semaphore waitSemaphore = {}, vk::Semaphore signalSempahore = {});
-	void	CmdBufferEndSubmitWait(vk::CommandBuffer  buffer, vk::Device device, vk::Queue queue);
-	void	CmdBufferEndSubmitWait(vk::CommandBuffer  buffer, vk::Device device, vk::Queue queue, vk::Fence fence);
+	void	CmdBufferEndSubmit(vk::CommandBuffer  buffer, vk::Queue m_queue, vk::Fence fence = {}, vk::Semaphore waitSemaphore = {}, vk::Semaphore signalSempahore = {});
+	void	CmdBufferEndSubmitWait(vk::CommandBuffer  buffer, vk::Device m_device, vk::Queue m_queue);
+	void	CmdBufferEndSubmitWait(vk::CommandBuffer  buffer, vk::Device m_device, vk::Queue m_queue, vk::Fence fence);
 
-	void WriteBufferDescriptor(vk::Device device,
+	void WriteBufferDescriptor(vk::Device m_device,
 		const vk::PhysicalDeviceDescriptorBufferPropertiesEXT& props,
 		void* descriptorBufferMemory,
-		vk::DescriptorSetLayout layout,
+		vk::DescriptorSetLayout m_layout,
 		size_t layoutIndex,
 		vk::DeviceAddress bufferAddress,
 		size_t bufferSize

@@ -14,37 +14,37 @@ using namespace Rendering;
 using namespace Vulkan;
 
 void	VulkanShaderBase::FillDescriptorSetLayouts(std::vector<vk::DescriptorSetLayout>& layouts) const {
-	layouts.resize(std::max(allLayouts.size(), layouts.size()));
-	for (int i = 0; i < allLayouts.size(); ++i) {
-		layouts[i] = *allLayouts[i];
+	layouts.resize(std::max(m_allLayouts.size(), layouts.size()));
+	for (int i = 0; i < m_allLayouts.size(); ++i) {
+		layouts[i] = *m_allLayouts[i];
 	}
 }
 
 void	VulkanShaderBase::FillPushConstants(std::vector<vk::PushConstantRange>& constants) const {
 	constants.clear();
-	constants = pushConstants;
+	constants = m_pushConstants;
 }
 
 vk::DescriptorSetLayout VulkanShaderBase::GetLayout(uint32_t index) const {
-	assert(index < allLayouts.size());
-	assert(!allLayouts.empty());
-	return *allLayouts[index];
+	assert(index < m_allLayouts.size());
+	assert(!m_allLayouts.empty());
+	return *m_allLayouts[index];
 }
 
 std::vector<vk::DescriptorSetLayoutBinding> VulkanShaderBase::GetLayoutBinding(uint32_t index) const {
-	if (index >= allLayoutsBindings.size()) {
+	if (index >= m_allLayoutsBindings.size()) {
 		return {};
 	}
-	return allLayoutsBindings[index];
+	return m_allLayoutsBindings[index];
 }
 
 void VulkanShaderBase::AddDescriptorSetLayoutState(std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& data, std::vector<vk::UniqueDescriptorSetLayout>& layouts) {
-	allLayoutsBindings = std::move(data);
-	allLayouts = std::move(layouts);
+	m_allLayoutsBindings = std::move(data);
+	m_allLayouts = std::move(layouts);
 }
 
 void VulkanShaderBase::AddPushConstantState(std::vector<vk::PushConstantRange>& data) {
-	pushConstants = data;
+	m_pushConstants = data;
 }
 
 void VulkanShaderBase::AddReflectionData(uint32_t dataSize, const void* data, vk::ShaderStageFlags stage) {
@@ -61,10 +61,10 @@ void VulkanShaderBase::AddReflectionData(uint32_t dataSize, const void* data, vk
 	assert(result == SPV_REFLECT_RESULT_SUCCESS);
 
 	for (auto& set : descriptorSetLayouts) {
-		if (set->set >= allLayoutsBindings.size()) {
-			allLayoutsBindings.resize(set->set + 1);
+		if (set->set >= m_allLayoutsBindings.size()) {
+			m_allLayoutsBindings.resize(set->set + 1);
 		}
-		std::vector<vk::DescriptorSetLayoutBinding>& setLayout = allLayoutsBindings[set->set];
+		std::vector<vk::DescriptorSetLayoutBinding>& setLayout = m_allLayoutsBindings[set->set];
 		setLayout.resize(set->binding_count);
 		for (int i = 0; i < set->binding_count; ++i) {
 			SpvReflectDescriptorBinding* binding = set->bindings[i];
@@ -105,10 +105,10 @@ void VulkanShaderBase::AddReflectionData(uint32_t dataSize, const void* data, vk
 
 	for (auto& constant : pushConstantLayouts) {
 		bool found = false;
-		for (int i = 0; i < pushConstants.size(); ++i) {
-			if (pushConstants[i].offset == constant->offset &&
-				pushConstants[i].size == constant->size) {
-				pushConstants[i].stageFlags |= stage;
+		for (int i = 0; i < m_pushConstants.size(); ++i) {
+			if (m_pushConstants[i].offset == constant->offset &&
+				m_pushConstants[i].size == constant->size) {
+				m_pushConstants[i].stageFlags |= stage;
 				found = true;
 				break;
 			}
@@ -117,16 +117,16 @@ void VulkanShaderBase::AddReflectionData(uint32_t dataSize, const void* data, vk
 		range.offset = constant->offset;
 		range.size = constant->size;
 		range.stageFlags = stage;
-		pushConstants.push_back(range);
+		m_pushConstants.push_back(range);
 	}
 
 	spvReflectDestroyShaderModule(&module);
 }
 
-void VulkanShaderBase::BuildLayouts(vk::Device device) {
-	for (const auto& i : allLayoutsBindings) {
+void VulkanShaderBase::BuildLayouts(vk::Device m_device) {
+	for (const auto& i : m_allLayoutsBindings) {
 		vk::DescriptorSetLayoutCreateInfo createInfo;
 		createInfo.setBindings(i);
-		allLayouts.push_back(device.createDescriptorSetLayoutUnique(createInfo));
+		m_allLayouts.push_back(m_device.createDescriptorSetLayoutUnique(createInfo));
 	}
 }

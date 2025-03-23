@@ -30,12 +30,12 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 	PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = Vulkan::dynamicLoader.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
-	vkInit = vkInitInfo;
+	m_vkInit = vkInitInfo;
 
-	allocatorInfo		= {};
+	m_allocatorInfo		= {};
 
 	for (uint32_t i = 0; i < CommandType::MAX_COMMAND_TYPES; ++i) {
-		queueFamilies[i] = -1;
+		m_queueFamilies[i] = -1;
 	}
 
 	InitInstance();
@@ -45,90 +45,89 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 	InitGPUDevice();
 	InitMemoryAllocator();
 
-	stagingBuffers = std::make_unique<VulkanStagingBuffers>(GetDevice(), GetMemoryAllocator());
+	m_stagingBuffers = std::make_unique<VulkanStagingBuffers>(GetDevice(), GetMemoryAllocator());
 
 	InitCommandPools();
 	InitDefaultDescriptorPool();
 
 	OnWindowResize(window.GetScreenSize().x, window.GetScreenSize().y);
-	InitFrameStates(vkInit.framesInFlight);
+	InitFrameStates(m_vkInit.framesInFlight);
 
-	pipelineCache = device.createPipelineCache(vk::PipelineCacheCreateInfo());
+	m_pipelineCache = m_device.createPipelineCache(vk::PipelineCacheCreateInfo());
 
-	frameCmds = frameContexts[currentSwap].cmdBuffer;
+	m_frameCmds = m_frameContexts[m_currentSwap].cmdBuffer;
 }
 
 VulkanRenderer::~VulkanRenderer() {
-	device.waitIdle();
-	depthBuffer.reset();
+	m_device.waitIdle();
+	m_depthBuffer.reset();
 
-	for (auto& i : frameContexts) {
-		device.destroyImageView(i.colourView);
-	};
-
-	for(ChainState & c : swapStates) {
-		device.destroyFramebuffer(c.frameBuffer);
-		device.destroySemaphore(c.acquireSempaphore);
-		device.destroyFence(c.acquireFence);
-		device.destroyImageView(c.colourView);
+	for(ChainState & c : m_swapStates) {
+		m_device.destroyFramebuffer(c.frameBuffer);
+		m_device.destroySemaphore(c.acquireSempaphore);
+		m_device.destroyFence(c.acquireFence);
+		m_device.destroyImageView(c.colourView);
 	}
-	vmaDestroyAllocator(memoryAllocator);
-	device.destroyDescriptorPool(defaultDescriptorPool);
-	device.destroySwapchainKHR(swapChain);
+	m_frameContexts.clear();
+	vmaDestroyAllocator(m_memoryAllocator);
+	m_device.destroyDescriptorPool(m_defaultDescriptorPool);
+	m_device.destroySwapchainKHR(m_swapChain);
 
-	device.destroyCommandPool(commandPools[CommandType::Graphics]);
-	device.destroyCommandPool(commandPools[CommandType::Copy]);
-	device.destroyCommandPool(commandPools[CommandType::AsyncCompute]);
+	for (auto& c : m_commandPools) {
+		if (c) {
+			m_device.destroyCommandPool(c);
+		}
+	}
+	
+	m_device.destroyRenderPass(m_defaultRenderPass);
+	m_device.destroyPipelineCache(m_pipelineCache);
+	m_device.destroy(); //Destroy everything except instance before this gets destroyed!
 
-	device.destroyRenderPass(defaultRenderPass);
-	device.destroyPipelineCache(pipelineCache);
-	device.destroy(); //Destroy everything except instance before this gets destroyed!
-
-	instance.destroySurfaceKHR(surface);
-	instance.destroy();
+	m_instance.destroySurfaceKHR(m_surface);
+	m_instance.destroy();
 }
 
 bool VulkanRenderer::InitInstance() {
 	vk::ApplicationInfo appInfo = {
 		.pApplicationName = this->hostWindow.GetTitle().c_str(),
-		.apiVersion = VK_MAKE_VERSION(vkInit.majorVersion, vkInit.minorVersion, 0)
+		.apiVersion = VK_MAKE_VERSION(m_vkInit.majorVersion, m_vkInit.minorVersion, 0)
 	};
 		
 	vk::InstanceCreateInfo instanceInfo = {
 		.flags = {},
 		.pApplicationInfo		 = &appInfo,
-		.enabledLayerCount		 = (uint32_t)vkInit.instanceLayers.size(),
-		.ppEnabledLayerNames	 = vkInit.instanceLayers.data(),
-		.enabledExtensionCount	 = (uint32_t)vkInit.instanceExtensions.size(),
-		.ppEnabledExtensionNames = vkInit.instanceExtensions.data()
+		.enabledLayerCount		 = (uint32_t)m_vkInit.instanceLayers.size(),
+		.ppEnabledLayerNames	 = m_vkInit.instanceLayers.data(),
+		.enabledExtensionCount	 = (uint32_t)m_vkInit.instanceExtensions.size(),
+		.ppEnabledExtensionNames = m_vkInit.instanceExtensions.data()
 	};
 		
-	instance = vk::createInstance(instanceInfo);
+	m_instance = vk::createInstance(instanceInfo);
 
-	VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
+	VULKAN_HPP_DEFAULT_DISPATCHER.init(m_instance);
 
 	return true;
 }
 
 bool	VulkanRenderer::InitPhysicalDevice() {
-	auto enumResult = instance.enumeratePhysicalDevices();
+	auto enumResult = m_instance.enumeratePhysicalDevices();
 
 	if (enumResult.empty()) {
 		return false; //Guess there's no Vulkan capable devices?!
 	}
 
-	gpu = enumResult[0];
+	m_physicalDevice = enumResult[0];
 	for (auto& i : enumResult) {
-		if (i.getProperties().deviceType == vkInit.idealGPU) {
-			gpu = i;
+		if (i.getProperties().deviceType == m_vkInit.idealGPU) {
+			m_physicalDevice = i;
 			break;
 		}
 	}
 
-	std::cout << __FUNCTION__ << " Vulkan using physical device " << gpu.getProperties().deviceName << "\n";
+	std::cout << __FUNCTION__ << " Vulkan using physical device " << m_physicalDevice.getProperties().deviceName << "\n";
 
 	vk::PhysicalDeviceProperties2 props;
-	gpu.getProperties2(&props);
+	m_physicalDevice.getProperties2(&props);
 
 	return true;
 }
@@ -143,65 +142,65 @@ bool VulkanRenderer::InitGPUDevice() {
 
 	queueInfos.emplace_back(vk::DeviceQueueCreateInfo()
 		.setQueueCount(1)
-		.setQueueFamilyIndex(queueFamilies[CommandType::Type::Graphics])
+		.setQueueFamilyIndex(m_queueFamilies[CommandType::Type::Graphics])
 		.setPQueuePriorities(&queuePriority)
 	);
 
-	if (queueFamilies[CommandType::Type::AsyncCompute] != queueFamilies[CommandType::Type::Graphics]){
+	if (m_queueFamilies[CommandType::Type::AsyncCompute] != m_queueFamilies[CommandType::Type::Graphics]){
 		queueInfos.emplace_back(vk::DeviceQueueCreateInfo()
 			.setQueueCount(1)
-			.setQueueFamilyIndex(queueFamilies[CommandType::Type::AsyncCompute])
+			.setQueueFamilyIndex(m_queueFamilies[CommandType::Type::AsyncCompute])
 			.setPQueuePriorities(&queuePriority)
 		);
 	}
-	if (queueFamilies[CommandType::Type::Copy] != queueFamilies[CommandType::Type::Graphics]) {
+	if (m_queueFamilies[CommandType::Type::Copy] != m_queueFamilies[CommandType::Type::Graphics]) {
 		queueInfos.emplace_back(vk::DeviceQueueCreateInfo()
 			.setQueueCount(1)
-			.setQueueFamilyIndex(queueFamilies[CommandType::Copy])
+			.setQueueFamilyIndex(m_queueFamilies[CommandType::Copy])
 			.setPQueuePriorities(&queuePriority)
 		);
 	}
-	if (queueFamilies[CommandType::Type::Present] != queueFamilies[CommandType::Type::Graphics]) {
+	if (m_queueFamilies[CommandType::Type::Present] != m_queueFamilies[CommandType::Type::Graphics]) {
 		queueInfos.emplace_back(vk::DeviceQueueCreateInfo()
 			.setQueueCount(1)
-			.setQueueFamilyIndex(queueFamilies[CommandType::Present])
+			.setQueueFamilyIndex(m_queueFamilies[CommandType::Present])
 			.setPQueuePriorities(&queuePriority)
 		);
 	}
 
 	vk::PhysicalDeviceFeatures2 deviceFeatures;
-	gpu.getFeatures2(&deviceFeatures);
+	m_physicalDevice.getFeatures2(&deviceFeatures);
 
-	if (!vkInit.features.empty()) {
-		for (int i = 1; i < vkInit.features.size(); ++i) {
-			vk::PhysicalDeviceFeatures2* prevStruct = (vk::PhysicalDeviceFeatures2*)vkInit.features[i-1];
-			prevStruct->pNext = vkInit.features[i];
+	if (!m_vkInit.features.empty()) {
+		for (int i = 1; i < m_vkInit.features.size(); ++i) {
+			vk::PhysicalDeviceFeatures2* prevStruct = (vk::PhysicalDeviceFeatures2*)m_vkInit.features[i-1];
+			prevStruct->pNext = m_vkInit.features[i];
 		}
-		deviceFeatures.pNext = vkInit.features[0];
+		deviceFeatures.pNext = m_vkInit.features[0];
 	}
 
 	vk::DeviceCreateInfo createInfo = vk::DeviceCreateInfo()
 		.setQueueCreateInfoCount(queueInfos.size())
 		.setPQueueCreateInfos(queueInfos.data());
 	
-	createInfo.setEnabledLayerCount((uint32_t)vkInit.deviceLayers.size())
-		.setPpEnabledLayerNames(vkInit.deviceLayers.data())
-		.setEnabledExtensionCount((uint32_t)vkInit.deviceExtensions.size())
-		.setPpEnabledExtensionNames(vkInit.deviceExtensions.data());
+	createInfo.setEnabledLayerCount((uint32_t)m_vkInit.deviceLayers.size())
+		.setPpEnabledLayerNames(m_vkInit.deviceLayers.data())
+		.setEnabledExtensionCount((uint32_t)m_vkInit.deviceExtensions.size())
+		.setPpEnabledExtensionNames(m_vkInit.deviceExtensions.data());
 
 	createInfo.pNext = &deviceFeatures;
 
-	device = gpu.createDevice(createInfo);
+	m_device = m_physicalDevice.createDevice(createInfo);
 
-	queues[CommandType::Graphics]		= device.getQueue(queueFamilies[CommandType::Type::Graphics], 0);
-	queues[CommandType::AsyncCompute]	= device.getQueue(queueFamilies[CommandType::Type::AsyncCompute], 0);
-	queues[CommandType::Copy]			= device.getQueue(queueFamilies[CommandType::Type::Copy], 0);
-	queues[CommandType::Present]		= device.getQueue(queueFamilies[CommandType::Type::Present], 0);
+	m_queues[CommandType::Graphics]		= m_device.getQueue(m_queueFamilies[CommandType::Type::Graphics], 0);
+	m_queues[CommandType::AsyncCompute]	= m_device.getQueue(m_queueFamilies[CommandType::Type::AsyncCompute], 0);
+	m_queues[CommandType::Copy]			= m_device.getQueue(m_queueFamilies[CommandType::Type::Copy], 0);
+	m_queues[CommandType::Present]		= m_device.getQueue(m_queueFamilies[CommandType::Type::Present], 0);
 
-	deviceMemoryProperties = gpu.getMemoryProperties();
-	deviceProperties = gpu.getProperties();
+	m_deviceMemoryProperties = m_physicalDevice.getMemoryProperties();
+	m_deviceProperties = m_physicalDevice.getProperties();
 
-	VULKAN_HPP_DEFAULT_DISPATCHER.init(device);
+	VULKAN_HPP_DEFAULT_DISPATCHER.init(m_device);
 
 	//vk::DebugUtilsMessengerCreateInfoEXT debugInfo;
 	//debugInfo.pfnUserCallback = DebugCallbackFunction;
@@ -217,7 +216,7 @@ bool VulkanRenderer::InitSurface() {
 #ifdef _WIN32
 	Win32Window* window = (Win32Window*)&hostWindow;
 
-	surface = instance.createWin32SurfaceKHR(
+	m_surface = m_instance.createWin32SurfaceKHR(
 		{
 			.flags = {},
 			.hinstance = window->GetInstance(),
@@ -226,76 +225,79 @@ bool VulkanRenderer::InitSurface() {
 	);
 #endif
 
-	auto formats = gpu.getSurfaceFormatsKHR(surface);
+	auto formats = m_physicalDevice.getSurfaceFormatsKHR(m_surface);
 
 	if (formats.size() == 1 && formats[0].format == vk::Format::eUndefined) {
-		surfaceFormat	= vk::Format::eB8G8R8A8Unorm;
-		surfaceSpace	= formats[0].colorSpace;
+		m_surfaceFormat	= vk::Format::eB8G8R8A8Unorm;
+		m_surfaceSpace	= formats[0].colorSpace;
 	}
 	else {
-		surfaceFormat	= formats[0].format;
-		surfaceSpace	= formats[0].colorSpace;
+		m_surfaceFormat	= formats[0].format;
+		m_surfaceSpace	= formats[0].colorSpace;
 	}
 
 	return formats.size() > 0;
 }
 
-void	VulkanRenderer::InitFrameStates(uint32_t framesInFlight) {
-	frameContexts.resize(framesInFlight);
+void	VulkanRenderer::InitFrameStates(uint32_t m_framesInFlight) {
+	m_frameContexts.resize(m_framesInFlight);
 
-	auto buffers = device.allocateCommandBuffers(
+	auto buffers = m_device.allocateCommandBuffers(
 		{
-			.commandPool = commandPools[CommandType::Graphics],
+			.commandPool = m_commandPools[CommandType::Graphics],
 			.level = vk::CommandBufferLevel::ePrimary,
-			.commandBufferCount = framesInFlight
+			.commandBufferCount = m_framesInFlight
 		}
 	);
 
 	uint32_t index = 0;
-	for (FrameContext& context : frameContexts) {
-		context.device = GetDevice();
-		context.descriptorPool = GetDescriptorPool();
+	for (FrameContext& context : m_frameContexts) {
+		context.device				= m_device;
+		context.descriptorPool		= m_defaultDescriptorPool;
 
-		context.cmdBuffer = buffers[index];
+		context.cmdBuffer			= buffers[index];
 
-		context.workSempaphore = Vulkan::CreateTimelineSemaphore(GetDevice());
+		Vulkan::SetDebugName(m_device, vk::ObjectType::eCommandBuffer, Vulkan::GetVulkanHandle(context.cmdBuffer), "Context Cmds " + std::to_string(index));
 
-		context.defaultViewport	= defaultViewport;
-		context.defaultScreenRect = defaultScreenRect;
+		context.workSempaphore		= Vulkan::CreateTimelineSemaphore(GetDevice());
 
-		context.colourFormat = surfaceFormat;
+		context.viewport		= m_defaultViewport;
+		context.screenRect	= m_defaultScreenRect;
 
-		context.depthImage = depthBuffer->GetImage();
-		context.depthView = depthBuffer->GetDefaultView();
-		context.depthFormat = depthBuffer->GetFormat();
+		context.colourFormat		= m_surfaceFormat;
+
+		context.depthImage			= m_depthBuffer->GetImage();
+		context.depthView			= m_depthBuffer->GetDefaultView();
+		context.depthFormat			= m_depthBuffer->GetFormat();
 
 		for (int i = 0; i < CommandType::Type::MAX_COMMAND_TYPES; ++i) {
-			context.commandPools[i] = commandPools[i];
-			context.queues[i] = queues[i];
+			context.commandPools[i]		= m_commandPools[i];
+			context.queues[i]			= m_queues[i];
+			context.queueFamilies[i]	= m_queueFamilies[i];
 		}
 		index++;
 	}
 }
 
 void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
-	vk::SwapchainKHR oldChain					= swapChain;
+	vk::SwapchainKHR oldChain					= m_swapChain;
 
-	vk::SurfaceCapabilitiesKHR surfaceCaps = gpu.getSurfaceCapabilitiesKHR(surface);
+	vk::SurfaceCapabilitiesKHR surfaceCaps = m_physicalDevice.getSurfaceCapabilitiesKHR(m_surface);
 
 	vk::Extent2D swapExtents = vk::Extent2D((int)hostWindow.GetScreenSize().x, (int)hostWindow.GetScreenSize().y);
 
-	auto presentModes = gpu.getSurfacePresentModesKHR(surface); //Type is of vector of PresentModeKHR
+	auto presentModes = m_physicalDevice.getSurfacePresentModesKHR(m_surface); //Type is of vector of PresentModeKHR
 
 	vk::PresentModeKHR currentPresentMode	= vk::PresentModeKHR::eFifo;
 
 	for (const auto& i : presentModes) {
-		if (i == vkInit.idealPresentMode) {
+		if (i == m_vkInit.idealPresentMode) {
 			currentPresentMode = i;
 			break;
 		}
 	}
 
-	if (currentPresentMode != vkInit.idealPresentMode) {
+	if (currentPresentMode != m_vkInit.idealPresentMode) {
 		std::cout << __FUNCTION__ << " Vulkan cannot use chosen present mode! Defaulting to FIFO...\n";
 	}
 
@@ -317,47 +319,47 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 
 	swapInfo.setPresentMode(currentPresentMode)
 		.setPreTransform(idealTransform)
-		.setSurface(surface)
-		.setImageColorSpace(surfaceSpace)
-		.setImageFormat(surfaceFormat)
+		.setSurface(m_surface)
+		.setImageColorSpace(m_surfaceSpace)
+		.setImageFormat(m_surfaceFormat)
 		.setImageExtent(swapExtents)
 		.setMinImageCount(idealImageCount)
 		.setOldSwapchain(oldChain)
 		.setImageArrayLayers(1)
 		.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
 
-	swapChain = device.createSwapchainKHR(swapInfo);
+	m_swapChain = m_device.createSwapchainKHR(swapInfo);
 
-	if (!swapStates.empty()) {
-		for (unsigned int i = 0; i < swapStates.size(); ++i) {
-			device.destroyImageView(swapStates[i].colourView);
-			device.destroyFramebuffer(swapStates[i].frameBuffer);
+	if (!m_swapStates.empty()) {
+		for (unsigned int i = 0; i < m_swapStates.size(); ++i) {
+			m_device.destroyImageView(m_swapStates[i].colourView);
+			m_device.destroyFramebuffer(m_swapStates[i].frameBuffer);
 		}
 	}
 	if (oldChain) {
-		device.destroySwapchainKHR(oldChain);
+		m_device.destroySwapchainKHR(oldChain);
 	}
 
-	auto images = device.getSwapchainImagesKHR(swapChain);
+	auto images = m_device.getSwapchainImagesKHR(m_swapChain);
 
-	swapStates.resize(images.size());
+	m_swapStates.resize(images.size());
 
-	for(int i = 0; i < swapStates.size(); ++i) {
-		ChainState& chain = swapStates[i];
+	for(int i = 0; i < m_swapStates.size(); ++i) {
+		ChainState& chain = m_swapStates[i];
 
-		chain.acquireSempaphore = device.createSemaphore({});
-		chain.acquireFence		= device.createFence({});
+		chain.acquireSempaphore = m_device.createSemaphore({});
+		chain.acquireFence		= m_device.createFence({});
 
-		chain.swapCmds = CmdBufferCreate(device, GetCommandPool(CommandType::Graphics), "Window swap cmds").release();
+		chain.swapCmds = CmdBufferCreate(m_device, GetCommandPool(CommandType::Graphics), "Window swap cmds").release();
 
 		chain.colourImage = images[i];
 
 		ImageTransitionBarrier(cmdBuffer, chain.colourImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageAspectFlagBits::eColor, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput);
 
-		chain.colourView = device.createImageView(
+		chain.colourView = m_device.createImageView(
 			vk::ImageViewCreateInfo()
 			.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
-			.setFormat(surfaceFormat)
+			.setFormat(m_surfaceFormat)
 			.setImage(chain.colourImage)
 			.setViewType(vk::ImageViewType::e2D)	
 		);
@@ -370,21 +372,21 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 			.setLayers(1)
 			.setAttachmentCount(2)
 			.setPAttachments(attachments)
-			.setRenderPass(defaultRenderPass);
+			.setRenderPass(m_defaultRenderPass);
 
 		attachments[0] = chain.colourView;
-		attachments[1] = *depthBuffer->defaultView;
-		chain.frameBuffer = device.createFramebuffer(createInfo);
+		attachments[1] = *m_depthBuffer->m_defaultView;
+		chain.frameBuffer = m_device.createFramebuffer(createInfo);
 	}
-	currentSwap = 0; //??
+	m_currentSwap = 0; //??
 }
 
 void	VulkanRenderer::InitCommandPools() {	
 	for (uint32_t i = 0; i < CommandType::MAX_COMMAND_TYPES; ++i) {
-		commandPools[i] = device.createCommandPool(
+		m_commandPools[i] = m_device.createCommandPool(
 			{
 				.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-				.queueFamilyIndex = queueFamilies[i]
+				.queueFamilyIndex = m_queueFamilies[i]
 			}
 		);
 	}
@@ -395,18 +397,18 @@ void	VulkanRenderer::InitMemoryAllocator() {
 	funcs.vkGetInstanceProcAddr = ::vk::detail::defaultDispatchLoaderDynamic.vkGetInstanceProcAddr;
 	funcs.vkGetDeviceProcAddr   = ::vk::detail::defaultDispatchLoaderDynamic.vkGetDeviceProcAddr;
 
-	allocatorInfo.physicalDevice = gpu;
-	allocatorInfo.device	= device;
-	allocatorInfo.instance	= instance;
+	m_allocatorInfo.physicalDevice = m_physicalDevice;
+	m_allocatorInfo.device	= m_device;
+	m_allocatorInfo.instance	= m_instance;
 
-	allocatorInfo.flags |= vkInit.vmaFlags;
+	m_allocatorInfo.flags |= m_vkInit.vmaFlags;
 
-	allocatorInfo.pVulkanFunctions = &funcs;
-	vmaCreateAllocator(&allocatorInfo, &memoryAllocator);
+	m_allocatorInfo.pVulkanFunctions = &funcs;
+	vmaCreateAllocator(&m_allocatorInfo, &m_memoryAllocator);
 }
 
 bool VulkanRenderer::InitDeviceQueueIndices() {
-	std::vector<vk::QueueFamilyProperties> deviceQueueProps = gpu.getQueueFamilyProperties();
+	std::vector<vk::QueueFamilyProperties> deviceQueueProps = m_physicalDevice.getQueueFamilyProperties();
 
 	VkBool32 supportsPresent = false;
 
@@ -415,45 +417,51 @@ bool VulkanRenderer::InitDeviceQueueIndices() {
 	int copyBits	= INT_MAX;
 
 	for (unsigned int i = 0; i < deviceQueueProps.size(); ++i) {
-		supportsPresent = gpu.getSurfaceSupportKHR(i, surface);
+		supportsPresent = m_physicalDevice.getSurfaceSupportKHR(i, m_surface);
 
 		int queueBitCount = std::popcount((uint32_t)deviceQueueProps[i].queueFlags);
 
 		if (deviceQueueProps[i].queueFlags & vk::QueueFlagBits::eGraphics && queueBitCount < gfxBits) {
-			queueFamilies[CommandType::Graphics] = i;
+			m_queueFamilies[CommandType::Graphics] = i;
 			gfxBits = queueBitCount;
-			if (supportsPresent && queueFamilies[CommandType::Present] == -1) {
-				queueFamilies[CommandType::Present] = i;
+			if (supportsPresent && m_queueFamilies[CommandType::Present] == -1) {
+				m_queueFamilies[CommandType::Present] = i;
 			}
 		}
 
 		if (deviceQueueProps[i].queueFlags & vk::QueueFlagBits::eCompute && queueBitCount < computeBits) {
-			queueFamilies[CommandType::AsyncCompute] = i;
+			m_queueFamilies[CommandType::AsyncCompute] = i;
 			computeBits = queueBitCount;
 		}
 
 		if (deviceQueueProps[i].queueFlags & vk::QueueFlagBits::eTransfer && queueBitCount < copyBits) {
-			queueFamilies[CommandType::Copy] = i;
+			m_queueFamilies[CommandType::Copy] = i;
 			copyBits = queueBitCount;
 		}
 	}
 
-	if (queueFamilies[CommandType::Graphics] == -1) {
+	if (m_queueFamilies[CommandType::Graphics] == -1) {
 		return false;
 	}
 
-	if (queueFamilies[CommandType::AsyncCompute] == -1) {
-		queueFamilies[CommandType::AsyncCompute] = queueFamilies[CommandType::Graphics];
+	if (m_queueFamilies[CommandType::AsyncCompute] == -1) {
+		m_queueFamilies[CommandType::AsyncCompute] = m_queueFamilies[CommandType::Graphics];
 	}
-	else {
+	else if(m_queueFamilies[CommandType::AsyncCompute] != m_queueFamilies[CommandType::Graphics]) {
 		std::cout << __FUNCTION__ << " Device supports async compute!\n";
 	}
+	else {
+		std::cout << __FUNCTION__ << " Device does NOT support async compute!\n";
+	}
 
-	if (queueFamilies[CommandType::Copy] == -1) {
-		queueFamilies[CommandType::Copy] = queueFamilies[CommandType::Copy];
+	if (m_queueFamilies[CommandType::Copy] == -1) {
+		m_queueFamilies[CommandType::Copy] = m_queueFamilies[CommandType::Copy];
+	}
+	else if(m_queueFamilies[CommandType::Copy] != m_queueFamilies[CommandType::Graphics]){
+		std::cout << __FUNCTION__ << " Device supports async copy!\n";
 	}
 	else {
-		std::cout << __FUNCTION__ << " Device supports async copy!\n";
+		std::cout << __FUNCTION__ << " Device does NOT support async copy!\n";
 	}
 
 	return true;
@@ -468,27 +476,27 @@ void VulkanRenderer::OnWindowResize(int width, int height) {
 	}
 	windowSize = { width, height };
 
-	defaultScreenRect = vk::Rect2D({ 0,0 }, { (uint32_t)windowSize.x, (uint32_t)windowSize.y });
+	m_defaultScreenRect = vk::Rect2D({ 0,0 }, { (uint32_t)windowSize.x, (uint32_t)windowSize.y });
 
-	if (vkInit.useOpenGLCoordinates) {
-		defaultViewport = vk::Viewport(0.0f, (float)windowSize.y, (float)windowSize.x, (float)windowSize.y, -1.0f, 1.0f);
+	if (m_vkInit.useOpenGLCoordinates) {
+		m_defaultViewport = vk::Viewport(0.0f, (float)windowSize.y, (float)windowSize.x, (float)windowSize.y, -1.0f, 1.0f);
 	}
 	else {
-		defaultViewport = vk::Viewport(0.0f, (float)windowSize.y, (float)windowSize.x, -(float)windowSize.y, 0.0f, 1.0f);
+		m_defaultViewport = vk::Viewport(0.0f, (float)windowSize.y, (float)windowSize.x, -(float)windowSize.y, 0.0f, 1.0f);
 	}
 
-	defaultScissor	= vk::Rect2D(vk::Offset2D(0, 0), vk::Extent2D(windowSize.x, windowSize.y));
+	m_defaultScissor	= vk::Rect2D(vk::Offset2D(0, 0), vk::Extent2D(windowSize.x, windowSize.y));
 
 	std::cout << __FUNCTION__ << " New dimensions: " << windowSize.x << " , " << windowSize.y << "\n";
 
-	device.waitIdle();
+	m_device.waitIdle();
 
-	depthBuffer = TextureBuilder(GetDevice(), GetMemoryAllocator())
+	m_depthBuffer = TextureBuilder(GetDevice(), GetMemoryAllocator())
 		.UsingPool(GetCommandPool(CommandType::Graphics))
 		.UsingQueue(GetQueue(CommandType::Graphics))
 		.WithDimension(hostWindow.GetScreenSize().x, hostWindow.GetScreenSize().y)
 		.WithAspects(vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil)
-		.WithFormat(vkInit.depthStencilFormat)
+		.WithFormat(m_vkInit.depthStencilFormat)
 		.WithLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
 		.WithUsages(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled)
 		.WithPipeFlags(vk::PipelineStageFlagBits2::eEarlyFragmentTests)
@@ -497,16 +505,16 @@ void VulkanRenderer::OnWindowResize(int width, int height) {
 
 	InitDefaultRenderPass();
 
-	vk::UniqueCommandBuffer cmds = CmdBufferCreateBegin(device, commandPools[CommandType::Graphics], "Window resize cmds");
+	vk::UniqueCommandBuffer cmds = CmdBufferCreateBegin(m_device, m_commandPools[CommandType::Graphics], "Window resize cmds");
 	InitBufferChain(*cmds);
 
-	device.waitIdle();
+	m_device.waitIdle();
 
 	CompleteResize();
 
-	CmdBufferEndSubmitWait(*cmds, device, queues[CommandType::Graphics]);
+	CmdBufferEndSubmitWait(*cmds, m_device, m_queues[CommandType::Graphics]);
 
-	device.waitIdle();
+	m_device.waitIdle();
 }
 
 void VulkanRenderer::CompleteResize() {
@@ -515,58 +523,58 @@ void VulkanRenderer::CompleteResize() {
 
 void VulkanRenderer::WaitForSwapImage() {
 	if (!hostWindow.IsMinimised()) {
-		vk::Result waitResult = device.waitForFences(currentSwapFence, true, ~0);
+		vk::Result waitResult = m_device.waitForFences(m_currentSwapFence, true, ~0);
 	}
-	TransitionUndefinedToColour(frameCmds, swapStates[currentSwap].colourImage);
+	TransitionUndefinedToColour(m_frameCmds, m_swapStates[m_currentSwap].colourImage);
 }
 
 void	VulkanRenderer::BeginFrame() {
 	//First we need to prevent the renderer from going too far ahead of the frames in flight max
-	waitFrameContext	= (currentFrameContext + frameContexts.size() - 1) % frameContexts.size();
-	currentFrameContext = (currentFrameContext + 1) % frameContexts.size();
+	m_currentFrameContext = (m_currentFrameContext + 1) % m_frameContexts.size();
 
 	//block on the waiting frame's timeline semaphore
-	if (globalFrameID >= frameContexts.size()) {
-		uint64_t waitValue = globalFrameID;
-		vk::SemaphoreWaitInfo waitInfo{
-			.semaphoreCount = 1,
-			.pSemaphores = &*(frameContexts[waitFrameContext].workSempaphore),
-			.pValues = &waitValue
-		};
-		vk::Result wait = device.waitSemaphores(waitInfo, UINT64_MAX);
+	if (m_globalFrameID >= m_frameContexts.size()) {
+		uint64_t waitValue = m_globalFrameID;
+
+		vk::SemaphoreWaitInfo waitInfo;
+		waitInfo.pSemaphores = &*m_frameContexts[m_currentFrameContext].workSempaphore;
+		waitInfo.semaphoreCount = 1;
+		waitInfo.pValues = &waitValue;
+
+		m_device.waitSemaphores(waitInfo, UINT64_MAX);
 	}
 
 	//Acquire our next swap image
-	currentSwapFence = swapStates[currentSwap].acquireFence;
-	device.resetFences(currentSwapFence);
-	currentSwap = device.acquireNextImageKHR(swapChain, UINT64_MAX, VK_NULL_HANDLE, currentSwapFence).value;	//Get swap image
+	m_currentSwapFence = m_swapStates[m_currentSwap].acquireFence;
+	m_device.resetFences(m_currentSwapFence);
+	m_currentSwap = m_device.acquireNextImageKHR(m_swapChain, UINT64_MAX, VK_NULL_HANDLE, m_currentSwapFence).value;	//Get swap image
 
 	//Now we know the swap image, we can fill out our current frame state...
 	//Our current frame
 
-	frameContexts[currentFrameContext].defaultViewport		= defaultViewport;
-	frameContexts[currentFrameContext].defaultScreenRect	= defaultScreenRect;
+	m_frameContexts[m_currentFrameContext].viewport		= m_defaultViewport;
+	m_frameContexts[m_currentFrameContext].screenRect	= m_defaultScreenRect;
 
-	frameContexts[currentFrameContext].colourImage		= swapStates[currentSwap].colourImage;
-	frameContexts[currentFrameContext].colourView		= swapStates[currentSwap].colourView;
-	frameContexts[currentFrameContext].colourFormat		= surfaceFormat;
+	m_frameContexts[m_currentFrameContext].colourImage		= m_swapStates[m_currentSwap].colourImage;
+	m_frameContexts[m_currentFrameContext].colourView		= m_swapStates[m_currentSwap].colourView;
+	m_frameContexts[m_currentFrameContext].colourFormat		= m_surfaceFormat;
 
-	frameContexts[currentFrameContext].depthFormat		= depthBuffer->GetFormat();
-	frameCmds = frameContexts[currentFrameContext].cmdBuffer;
-	frameCmds.reset({});
+	m_frameContexts[m_currentFrameContext].depthFormat		= m_depthBuffer->GetFormat();
+	m_frameCmds = m_frameContexts[m_currentFrameContext].cmdBuffer;
+	m_frameCmds.reset({});
 
-	frameCmds.begin(vk::CommandBufferBeginInfo());
+	m_frameCmds.begin(vk::CommandBufferBeginInfo());
 
-	if (!vkInit.skipDynamicState) {
-		frameCmds.setViewport(0, 1, &defaultViewport);
-		frameCmds.setScissor(0, 1, &defaultScissor);
+	if (!m_vkInit.skipDynamicState) {
+		m_frameCmds.setViewport(0, 1, &m_defaultViewport);
+		m_frameCmds.setScissor( 0, 1, &m_defaultScissor);
 	}
 
-	if (vkInit.autoTransitionFrameBuffer) {
+	if (m_vkInit.autoTransitionFrameBuffer) {
 		WaitForSwapImage();
 	}
-	if (vkInit.autoBeginDynamicRendering) {
-		BeginDefaultRendering(frameCmds);
+	if (m_vkInit.autoBeginDynamicRendering) {
+		BeginDefaultRendering(m_frameCmds);
 	}
 }
 
@@ -575,18 +583,18 @@ void VulkanRenderer::RenderFrame() {
 }
 
 void	VulkanRenderer::EndFrame() {
-	if (vkInit.autoBeginDynamicRendering) {
-		frameCmds.endRendering();
+	if (m_vkInit.autoBeginDynamicRendering) {
+		m_frameCmds.endRendering();
 	}
-	TransitionColourToPresent(frameCmds, frameContexts[currentFrameContext].colourImage);
+	TransitionColourToPresent(m_frameCmds, m_frameContexts[m_currentFrameContext].colourImage);
 	if (hostWindow.IsMinimised()) {
-		CmdBufferEndSubmitWait(frameCmds, device, queues[CommandType::Graphics]);
+		CmdBufferEndSubmitWait(m_frameCmds, m_device, m_queues[CommandType::Graphics]);
 	}
 	else {
-		CmdBufferEndSubmit(frameCmds, queues[CommandType::Graphics]);
+		CmdBufferEndSubmit(m_frameCmds, m_queues[CommandType::Graphics]);
 	}
 
-	uint64_t signalValue = globalFrameID + frameContexts.size();
+	uint64_t signalValue = m_globalFrameID + (m_frameContexts.size());
 	vk::TimelineSemaphoreSubmitInfo tlSubmit;
 	tlSubmit.signalSemaphoreValueCount = 1;
 	tlSubmit.pSignalSemaphoreValues = &signalValue;
@@ -594,36 +602,36 @@ void	VulkanRenderer::EndFrame() {
 	vk::SubmitInfo queueSubmit;
 	queueSubmit.pNext = &tlSubmit;
 	queueSubmit.signalSemaphoreCount = 1;
-	queueSubmit.pSignalSemaphores = &*frameContexts[currentFrameContext].workSempaphore;
+	queueSubmit.pSignalSemaphores = &*m_frameContexts[m_currentFrameContext].workSempaphore;
 
-	queues[CommandType::Graphics].submit(queueSubmit);
+	m_queues[CommandType::Graphics].submit(queueSubmit);
 
-	globalFrameID++;
+	m_globalFrameID++;
 }
 
 void VulkanRenderer::SwapBuffers() {
-	stagingBuffers->Update();
+	m_stagingBuffers->Update();
 	if (!hostWindow.IsMinimised()) {
-		vk::Queue		gfxQueue	= queues[CommandType::Graphics];
-		vk::Result presentResult = gfxQueue.presentKHR(
+		vk::Queue	gfxQueue		= m_queues[CommandType::Graphics];
+		vk::Result	presentResult	= gfxQueue.presentKHR(
 			{
 				.swapchainCount = 1,
-				.pSwapchains = &swapChain,
-				.pImageIndices = &currentSwap
+				.pSwapchains	= &m_swapChain,
+				.pImageIndices	= &m_currentSwap
 			}
 		);	
 	}
 }
 
 void	VulkanRenderer::InitDefaultRenderPass() {
-	if (defaultRenderPass) {
-		device.destroyRenderPass(defaultRenderPass);
+	if (m_defaultRenderPass) {
+		m_device.destroyRenderPass(m_defaultRenderPass);
 	}
 	vk::AttachmentDescription attachments[] = {
 		vk::AttachmentDescription()
 			.setInitialLayout(vk::ImageLayout::eColorAttachmentOptimal)
 			.setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal)
-			.setFormat(surfaceFormat)
+			.setFormat(m_surfaceFormat)
 			.setLoadOp(vk::AttachmentLoadOp::eClear)
 			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
@@ -631,7 +639,7 @@ void	VulkanRenderer::InitDefaultRenderPass() {
 		vk::AttachmentDescription()
 			.setInitialLayout(vk::ImageLayout::eUndefined)
 			.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
-			.setFormat(depthBuffer->GetFormat())
+			.setFormat(m_depthBuffer->GetFormat())
 			.setLoadOp(vk::AttachmentLoadOp::eClear)
 			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
@@ -642,7 +650,7 @@ void	VulkanRenderer::InitDefaultRenderPass() {
 		vk::AttachmentReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal)
 	};
 
-	vk::SubpassDescription subPass = vk::SubpassDescription()
+	vk::SubpassDescription m_subPass = vk::SubpassDescription()
 		.setColorAttachmentCount(1)
 		.setPColorAttachments(&references[0])
 		.setPDepthStencilAttachment(&references[1])
@@ -652,9 +660,9 @@ void	VulkanRenderer::InitDefaultRenderPass() {
 		.setAttachmentCount(2)
 		.setPAttachments(attachments)
 		.setSubpassCount(1)
-		.setPSubpasses(&subPass);
+		.setPSubpasses(&m_subPass);
 
-	defaultRenderPass = device.createRenderPass(renderPassInfo);
+	m_defaultRenderPass = m_device.createRenderPass(renderPassInfo);
 }
 
 void	VulkanRenderer::InitDefaultDescriptorPool(uint32_t maxSets) {
@@ -679,11 +687,11 @@ void	VulkanRenderer::InitDefaultDescriptorPool(uint32_t maxSets) {
 	poolCreate.setMaxSets(maxSets * poolCount);
 	poolCreate.setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
 
-	defaultDescriptorPool = device.createDescriptorPool(poolCreate);
+	m_defaultDescriptorPool = m_device.createDescriptorPool(poolCreate);
 }
 
 void	VulkanRenderer::BeginDefaultRenderPass(vk::CommandBuffer  cmds) {
-	cmds.beginRenderPass(defaultBeginInfo, vk::SubpassContents::eInline);
+	cmds.beginRenderPass(m_defaultBeginInfo, vk::SubpassContents::eInline);
 }
 
 void	VulkanRenderer::BeginDefaultRendering(vk::CommandBuffer  cmds) {
@@ -691,14 +699,14 @@ void	VulkanRenderer::BeginDefaultRendering(vk::CommandBuffer  cmds) {
 	renderInfo.layerCount = 1;
 
 	vk::RenderingAttachmentInfoKHR colourAttachment;
-	colourAttachment.setImageView(frameContexts[currentFrameContext].colourView)
+	colourAttachment.setImageView(m_frameContexts[m_currentFrameContext].colourView)
 		.setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
 		.setLoadOp(vk::AttachmentLoadOp::eClear)
 		.setStoreOp(vk::AttachmentStoreOp::eStore)
 		.setClearValue(vk::ClearColorValue(0.2f, 0.2f, 0.2f, 1.0f));
 
 	vk::RenderingAttachmentInfoKHR depthAttachment;
-	depthAttachment.setImageView(depthBuffer->GetDefaultView())
+	depthAttachment.setImageView(m_depthBuffer->GetDefaultView())
 		.setImageLayout(vk::ImageLayout::eDepthAttachmentOptimal)
 		.setLoadOp(vk::AttachmentLoadOp::eClear)
 		.setStoreOp(vk::AttachmentStoreOp::eStore)
@@ -708,11 +716,15 @@ void	VulkanRenderer::BeginDefaultRendering(vk::CommandBuffer  cmds) {
 		.setPDepthAttachment(&depthAttachment);
 		//.setPStencilAttachment(&depthAttachment);
 
-	renderInfo.setRenderArea(defaultScreenRect);
+	renderInfo.setRenderArea(m_defaultScreenRect);
 
 	cmds.beginRendering(renderInfo);
-	cmds.setViewport(0, 1, &defaultViewport);
-	cmds.setScissor(0, 1, &defaultScissor);
+	cmds.setViewport(0, 1, &m_defaultViewport);
+	cmds.setScissor( 0, 1, &m_defaultScissor);
+}
+
+void VulkanRenderer::WaitForGPUIdle() {
+	m_device.waitIdle();
 }
 
 VkBool32 VulkanRenderer::DebugCallbackFunction(

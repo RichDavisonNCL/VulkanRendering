@@ -17,7 +17,7 @@ namespace NCL::Rendering::Vulkan {
 	*/
 	class ShaderBuilder {
 	public:
-		ShaderBuilder(vk::Device device) { sourceDevice = device; };
+		ShaderBuilder(vk::Device m_device) { m_sourceDevice = m_device; };
 		~ShaderBuilder()	{};
 
 		ShaderBuilder& WithMeshBinary(const std::string& name, const std::string& entry = "main");
@@ -32,8 +32,8 @@ namespace NCL::Rendering::Vulkan {
 
 		UniqueVulkanShader Build(const std::string& debugName = "");
 	protected:
-		std::string shaderFiles[ShaderStages::MAX_SIZE];
-		std::string entryPoints[ShaderStages::MAX_SIZE];
-		vk::Device	sourceDevice;
+		std::string m_shaderFiles[ShaderStages::MAX_SIZE];
+		std::string m_entryPoints[ShaderStages::MAX_SIZE];
+		vk::Device	m_sourceDevice;
 	};
 }

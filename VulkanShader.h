@@ -37,17 +37,16 @@ namespace NCL::Rendering::Vulkan {
 		~VulkanShader();
 
 	protected:
-		void AddBinaryShaderModule(ShaderStages::Type stage, vk::UniqueShaderModule& shaderModule, const std::string& entryPoint = "main");
-		void AddBinaryShaderModule(const std::string& fromFile, ShaderStages::Type stage, vk::Device device, const std::string& entryPoint = "main");
+		void AddBinaryShaderModule(ShaderStages::Type stage, vk::UniqueShaderModule& m_shaderModule, const std::string& m_entryPoint = "main");
+		void AddBinaryShaderModule(const std::string& fromFile, ShaderStages::Type stage, vk::Device m_device, const std::string& m_entryPoint = "main");
 
 		void Init();
 
 	protected:			
 		VulkanShader();
-		vk::UniqueShaderModule shaderModules[ShaderStages::MAX_SIZE];
-		std::string entryPoints[ShaderStages::MAX_SIZE];
-
-		uint32_t stageCount;
-		vk::PipelineShaderStageCreateInfo infos[ShaderStages::MAX_SIZE];
+		vk::UniqueShaderModule				m_shaderModules[ShaderStages::MAX_SIZE];
+		std::string							m_entryPoints[ShaderStages::MAX_SIZE];
+		vk::PipelineShaderStageCreateInfo	m_infos[ShaderStages::MAX_SIZE];
+		uint32_t							m_stageCount;
 	};
 }

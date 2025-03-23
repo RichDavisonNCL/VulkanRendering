@@ -13,21 +13,21 @@ using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-ComputePipelineBuilder::ComputePipelineBuilder(vk::Device device) : PipelineBuilderBase(device){
+ComputePipelineBuilder::ComputePipelineBuilder(vk::Device m_device) : PipelineBuilderBase(m_device){
 
 }
 
 ComputePipelineBuilder& ComputePipelineBuilder::WithShader(const UniqueVulkanCompute& compute) {
-	compute->FillShaderStageCreateInfo(pipelineCreate);
-	compute->FillDescriptorSetLayouts(reflectionLayouts);
-	compute->FillPushConstants(allPushConstants);
+	compute->FillShaderStageCreateInfo(m_pipelineCreate);
+	compute->FillDescriptorSetLayouts(m_reflectionLayouts);
+	compute->FillPushConstants(m_allPushConstants);
 	return *this;
 }
 
 ComputePipelineBuilder& ComputePipelineBuilder::WithShader(const VulkanCompute& compute) {
-	compute.FillShaderStageCreateInfo(pipelineCreate);
-	compute.FillDescriptorSetLayouts(reflectionLayouts);
-	compute.FillPushConstants(allPushConstants);
+	compute.FillShaderStageCreateInfo(m_pipelineCreate);
+	compute.FillDescriptorSetLayouts(m_reflectionLayouts);
+	compute.FillPushConstants(m_allPushConstants);
 	return *this;
 }
 
@@ -37,19 +37,21 @@ VulkanPipeline	ComputePipelineBuilder::Build(const std::string& debugName, vk::P
 	FinaliseDescriptorLayouts();
 
 	vk::PipelineLayoutCreateInfo pipeLayoutCreate = vk::PipelineLayoutCreateInfo()
-		.setSetLayoutCount((uint32_t)allLayouts.size())
-		.setPSetLayouts(allLayouts.data())
-		.setPPushConstantRanges(allPushConstants.data())
-		.setPushConstantRangeCount((uint32_t)allPushConstants.size());
+		.setSetLayoutCount((uint32_t)m_allLayouts.size())
+		.setPSetLayouts(m_allLayouts.data())
+		.setPPushConstantRanges(m_allPushConstants.data())
+		.setPushConstantRangeCount((uint32_t)m_allPushConstants.size());
 
-	output.layout = sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
 
-	pipelineCreate.setLayout(*output.layout);
+	output.m_layout = m_sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
 
-	output.pipeline = sourceDevice.createComputePipelineUnique(cache, pipelineCreate).value;
+	m_pipelineCreate.setLayout(*output.m_layout);
+
+
+	output.pipeline = m_sourceDevice.createComputePipelineUnique(cache, m_pipelineCreate).value;
 
 	if (!debugName.empty()) {
-		SetDebugName(sourceDevice, vk::ObjectType::ePipeline, GetVulkanHandle(*output.pipeline), debugName);
+		SetDebugName(m_sourceDevice, vk::ObjectType::ePipeline, GetVulkanHandle(*output.pipeline), debugName);
 	}
 
 	return output;

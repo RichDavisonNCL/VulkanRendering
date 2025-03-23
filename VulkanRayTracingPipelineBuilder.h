@@ -15,7 +15,7 @@ namespace NCL::Rendering::Vulkan {
 	class VulkanRayTracingPipelineBuilder : 
 		public PipelineBuilderBase< VulkanRayTracingPipelineBuilder, vk::RayTracingPipelineCreateInfoKHR> {
 	public:
-		VulkanRayTracingPipelineBuilder(vk::Device device);
+		VulkanRayTracingPipelineBuilder(vk::Device m_device);
 		~VulkanRayTracingPipelineBuilder();
 
 		VulkanRayTracingPipelineBuilder& WithShader(VulkanRTShader& shader, vk::ShaderStageFlagBits stage, const string& entry = "main");
@@ -31,20 +31,20 @@ namespace NCL::Rendering::Vulkan {
 
 	protected:
 		struct ShaderEntry {
-			std::string				entryPoint;
+			std::string				m_entryPoint;
 			VulkanRTShader*			shader;
 			vk::ShaderStageFlagBits	stage;
 		};
 
-		std::vector<ShaderEntry> entries;
+		std::vector<ShaderEntry>							m_entries;
 
-		std::vector<vk::PipelineShaderStageCreateInfo>		shaderStages;
+		std::vector<vk::PipelineShaderStageCreateInfo>		m_shaderStages;
 
-		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> genGroups;
-		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> missGroups;
-		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> hitGroups;
-		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> allGroups;
+		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> m_genGroups;
+		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> m_missGroups;
+		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> m_hitGroups;
+		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> m_allGroups;
 
-		vk::PipelineDynamicStateCreateInfo			dynamicCreate;
+		vk::PipelineDynamicStateCreateInfo					m_dynamicCreate;
 	};
 }

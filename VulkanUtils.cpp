@@ -101,20 +101,20 @@ void	Vulkan::ImageTransitionBarrier(vk::CommandBuffer  cmdBuffer, vk::Image imag
 	uint32_t mipLevel, uint32_t mipCount, uint32_t layer, uint32_t layerCount) {
 
 	vk::ImageMemoryBarrier2 memoryBarrier2 = {
-		.srcStageMask = srcStage,	
-		.dstStageMask = dstStage,
-		.dstAccessMask = DefaultAccessFlags2(newLayout),
-		.oldLayout = oldLayout,
-		.newLayout = newLayout,
+		.srcStageMask	= srcStage,	
+		.dstStageMask	= dstStage,
+		.dstAccessMask	= DefaultAccessFlags2(newLayout),
+		.oldLayout		= oldLayout,
+		.newLayout		= newLayout,
 		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		.image = image,
+		.image			= image,
 		.subresourceRange = {
-			.aspectMask = aspect,
-			.baseMipLevel = mipLevel,
-			.levelCount = mipCount,
+			.aspectMask		= aspect,
+			.baseMipLevel	= mipLevel,
+			.levelCount		= mipCount,
 			.baseArrayLayer = layer,
-			.layerCount = layerCount,
+			.layerCount		= layerCount,
 		}
 	};	
 	vk::DependencyInfo info;
@@ -210,10 +210,11 @@ void	Vulkan::CmdBufferEndSubmit(vk::CommandBuffer  buffer, vk::Queue queue, vk::
 	}
 	buffer.end();
 
-	vk::SubmitInfo submitInfo = vk::SubmitInfo();
-	submitInfo.setCommandBufferCount(1);
-	submitInfo.setPCommandBuffers(&buffer);
-
+	vk::SubmitInfo submitInfo = {
+		.commandBufferCount = 1,
+		.pCommandBuffers = &buffer
+	};
+		
 	vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eTopOfPipe;
 
 	if (waitSemaphore) {
@@ -377,7 +378,7 @@ vk::UniqueSemaphore Vulkan::CreateTimelineSemaphore(vk::Device device, uint64_t 
 		.initialValue = initialValue
 	};
 	vk::SemaphoreCreateInfo createInfo{
-		.pNext = &typeCreateInfo
+		.pNext = &typeCreateInfo,
 	};
 	return std::move(device.createSemaphoreUnique(createInfo));
 }

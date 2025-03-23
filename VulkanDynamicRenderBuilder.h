@@ -25,14 +25,14 @@ namespace NCL::Rendering::Vulkan {
 
 		DynamicRenderBuilder& WithColourAttachment(
 			vk::ImageView	texture,
-			vk::ImageLayout layout = vk::ImageLayout::eColorAttachmentOptimal,
+			vk::ImageLayout m_layout = vk::ImageLayout::eColorAttachmentOptimal,
 			bool clear = true,
 			vk::ClearValue clearValue = vk::ClearColorValue(std::array<float, 4>{0, 0, 0, 1})
 		);
 
 		DynamicRenderBuilder& WithDepthAttachment(
 			vk::ImageView	texture,
-			vk::ImageLayout layout = vk::ImageLayout::eDepthAttachmentOptimal,
+			vk::ImageLayout m_layout = vk::ImageLayout::eDepthAttachmentOptimal,
 			bool clear = true,
 			vk::ClearValue clearValue = vk::ClearDepthStencilValue(1.0f, 0),
 			bool withStencil = false
@@ -51,7 +51,7 @@ namespace NCL::Rendering::Vulkan {
 		DynamicRenderBuilder& WithRenderInfo(vk::RenderingInfoKHR const & info);
 
 		const vk::RenderingInfoKHR& Build();
-		void BeginRendering(vk::CommandBuffer cmdBuffer);
+		void BeginRendering(vk::CommandBuffer m_cmdBuffer);
 
 	protected:
 		vk::RenderingInfoKHR renderInfo;

@@ -27,7 +27,7 @@ namespace NCL::Rendering::Vulkan {
 	*/
 	class PipelineBuilder	: public PipelineBuilderBase<PipelineBuilder, vk::GraphicsPipelineCreateInfo> {
 	public:
-		PipelineBuilder(vk::Device device);
+		PipelineBuilder(vk::Device m_device);
 		~PipelineBuilder() {}
 
 		PipelineBuilder& WithRasterState(vk::CullModeFlagBits cullMode, vk::PolygonMode polyMode = vk::PolygonMode::eFill);
@@ -45,7 +45,7 @@ namespace NCL::Rendering::Vulkan {
 
 		PipelineBuilder& WithPass(vk::RenderPass& renderPass);
 
-		PipelineBuilder& WithLayout(vk::PipelineLayout& layout);
+		PipelineBuilder& WithLayout(vk::PipelineLayout& m_layout);
 
 		//Depth attachment that does nothing?
 		PipelineBuilder& WithDepthAttachment(vk::Format depthFormat);
@@ -74,32 +74,32 @@ namespace NCL::Rendering::Vulkan {
 		VulkanPipeline	Build(const std::string& debugName = "", vk::PipelineCache cache = {});
 
 		vk::PipelineRenderingCreateInfoKHR& GetRenderingCreateInfo()  {
-			return renderingCreate;
+			return m_renderingCreate;
 		}
 
 	protected:
-		vk::PipelineCacheCreateInfo					cacheCreate;
-		vk::PipelineInputAssemblyStateCreateInfo	inputAsmCreate;
-		vk::PipelineRasterizationStateCreateInfo	rasterCreate;
-		vk::PipelineColorBlendStateCreateInfo		blendCreate;
-		vk::PipelineDepthStencilStateCreateInfo		depthStencilCreate;
-		vk::PipelineViewportStateCreateInfo			viewportCreate;
-		vk::PipelineMultisampleStateCreateInfo		sampleCreate;
-		vk::PipelineDynamicStateCreateInfo			dynamicCreate;
-		vk::PipelineVertexInputStateCreateInfo		vertexCreate;
-		vk::PipelineTessellationStateCreateInfo		tessellationCreate;
+		vk::PipelineCacheCreateInfo					m_cacheCreate;
+		vk::PipelineInputAssemblyStateCreateInfo	m_inputAsmCreate;
+		vk::PipelineRasterizationStateCreateInfo	m_rasterCreate;
+		vk::PipelineColorBlendStateCreateInfo		m_blendCreate;
+		vk::PipelineDepthStencilStateCreateInfo		m_depthStencilCreate;
+		vk::PipelineViewportStateCreateInfo			m_viewportCreate;
+		vk::PipelineMultisampleStateCreateInfo		m_sampleCreate;
+		vk::PipelineDynamicStateCreateInfo			m_dynamicCreate;
+		vk::PipelineVertexInputStateCreateInfo		m_vertexCreate;
+		vk::PipelineTessellationStateCreateInfo		m_tessellationCreate;
 
-		vk::PipelineRenderingCreateInfoKHR			renderingCreate;
+		vk::PipelineRenderingCreateInfoKHR			m_renderingCreate;
 
-		vk::PipelineLayout							externalLayout;
+		vk::PipelineLayout							m_externalLayout;
 
-		std::vector< vk::PipelineColorBlendAttachmentState>			blendAttachStates;
+		std::vector< vk::PipelineColorBlendAttachmentState>			m_blendAttachStates;
 
-		std::vector<vk::DynamicState> dynamicStates;
+		std::vector<vk::DynamicState> m_dynamicStates;
 
-		std::vector<vk::Format> allColourRenderingFormats;
-		vk::Format depthRenderingFormat;
+		std::vector<vk::Format> m_allColourRenderingFormats;
+		vk::Format m_depthRenderingFormat;
 
-		bool ignoreDynamicDefaults;
+		bool m_ignoreDynamicDefaults;
 	};
 }

@@ -13,8 +13,8 @@ namespace NCL::Rendering::Vulkan {
 
 	class BufferBuilder	{
 	public:
-		BufferBuilder(vk::Device device, VmaAllocator allocator);
-		BufferBuilder(VkDevice device, VmaAllocator allocator);
+		BufferBuilder(vk::Device m_device, VmaAllocator m_allocator);
+		BufferBuilder(VkDevice m_device, VmaAllocator m_allocator);
 
 		BufferBuilder& WithBufferUsage(vk::BufferUsageFlags flags);
 		BufferBuilder& WithBufferUsage(VkBufferUsageFlags flags);
@@ -40,9 +40,9 @@ namespace NCL::Rendering::Vulkan {
 		VulkanBuffer Build(size_t byteSize, const std::string& name = "");
 
 	protected:
-		vk::Device sourceDevice;
-		VmaAllocator sourceAllocator;
-		VmaAllocationCreateInfo vmaInfo;
-		vk::BufferCreateInfo	vkInfo;
+		vk::Device					m_sourceDevice;
+		VmaAllocator				m_sourceAllocator;
+		VmaAllocationCreateInfo		m_vmaCreateInfo;
+		vk::BufferCreateInfo		m_vkCreateInfo;
 	};
 }

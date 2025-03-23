@@ -28,12 +28,12 @@ DynamicRenderBuilder& DynamicRenderBuilder::WithDepthAttachment(vk::RenderingAtt
 }
 
 DynamicRenderBuilder& DynamicRenderBuilder::WithColourAttachment(
-	vk::ImageView	texture, vk::ImageLayout layout, bool clear, vk::ClearValue clearValue
+	vk::ImageView	texture, vk::ImageLayout m_layout, bool clear, vk::ClearValue clearValue
 )
 {
 	vk::RenderingAttachmentInfoKHR colourAttachment;
 	colourAttachment.setImageView(texture)
-		.setImageLayout(layout)
+		.setImageLayout(m_layout)
 		.setLoadOp(clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eDontCare)
 		.setStoreOp(vk::AttachmentStoreOp::eStore)
 		.setClearValue(clearValue);
@@ -44,11 +44,11 @@ DynamicRenderBuilder& DynamicRenderBuilder::WithColourAttachment(
 }
 
 DynamicRenderBuilder& DynamicRenderBuilder::WithDepthAttachment(
-	vk::ImageView	texture, vk::ImageLayout layout, bool clear, vk::ClearValue clearValue, bool withStencil
+	vk::ImageView	texture, vk::ImageLayout m_layout, bool clear, vk::ClearValue clearValue, bool withStencil
 )
 {
 	depthAttachment.setImageView(texture)
-		.setImageLayout(layout)
+		.setImageLayout(m_layout)
 		.setLoadOp(clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eDontCare)
 		.setStoreOp(vk::AttachmentStoreOp::eStore)
 		.setClearValue(clearValue);
@@ -114,15 +114,15 @@ const vk::RenderingInfoKHR& DynamicRenderBuilder::Build() {
 	return renderInfo;
 }
 
-void DynamicRenderBuilder::BeginRendering(vk::CommandBuffer cmdBuffer) {
-	cmdBuffer.beginRendering(Build());
+void DynamicRenderBuilder::BeginRendering(vk::CommandBuffer m_cmdBuffer) {
+	m_cmdBuffer.beginRendering(Build());
 	if (usingAutoViewstate) {
 
 		vk::Extent2D	extent		= renderInfo.renderArea.extent;
 		vk::Viewport	viewport	= vk::Viewport(0.0f, (float)extent.height, (float)extent.width, -(float)extent.height, 0.0f, 1.0f);
 		vk::Rect2D		scissor		= vk::Rect2D(vk::Offset2D(0, 0), extent);
 
-		cmdBuffer.setViewport(0, 1, &viewport);
-		cmdBuffer.setScissor( 0, 1, &scissor);
+		m_cmdBuffer.setViewport(0, 1, &viewport);
+		m_cmdBuffer.setScissor( 0, 1, &scissor);
 	}
 }

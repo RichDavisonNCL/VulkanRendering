@@ -20,26 +20,26 @@ namespace NCL::Rendering::Vulkan {
 		~VulkanTexture();
 
 		vk::ImageView GetDefaultView() const {
-			return *defaultView;
+			return *m_defaultView;
 		}
 
 		vk::Format GetFormat() const {
-			return format;
+			return m_format;
 		}
 
 		vk::Image GetImage() const {
-			return image;
+			return m_image;
 		}
 
 		//Allows us to pass a texture as vk type to various functions
 		operator vk::Image() const {
-			return image;
+			return m_image;
 		}
 		operator vk::ImageView() const {
-			return *defaultView;
+			return *m_defaultView;
 		}		
 		operator vk::Format() const {
-			return format;
+			return m_format;
 		}
 
 		void GenerateMipMaps(	vk::CommandBuffer  buffer, 
@@ -56,18 +56,18 @@ namespace NCL::Rendering::Vulkan {
 	protected:
 		VulkanTexture();
 
-		vk::UniqueImageView		defaultView;
-		vk::Image				image; //Don't use 'Unique', uses VMA
-		vk::Format				format = vk::Format::eUndefined;
-		vk::ImageAspectFlags	aspectType;
+		vk::UniqueImageView		m_defaultView;
+		vk::Image				m_image; //Don't use 'Unique', uses VMA
+		vk::Format				m_format = vk::Format::eUndefined;
+		vk::ImageAspectFlags	m_aspectType;
 
-		vk::UniqueSemaphore		workSemaphore;
+		vk::UniqueSemaphore		m_workSemaphore;
 
-		VmaAllocation			allocationHandle	= {};
-		VmaAllocationInfo		allocationInfo		= {};
-		VmaAllocator			allocator			= {};
+		VmaAllocation			m_allocationHandle	= {};
+		VmaAllocationInfo		m_allocationInfo	= {};
+		VmaAllocator			m_allocator			= {};
 
-		uint32_t mipCount	= 0;
-		uint32_t layerCount = 0;
+		uint32_t m_mipCount		= 0;
+		uint32_t m_layerCount	= 0;
 	};
 }

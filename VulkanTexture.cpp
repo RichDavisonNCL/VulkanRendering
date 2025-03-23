@@ -20,16 +20,16 @@ VulkanTexture::VulkanTexture() {
 }
 
 VulkanTexture::~VulkanTexture() {
-	if (image) {
-		vmaDestroyImage(allocator, image, allocationHandle);
+	if (m_image) {
+		vmaDestroyImage(m_allocator, m_image, m_allocationHandle);
 	}
 }
 
 void VulkanTexture::GenerateMipMaps(vk::CommandBuffer  buffer, vk::ImageLayout startLayout, vk::ImageLayout endLayout, vk::PipelineStageFlags2 endFlags) {
-	for (int layer = 0; layer < layerCount; ++layer) {	
-		ImageTransitionBarrier(buffer, image, 
+	for (int layer = 0; layer < m_layerCount; ++layer) {	
+		ImageTransitionBarrier(buffer, m_image, 
 			startLayout, vk::ImageLayout::eTransferSrcOptimal,
-			aspectType, 
+			m_aspectType, 
 			vk::PipelineStageFlagBits2::eAllCommands, vk::PipelineStageFlagBits2::eTransfer, 
 			0, 1, layer, 1);
 
@@ -45,7 +45,7 @@ void VulkanTexture::GenerateMipMaps(vk::CommandBuffer  buffer, vk::ImageLayout s
 		blitData.dstOffsets[0] = vk::Offset3D(0, 0, 0);
 		blitData.dstOffsets[1] = vk::Offset3D(dimensions.x, dimensions.y, 1);
 
-		for (uint32_t mip = 1; mip < mipCount; ++mip) {
+		for (uint32_t mip = 1; mip < m_mipCount; ++mip) {
 			blitData.dstSubresource.setAspectMask(vk::ImageAspectFlagBits::eColor)
 				.setMipLevel(mip)
 				.setBaseArrayLayer(layer)
@@ -55,20 +55,20 @@ void VulkanTexture::GenerateMipMaps(vk::CommandBuffer  buffer, vk::ImageLayout s
 			blitData.dstOffsets[1].y = std::max(dimensions.y >> mip, 1u);
 
 			//Prepare the new mip level to receive the blitted data
-			ImageTransitionBarrier(buffer, image, 
+			ImageTransitionBarrier(buffer, m_image, 
 				vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, 
-				aspectType, 
+				m_aspectType, 
 				vk::PipelineStageFlagBits2::eTransfer, vk::PipelineStageFlagBits2::eTransfer,
 				mip, 1, layer, 1);
 			
-			buffer.blitImage(image, vk::ImageLayout::eTransferSrcOptimal, 
-							 image, vk::ImageLayout::eTransferDstOptimal, 
+			buffer.blitImage(m_image, vk::ImageLayout::eTransferSrcOptimal, 
+							 m_image, vk::ImageLayout::eTransferDstOptimal, 
 							 blitData, vk::Filter::eLinear);
 			//The new mip is then transitioned again to be able to act as a source
 			//for the next level 
-			ImageTransitionBarrier(buffer, image,
+			ImageTransitionBarrier(buffer, m_image,
 				vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eTransferSrcOptimal,
-				aspectType,
+				m_aspectType,
 				vk::PipelineStageFlagBits2::eTransfer, vk::PipelineStageFlagBits2::eTransfer,
 				mip, 1, layer, 1);
 
@@ -76,10 +76,10 @@ void VulkanTexture::GenerateMipMaps(vk::CommandBuffer  buffer, vk::ImageLayout s
 			blitData.srcSubresource = blitData.dstSubresource;
 		}
 		//Now that this layer's mipchain is complete, transition the whole lot to final layout
-		ImageTransitionBarrier(buffer, image, 
+		ImageTransitionBarrier(buffer, m_image, 
 				vk::ImageLayout::eTransferSrcOptimal, endLayout,
-				aspectType, 
+				m_aspectType, 
 				vk::PipelineStageFlagBits2::eTransfer, endFlags,
-				0, mipCount, layer, 1);
+				0, m_mipCount, layer, 1);
 	}
 }

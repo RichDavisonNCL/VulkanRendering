@@ -38,7 +38,7 @@ namespace NCL::Rendering::Vulkan {
 
 		VulkanShaderBindingTableBuilder& WithLibrary(const vk::RayTracingPipelineCreateInfoKHR& createInfo);
 
-		ShaderBindingTable Build(vk::Device device, VmaAllocator allocator);
+		ShaderBindingTable Build(vk::Device m_device, VmaAllocator m_allocator);
 
 	protected:
 		void FillCounts(const vk::RayTracingPipelineCreateInfoKHR* fromInfo);

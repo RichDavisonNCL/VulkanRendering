@@ -46,7 +46,11 @@ namespace NCL::Rendering::Vulkan {
 	struct FrameContext {
 		vk::Device			device;
 		vk::DescriptorPool  descriptorPool;
-		vk::CommandBuffer	cmdBuffer;
+		vk::CommandBuffer	cmdBuffer;		
+		
+		vk::CommandPool		commandPools[CommandType::Type::MAX_COMMAND_TYPES];
+		vk::Queue			queues[CommandType::Type::MAX_COMMAND_TYPES];
+		uint32_t			queueFamilies[CommandType::Type::MAX_COMMAND_TYPES];
 
 		vk::UniqueSemaphore	workSempaphore;
 
@@ -58,11 +62,8 @@ namespace NCL::Rendering::Vulkan {
 		vk::ImageView		depthView;
 		vk::Format			depthFormat;
 
-		vk::Viewport		defaultViewport;
-		vk::Rect2D			defaultScreenRect;
-
-		vk::CommandPool			commandPools[CommandType::Type::MAX_COMMAND_TYPES];
-		vk::Queue				queues[CommandType::Type::MAX_COMMAND_TYPES];
+		vk::Viewport		viewport;
+		vk::Rect2D			screenRect;
 	};
 
 	struct ChainState {
@@ -107,54 +108,58 @@ namespace NCL::Rendering::Vulkan {
 		friend class VulkanMesh;
 		friend class VulkanTexture;
 	public:
-		VulkanRenderer(Window& window, const VulkanInitialisation& vkInit);
+		VulkanRenderer(Window& window, const VulkanInitialisation& m_vkInit);
 		~VulkanRenderer();
 
-		virtual bool HasInitialised() const { return device; }
+		virtual bool HasInitialised() const { return m_device; }
 
 		vk::Device GetDevice() const {
-			return device;
+			return m_device;
 		}
 
 		vk::PhysicalDevice GetPhysicalDevice() const {
-			return gpu;
+			return m_physicalDevice;
 		}
 
 		vk::Instance	GetVulkanInstance() const {
-			return instance;
+			return m_instance;
 		}
 
 		VmaAllocator GetMemoryAllocator() const {
-			return memoryAllocator;
+			return m_memoryAllocator;
 		}
 
 		vk::Queue GetQueue(CommandType::Type type) const {
-			return queues[type];
+			return m_queues[type];
 		}
 
 		uint32_t GetQueueFamily(CommandType::Type type) const {
-			return queueFamilies[type];
+			return m_queueFamilies[type];
 		}
 
 		vk::CommandPool GetCommandPool(CommandType::Type type) const {
-			return commandPools[type];
+			return m_commandPools[type];
 		}
 
 		vk::DescriptorPool GetDescriptorPool() {
-			return defaultDescriptorPool;
+			return m_defaultDescriptorPool;
 		}
 
 		FrameContext const& GetFrameContext() const {
-			return frameContexts[currentFrameContext];
+			return m_frameContexts[m_currentFrameContext];
 		}
 
 		UniqueVulkanTexture const & GetDepthBuffer() const {
-			return depthBuffer;
+			return m_depthBuffer;
 		}
 
 		VulkanStagingBuffers& GetStagingBuffers() {
-			return *stagingBuffers;
+			return *m_stagingBuffers;
 		}
+
+
+
+		void WaitForGPUIdle();
 
 		void	BeginDefaultRenderPass(vk::CommandBuffer cmds);
 		void	BeginDefaultRendering(vk::CommandBuffer  cmds);
@@ -174,29 +179,29 @@ namespace NCL::Rendering::Vulkan {
 		virtual void WaitForSwapImage();
 
 	protected:	
-		vk::Viewport			defaultViewport;
-		vk::Rect2D				defaultScissor;	
-		vk::Rect2D				defaultScreenRect;			
-		vk::RenderPass			defaultRenderPass;
-		vk::RenderPassBeginInfo defaultBeginInfo;
+		vk::Viewport			m_defaultViewport;
+		vk::Rect2D				m_defaultScissor;	
+		vk::Rect2D				m_defaultScreenRect;			
+		vk::RenderPass			m_defaultRenderPass;
+		vk::RenderPassBeginInfo m_defaultBeginInfo;
 		
-		vk::DescriptorPool		defaultDescriptorPool;	//descriptor sets come from here!
+		vk::DescriptorPool		m_defaultDescriptorPool;	//descriptor sets come from here!
 
-		vk::CommandPool			commandPools[CommandType::Type::MAX_COMMAND_TYPES];
-		vk::Queue				queues[CommandType::Type::MAX_COMMAND_TYPES];
-		uint32_t				queueFamilies[CommandType::Type::MAX_COMMAND_TYPES];
+		vk::CommandPool			m_commandPools[CommandType::Type::MAX_COMMAND_TYPES];
+		vk::Queue				m_queues[CommandType::Type::MAX_COMMAND_TYPES];
+		uint32_t				m_queueFamilies[CommandType::Type::MAX_COMMAND_TYPES];
 
 
-		std::unique_ptr<VulkanStagingBuffers>  stagingBuffers;
+		std::unique_ptr<VulkanStagingBuffers>  m_stagingBuffers;
 
-		vk::CommandBuffer		frameCmds;
+		vk::CommandBuffer		m_frameCmds;
 		//vk::CommandBuffer		swapCmds;
 
-		UniqueVulkanTexture depthBuffer;
+		UniqueVulkanTexture		m_depthBuffer;
 
-		VmaAllocatorCreateInfo	allocatorInfo;
+		VmaAllocatorCreateInfo	m_allocatorInfo;
 
-		VulkanInitialisation vkInit;
+		VulkanInitialisation m_vkInit;
 	private: 
 		void	InitCommandPools();
 		bool	InitInstance();
@@ -204,7 +209,7 @@ namespace NCL::Rendering::Vulkan {
 		bool	InitGPUDevice();
 		bool	InitSurface();
 		void	InitMemoryAllocator();
-		void	InitBufferChain(vk::CommandBuffer  cmdBuffer);
+		void	InitBufferChain(vk::CommandBuffer  m_cmdBuffer);
 
 		void	InitFrameStates(uint32_t framesInFlight);
 
@@ -216,34 +221,33 @@ namespace NCL::Rendering::Vulkan {
 
 		bool	InitDeviceQueueIndices();
 
-		vk::Instance		instance;	//API Instance
-		vk::PhysicalDevice	gpu;		//GPU in use
+		vk::Instance		m_instance;			//API Instance
+		vk::PhysicalDevice	m_physicalDevice;	//GPU in use
 
-		vk::PhysicalDeviceProperties		deviceProperties;
-		vk::PhysicalDeviceMemoryProperties	deviceMemoryProperties;
+		vk::PhysicalDeviceProperties		m_deviceProperties;
+		vk::PhysicalDeviceMemoryProperties	m_deviceMemoryProperties;
 
-		vk::PipelineCache		pipelineCache;
-		vk::Device				device;		//Device handle	
+		vk::PipelineCache		m_pipelineCache;
+		vk::Device				m_device;		//Device handle	
 
-		vk::SurfaceKHR		surface;
-		vk::Format			surfaceFormat;
-		vk::ColorSpaceKHR	surfaceSpace;
+		vk::SurfaceKHR		m_surface;
+		vk::Format			m_surfaceFormat;
+		vk::ColorSpaceKHR	m_surfaceSpace;
 
-		vk::DebugUtilsMessengerEXT debugMessenger;
+		vk::DebugUtilsMessengerEXT m_debugMessenger;
 
-		std::vector<FrameContext>	frameContexts;
-		std::vector<ChainState>		swapStates;
+		std::vector<FrameContext>	m_frameContexts;
+		std::vector<ChainState>		m_swapStates;
 
-		uint32_t				waitFrameContext	= 0; //We need to wait for this to complete at start of frame
-		uint32_t				currentFrameContext	= 0; //Frame context for this frame
-		uint32_t				currentSwap			= 0; //To index our swapchain 
+		uint32_t				m_currentFrameContext	= 0; //Frame context for this frame
+		uint32_t				m_currentSwap			= 0; //To index our swapchain 
 
-		uint64_t				globalFrameID		= 0;
+		uint64_t				m_globalFrameID		= 0;
 
-		vk::Fence			currentSwapFence;
+		vk::Fence			m_currentSwapFence;
 
-		vk::SwapchainKHR	swapChain;
-		VmaAllocator		memoryAllocator;
+		vk::SwapchainKHR	m_swapChain;
+		VmaAllocator		m_memoryAllocator;
 
 	
 	};

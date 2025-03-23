@@ -17,7 +17,7 @@ namespace NCL::Rendering::Vulkan {
 		~VulkanMesh();
 
 		const vk::PipelineVertexInputStateCreateInfo& GetVertexInputState() const {
-			return vertexInputState;
+			return m_vertexInputState;
 		}
 
 		void BindToCommandBuffer(vk::CommandBuffer  buffer) const;
@@ -27,42 +27,43 @@ namespace NCL::Rendering::Vulkan {
 
 		void UploadToGPU(RendererBase* renderer) override;
 
+		void UploadToGPU(vk::CommandBuffer cmdBuffer, const VulkanBuffer& stagingBuffer, VulkanBuffer& gpuOnlyBuffer, vk::Semaphore finishSemaphore);
+
 		void UploadToGPU(RendererBase* renderer, vk::BufferUsageFlags extraUses);
-		void UploadToGPU(VulkanRenderer* renderer, VkQueue queue, vk::CommandBuffer buffer, const VulkanBuffer& stagingBuffer, vk::BufferUsageFlags extraUses = {});
 
 		uint32_t	GetAttributeMask() const;
 		size_t		CalculateGPUAllocationSize() const;
 		vk::PrimitiveTopology GetVulkanTopology() const;
 
 		size_t GetVertexStride() const {
-			return vertexStride;
+			return m_vertexStride;
 		}
 
 		operator const vk::PipelineVertexInputStateCreateInfo&() const {
-			return vertexInputState;
+			return m_vertexInputState;
 		}
 
 		bool GetIndexInformation(vk::Buffer& outBuffer, uint32_t& outOffset, uint32_t& outRange, vk::IndexType& outType);
 		bool GetAttributeInformation(VertexAttribute::Type v, vk::Buffer& outBuffer, uint32_t& outOffset, uint32_t& outRange, vk::Format& outFormat) const;
 
 	protected:
-		vk::PipelineVertexInputStateCreateInfo				vertexInputState;
-		std::vector<vk::VertexInputAttributeDescription>	attributeDescriptions;
-		std::vector<vk::VertexInputBindingDescription>		attributeBindings;		
+		vk::PipelineVertexInputStateCreateInfo				m_vertexInputState;
+		std::vector<vk::VertexInputAttributeDescription>	m_attributeDescriptions;
+		std::vector<vk::VertexInputBindingDescription>		m_attributeBindings;		
 	
-		VulkanBuffer gpuBuffer;
-		size_t vertexOffset = 0;
-		size_t indexOffset	= 0;
+		VulkanBuffer m_gpuBuffer;
+		size_t m_vertexDataOffset = 0;
+		size_t m_indexDataOffset	= 0;
 
-		size_t vertexStride = 0;
+		size_t m_vertexStride = 0;
 
-		uint32_t attributeMask = 0;
+		uint32_t m_attributeMask = 0;
 
-		vk::IndexType indexType = vk::IndexType::eNoneKHR;
+		vk::IndexType m_indexType = vk::IndexType::eNoneKHR;
 
-		std::vector<vk::Buffer>					usedBuffers;
-		std::vector<vk::DeviceSize>				usedOffsets;
-		std::vector<vk::Format>					usedFormats;
-		std::vector< VertexAttribute::Type >	usedAttributes;
+		std::vector<vk::Buffer>					m_usedBuffers;
+		std::vector<vk::DeviceSize>				m_usedOffsets;
+		std::vector<vk::Format>					m_usedFormats;
+		std::vector< VertexAttribute::Type >	m_usedAttributes;
 	};
 }

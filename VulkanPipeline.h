@@ -9,13 +9,13 @@ License: MIT (see LICENSE file at the top of the source tree)
 
 struct VulkanPipeline {
 	vk::UniquePipeline			pipeline;
-	vk::UniquePipelineLayout	layout;
+	vk::UniquePipelineLayout	m_layout;
 
 	operator vk::Pipeline() const {
 		return *pipeline;
 	}
 
 	operator vk::PipelineLayout() const {
-		return *layout;
+		return *m_layout;
 	}
 };

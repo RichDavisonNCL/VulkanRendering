@@ -44,24 +44,24 @@ namespace NCL::Rendering::Vulkan {
 		vk::UniqueAccelerationStructureKHR Build(vk::BuildAccelerationStructureFlagsKHR flags, const std::string& debugName = "");
 	protected:
 
-		void BuildBLAS(vk::Device device, VmaAllocator allocator, vk::BuildAccelerationStructureFlagsKHR flags);
-		void BuildTLAS(vk::Device device, VmaAllocator allocator, vk::BuildAccelerationStructureFlagsKHR flags);
+		void BuildBLAS(vk::Device m_device, VmaAllocator m_allocator, vk::BuildAccelerationStructureFlagsKHR flags);
+		void BuildTLAS(vk::Device m_device, VmaAllocator m_allocator, vk::BuildAccelerationStructureFlagsKHR flags);
 
-		vk::BuildAccelerationStructureFlagsKHR flags;
+		vk::BuildAccelerationStructureFlagsKHR m_flags;
 
-		std::map<VulkanMesh*, uint32_t> uniqueMeshes;
+		std::map<VulkanMesh*, uint32_t> m_uniqueMeshes;
 
-		std::vector<VulkanBVHEntry> entries;
-		std::vector<VulkanMesh*>	meshes;
-		std::vector<Matrix4>		transforms;
-		std::vector< BLASEntry>		blasBuildInfo;
+		std::vector<VulkanBVHEntry> m_entries;
+		std::vector<VulkanMesh*>	m_meshes;
+		std::vector<Matrix4>		m_transforms;
+		std::vector< BLASEntry>		m_blasBuildInfo;
 
-		vk::Queue		queue;
-		vk::CommandPool pool;
-		vk::Device		sourceDevice;
-		VmaAllocator	sourceAllocator;
+		vk::Queue		m_queue;
+		vk::CommandPool m_pool;
+		vk::Device		m_sourceDevice;
+		VmaAllocator	m_sourceAllocator;
 
-		vk::UniqueAccelerationStructureKHR	tlas;
-		VulkanBuffer						tlasBuffer;
+		vk::UniqueAccelerationStructureKHR	m_tlas;
+		VulkanBuffer						m_tlasBuffer;
 	};
 }

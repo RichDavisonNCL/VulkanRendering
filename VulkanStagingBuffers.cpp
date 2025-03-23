@@ -13,9 +13,9 @@ using namespace Rendering;
 using namespace Vulkan;
 
 VulkanStagingBuffers::VulkanStagingBuffers(vk::Device inDevice, VmaAllocator inAllocator, uint32_t inFramesInFlight) {
-    device          = inDevice;
-    allocator       = inAllocator;
-    framesInFlight  = inFramesInFlight;
+    m_device          = inDevice;
+    m_allocator       = inAllocator;
+    m_framesInFlight  = inFramesInFlight;
 }
 
 VulkanStagingBuffers::~VulkanStagingBuffers() {
@@ -23,26 +23,26 @@ VulkanStagingBuffers::~VulkanStagingBuffers() {
 }
 
 const VulkanBuffer* VulkanStagingBuffers::GetStagingBuffer(size_t allocationSize) {
-    activeBuffers.emplace_back(
-        BufferBuilder(device, allocator)
+    m_activeBuffers.emplace_back(
+        BufferBuilder(m_device, m_allocator)
         .WithBufferUsage(vk::BufferUsageFlagBits::eTransferSrc)
         .WithHostVisibility()
         .Build(allocationSize, "Staging Buffer"),
-        framesInFlight);
+        m_framesInFlight);
 
-    return &activeBuffers.back().buffer;
+    return &m_activeBuffers.back().buffer;
 
     return nullptr;
 }
 
 void VulkanStagingBuffers::Update() {
-    for (std::vector<StagingBuffer>::iterator i = activeBuffers.begin();
-        i != activeBuffers.end(); )
+    for (std::vector<StagingBuffer>::iterator i = m_activeBuffers.begin();
+        i != m_activeBuffers.end(); )
     {
         (*i).framesCount--;
 
         if ((*i).framesCount == 0) {
-            i = activeBuffers.erase(i);
+            i = m_activeBuffers.erase(i);
         }
         else {
             ++i;

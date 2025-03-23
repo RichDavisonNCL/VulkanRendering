@@ -11,7 +11,7 @@ namespace NCL::Rendering::Vulkan {
 	class VulkanTexture;
 	class RenderPassBuilder	{
 	public:
-		RenderPassBuilder(vk::Device sourceDevice);
+		RenderPassBuilder(vk::Device m_sourceDevice);
 		~RenderPassBuilder() {}
 
 		RenderPassBuilder& WithColourAttachment(
@@ -41,10 +41,10 @@ namespace NCL::Rendering::Vulkan {
 		vk::UniqueRenderPass Build(const std::string& name = "");
 
 	protected:
-		std::vector<vk::AttachmentDescription>		allDescriptions;
-		std::vector<vk::AttachmentReference>		allReferences;
-		vk::AttachmentReference depthReference;
-		vk::SubpassDescription	subPass;
-		vk::Device sourceDevice;
+		std::vector<vk::AttachmentDescription>		m_allDescriptions;
+		std::vector<vk::AttachmentReference>		m_allReferences;
+		vk::AttachmentReference						m_depthReference;
+		vk::SubpassDescription						m_subPass;
+		vk::Device									m_sourceDevice;
 	};
 }

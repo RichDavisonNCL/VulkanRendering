@@ -30,10 +30,10 @@ const char* ErrorMessages[ShaderStages::MAX_SIZE] =
 
 
 ShaderBuilder& ShaderBuilder::AddBinary(ShaderStages::Type stage, const std::string& name, const std::string& entry) {
-	assert(MessageAssert(shaderFiles[stage].empty(), ErrorMessages[stage]));
+	assert(MessageAssert(m_shaderFiles[stage].empty(), ErrorMessages[stage]));
 	assert(MessageAssert(stage != (uint32_t)ShaderStages::MAX_SIZE, "Invalid shader stage!"));
-	shaderFiles[stage] = name;
-	entryPoints[stage] = entry;
+	m_shaderFiles[stage] = name;
+	m_entryPoints[stage] = entry;
 	return *this;
 }
 
@@ -64,20 +64,20 @@ ShaderBuilder& ShaderBuilder::WithTessEvalBinary(const string& name, const std::
 UniqueVulkanShader ShaderBuilder::Build(const std::string& debugName) {
 	VulkanShader* newShader = new VulkanShader();
 	//mesh and 'traditional' pipeline are mutually exclusive
-	assert(MessageAssert(!(!shaderFiles[ShaderStages::Mesh].empty() && !shaderFiles[ShaderStages::Vertex].empty()),
+	assert(MessageAssert(!(!m_shaderFiles[ShaderStages::Mesh].empty() && !m_shaderFiles[ShaderStages::Vertex].empty()),
 		"Cannot use traditional vertex pipeline with mesh shaders!"));
 
 	for (int i = 0; i < ShaderStages::MAX_SIZE; ++i) {
-		if (!shaderFiles[i].empty()) {
+		if (!m_shaderFiles[i].empty()) {
 
 			char* data;
 			size_t dataSize = 0;
-			Assets::ReadBinaryFile(Assets::SHADERDIR + "VK/" + shaderFiles[i], &data, dataSize);
+			Assets::ReadBinaryFile(Assets::SHADERDIR + "VK/" + m_shaderFiles[i], &data, dataSize);
 
 			vk::UniqueShaderModule module;
 
 			if (dataSize > 0) {
-				module = sourceDevice.createShaderModuleUnique(
+				module = m_sourceDevice.createShaderModuleUnique(
 					{
 						.flags = {},
 						.codeSize = dataSize,
@@ -88,18 +88,18 @@ UniqueVulkanShader ShaderBuilder::Build(const std::string& debugName) {
 				newShader->AddReflectionData(dataSize, data, rasterStages[i]);
 			}
 			else {
-				std::cout << __FUNCTION__ << " Problem loading shader file " << shaderFiles[i] << "!\n";
+				std::cout << __FUNCTION__ << " Problem loading shader file " << m_shaderFiles[i] << "!\n";
 			}
 
-			newShader->AddBinaryShaderModule(static_cast<ShaderStages::Type>(i), module, entryPoints[i]);
+			newShader->AddBinaryShaderModule(static_cast<ShaderStages::Type>(i), module, m_entryPoints[i]);
 
 			if (!debugName.empty()) {
-				SetDebugName(sourceDevice, vk::ObjectType::eShaderModule, GetVulkanHandle(*newShader->shaderModules[i]), debugName);
+				SetDebugName(m_sourceDevice, vk::ObjectType::eShaderModule, GetVulkanHandle(*newShader->m_shaderModules[i]), debugName);
 			}
 		}
 	};
 
 	newShader->Init();
-	newShader->BuildLayouts(sourceDevice);
+	newShader->BuildLayouts(m_sourceDevice);
 	return UniqueVulkanShader(newShader);
 }

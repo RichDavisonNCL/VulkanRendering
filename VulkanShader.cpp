@@ -21,7 +21,7 @@ using namespace Vulkan;
 
 
 VulkanShader::VulkanShader()	{
-	stageCount	= 0;
+	m_stageCount	= 0;
 }
 
 VulkanShader::~VulkanShader()	{
@@ -32,13 +32,13 @@ void VulkanShader::ReloadShader() {
 
 }
 
-void VulkanShader::AddBinaryShaderModule(const std::string& fromFile, ShaderStages::Type stage, vk::Device device, const std::string& entryPoint) {
+void VulkanShader::AddBinaryShaderModule(const std::string& fromFile, ShaderStages::Type stage, vk::Device m_device, const std::string& m_entryPoint) {
 	char* data;
 	size_t dataSize = 0;
 	Assets::ReadBinaryFile(Assets::SHADERDIR + "VK/" + fromFile, &data, dataSize);
 
 	if (dataSize > 0) {
-		shaderModules[stage] = device.createShaderModuleUnique(
+		m_shaderModules[stage] = m_device.createShaderModuleUnique(
 			{
 				.flags = {},
 				.codeSize = dataSize,
@@ -51,33 +51,33 @@ void VulkanShader::AddBinaryShaderModule(const std::string& fromFile, ShaderStag
 		std::cout << __FUNCTION__ << " Problem loading shader file " << fromFile << "!\n";
 	}
 
-	shaderFiles[stage] = fromFile;
-	entryPoints[stage] = entryPoint;
+	m_shaderFiles[stage] = fromFile;
+	m_entryPoints[stage] = m_entryPoint;
 
 	delete data;
 }
 
-void VulkanShader::AddBinaryShaderModule(ShaderStages::Type stage, vk::UniqueShaderModule& shaderModule, const std::string& entryPoint) {
-	shaderModule.swap(shaderModules[stage]);
-	entryPoints[stage]		= entryPoint;
+void VulkanShader::AddBinaryShaderModule(ShaderStages::Type stage, vk::UniqueShaderModule& m_shaderModule, const std::string& m_entryPoint) {
+	m_shaderModule.swap(m_shaderModules[stage]);
+	m_entryPoints[stage]		= m_entryPoint;
 }
 
 void VulkanShader::Init() {
-	stageCount = 0;
+	m_stageCount = 0;
 	for (int i = 0; i < ShaderStages::MAX_SIZE; ++i) {
-		if (shaderModules[i]) {
-			stageCount++;
+		if (m_shaderModules[i]) {
+			m_stageCount++;
 		}
 	}
 	uint32_t doneCount = 0;
 	for (int i = 0; i < ShaderStages::MAX_SIZE; ++i) {
-		if (shaderModules[i]) {
-			infos[doneCount].stage	= rasterStages[i];
-			infos[doneCount].module = *shaderModules[i];
-			infos[doneCount].pName	= entryPoints[i].c_str();
+		if (m_shaderModules[i]) {
+			m_infos[doneCount].stage	= rasterStages[i];
+			m_infos[doneCount].module = *m_shaderModules[i];
+			m_infos[doneCount].pName	= m_entryPoints[i].c_str();
 
 			doneCount++;
-			if (doneCount >= stageCount) {
+			if (doneCount >= m_stageCount) {
 				break;
 			}
 		}
@@ -85,6 +85,6 @@ void VulkanShader::Init() {
 }
 
 void	VulkanShader::FillShaderStageCreateInfo(vk::GraphicsPipelineCreateInfo &info) const {
-	info.setStageCount(stageCount); 
-	info.setPStages(infos);
+	info.setStageCount(m_stageCount); 
+	info.setPStages(m_infos);
 }

@@ -14,14 +14,14 @@ using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-VulkanRayTracingPipelineBuilder::VulkanRayTracingPipelineBuilder(vk::Device device) : PipelineBuilderBase(device){
+VulkanRayTracingPipelineBuilder::VulkanRayTracingPipelineBuilder(vk::Device m_device) : PipelineBuilderBase(m_device){
 }
 
 VulkanRayTracingPipelineBuilder::~VulkanRayTracingPipelineBuilder() {
 }
 
 VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithRecursionDepth(uint32_t count) {
-	pipelineCreate.maxPipelineRayRecursionDepth = count;
+	m_pipelineCreate.maxPipelineRayRecursionDepth = count;
 	return *this;
 }
 
@@ -29,7 +29,7 @@ VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithRayGenGrou
 	vk::RayTracingShaderGroupCreateInfoKHR groupCreateInfo;
 	groupCreateInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
 	groupCreateInfo.generalShader = shaderIndex;
-	genGroups.push_back(groupCreateInfo);
+	m_genGroups.push_back(groupCreateInfo);
 	return *this;
 }
 
@@ -37,7 +37,7 @@ VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithMissGroup(
 	vk::RayTracingShaderGroupCreateInfoKHR groupCreateInfo;
 	groupCreateInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
 	groupCreateInfo.generalShader = shaderIndex;
-	missGroups.push_back(groupCreateInfo);
+	m_missGroups.push_back(groupCreateInfo);
 	return *this;
 }
 
@@ -70,7 +70,7 @@ VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithTriangleHi
 	groupCreateInfo.closestHitShader	= closestHit;
 	groupCreateInfo.anyHitShader		= anyHit;
 
-	hitGroups.push_back(groupCreateInfo);
+	m_hitGroups.push_back(groupCreateInfo);
 
 	return *this;
 }
@@ -84,62 +84,62 @@ VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithProcedural
 	groupCreateInfo.closestHitShader	= closestHit;
 	groupCreateInfo.anyHitShader		= anyHit;
 
-	hitGroups.push_back(groupCreateInfo);
+	m_hitGroups.push_back(groupCreateInfo);
 
 	return *this;
 }
 
 VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithShader(VulkanRTShader& shader, vk::ShaderStageFlagBits stage, const string& entry) {
 	ShaderEntry entryInfo;
-	entryInfo.entryPoint = entry;
+	entryInfo.m_entryPoint = entry;
 	entryInfo.shader = &shader;
 	entryInfo.stage = stage;
 
-	entries.push_back(entryInfo);
+	m_entries.push_back(entryInfo);
 
-	shader.FillDescriptorSetLayouts(reflectionLayouts);
-	shader.FillPushConstants(allPushConstants);
+	shader.FillDescriptorSetLayouts(m_reflectionLayouts);
+	shader.FillPushConstants(m_allPushConstants);
 	
 	return *this;
 }
 
 VulkanPipeline VulkanRayTracingPipelineBuilder::Build(const std::string& debugName, vk::PipelineCache cache) {
-	for (const auto& i : entries) {
+	for (const auto& i : m_entries) {
 		vk::PipelineShaderStageCreateInfo stageInfo;
 
-		stageInfo.pName = i.entryPoint.c_str();
+		stageInfo.pName = i.m_entryPoint.c_str();
 		stageInfo.stage = i.stage;
 		stageInfo.module = *i.shader->GetModule();
-		shaderStages.push_back(stageInfo);
+		m_shaderStages.push_back(stageInfo);
 	}
 
 	FinaliseDescriptorLayouts();
 
-	allGroups.clear();
-	allGroups.insert(allGroups.end(), genGroups.begin() , genGroups.end());
-	allGroups.insert(allGroups.end(), missGroups.begin(), missGroups.end());
-	allGroups.insert(allGroups.end(), hitGroups.begin() , hitGroups.end());
+	m_allGroups.clear();
+	m_allGroups.insert(m_allGroups.end(), m_genGroups.begin() , m_genGroups.end());
+	m_allGroups.insert(m_allGroups.end(), m_missGroups.begin(), m_missGroups.end());
+	m_allGroups.insert(m_allGroups.end(), m_hitGroups.begin() , m_hitGroups.end());
 
-	pipelineCreate.groupCount	= allGroups.size();
-	pipelineCreate.pGroups		= allGroups.data();
+	m_pipelineCreate.groupCount	= m_allGroups.size();
+	m_pipelineCreate.pGroups	= m_allGroups.data();
 
-	pipelineCreate.stageCount	= shaderStages.size();
-	pipelineCreate.pStages		= shaderStages.data();
+	m_pipelineCreate.stageCount	= m_shaderStages.size();
+	m_pipelineCreate.pStages	= m_shaderStages.data();
 
 	vk::PipelineLayoutCreateInfo pipeLayoutCreate = vk::PipelineLayoutCreateInfo()
-		.setSetLayouts(allLayouts)
-		.setPushConstantRanges(allPushConstants);
+		.setSetLayouts(m_allLayouts)
+		.setPushConstantRanges(m_allPushConstants);
 
 	VulkanPipeline output;
-	output.layout = sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
+	output.m_layout = m_sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
 
-	pipelineCreate.layout = *output.layout;
-	pipelineCreate.setPDynamicState(&dynamicCreate);
+	m_pipelineCreate.layout = *output.m_layout;
+	m_pipelineCreate.setPDynamicState(&m_dynamicCreate);
 
-	output.pipeline = sourceDevice.createRayTracingPipelineKHRUnique({}, cache, pipelineCreate).value;
+	output.pipeline = m_sourceDevice.createRayTracingPipelineKHRUnique({}, cache, m_pipelineCreate).value;
 
 	if (!debugName.empty()) {
-		SetDebugName(sourceDevice, vk::ObjectType::ePipeline, GetVulkanHandle(*output.pipeline), debugName);
+		SetDebugName(m_sourceDevice, vk::ObjectType::ePipeline, GetVulkanHandle(*output.pipeline), debugName);
 	}
 
 	return output;

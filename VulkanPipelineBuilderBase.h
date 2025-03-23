@@ -21,63 +21,63 @@ namespace NCL::Rendering::Vulkan {
 	public:
 
 		T& WithLayout(vk::PipelineLayout pipeLayout) {
-			layout = pipeLayout;
-			pipelineCreate.setLayout(pipeLayout);
+			m_layout = pipeLayout;
+			m_pipelineCreate.setLayout(pipeLayout);
 			return (T&)*this;
 		}
 
-		T& WithDescriptorSetLayout(uint32_t setIndex, vk::DescriptorSetLayout layout) {
+		T& WithDescriptorSetLayout(uint32_t setIndex, vk::DescriptorSetLayout m_layout) {
 			assert(setIndex < 32);
-			if (setIndex >= userLayouts.size()) {
-				vk::DescriptorSetLayout nullLayout = Vulkan::GetNullDescriptor(sourceDevice);
-				while (userLayouts.size() <= setIndex) {
-					userLayouts.push_back(nullLayout);
+			if (setIndex >= m_userLayouts.size()) {
+				vk::DescriptorSetLayout nullLayout = Vulkan::GetNullDescriptor(m_sourceDevice);
+				while (m_userLayouts.size() <= setIndex) {
+					m_userLayouts.push_back(nullLayout);
 				}
 			}
-			userLayouts[setIndex] = layout;
+			m_userLayouts[setIndex] = m_layout;
 			return (T&)*this;
 		}
 
-		T& WithDescriptorSetLayout(uint32_t setIndex, const vk::UniqueDescriptorSetLayout& layout) {
-			return WithDescriptorSetLayout(setIndex, *layout);
+		T& WithDescriptorSetLayout(uint32_t setIndex, const vk::UniqueDescriptorSetLayout& m_layout) {
+			return WithDescriptorSetLayout(setIndex, *m_layout);
 		}
 
 		T& WithDescriptorBuffers() {
-			pipelineCreate.flags |= vk::PipelineCreateFlagBits::eDescriptorBufferEXT;
+			m_pipelineCreate.flags |= vk::PipelineCreateFlagBits::eDescriptorBufferEXT;
 			return (T&)*this;
 		}
 
 		P& GetCreateInfo() {
-			return pipelineCreate;
+			return m_pipelineCreate;
 		}
 	protected:
-		PipelineBuilderBase(vk::Device device) {
-			sourceDevice = device;
+		PipelineBuilderBase(vk::Device m_device) {
+			m_sourceDevice = m_device;
 		}
 		~PipelineBuilderBase() {}
 
 		void FinaliseDescriptorLayouts() {
-			allLayouts.clear();
-			for (int i = 0; i < reflectionLayouts.size(); ++i) {
-				if (userLayouts.size() > i && userLayouts[i] != Vulkan::GetNullDescriptor(sourceDevice)) {
-					allLayouts.push_back(userLayouts[i]);
+			m_allLayouts.clear();
+			for (int i = 0; i < m_reflectionLayouts.size(); ++i) {
+				if (m_userLayouts.size() > i && m_userLayouts[i] != Vulkan::GetNullDescriptor(m_sourceDevice)) {
+					m_allLayouts.push_back(m_userLayouts[i]);
 				}
 				else {
-					allLayouts.push_back(reflectionLayouts[i]);
+					m_allLayouts.push_back(m_reflectionLayouts[i]);
 				}
 			}
 		}
 
 	protected:
-		P pipelineCreate;
-		vk::PipelineLayout	layout;
-		vk::Device			sourceDevice;
+		P m_pipelineCreate;
+		vk::PipelineLayout	m_layout;
+		vk::Device			m_sourceDevice;
 
-		std::vector< vk::DescriptorSetLayout> allLayouts;
+		std::vector< vk::DescriptorSetLayout>	m_allLayouts;
 
-		std::vector< vk::DescriptorSetLayout> reflectionLayouts;
-		std::vector< vk::DescriptorSetLayout> userLayouts;
+		std::vector< vk::DescriptorSetLayout>	m_reflectionLayouts;
+		std::vector< vk::DescriptorSetLayout>	m_userLayouts;
 
-		std::vector< vk::PushConstantRange> allPushConstants;
+		std::vector< vk::PushConstantRange>		m_allPushConstants;
 	};
 }
