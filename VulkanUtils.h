@@ -58,7 +58,13 @@ namespace NCL::Rendering::Vulkan {
 	vk::UniqueDescriptorSet CreateDescriptorSet(vk::Device m_device, vk::DescriptorPool m_pool, vk::DescriptorSetLayout  m_layout, uint32_t variableDescriptorCount = 0);
 
 	vk::UniqueSemaphore		CreateTimelineSemaphore(vk::Device m_device, uint64_t initialValue = 0);
-
+	vk::Result				TimelineSemaphoreHostWait(vk::Device device, vk::Semaphore semaphore, uint64_t waitVal, uint64_t waitTime);
+	void					TimelineSemaphoreHostSignal(vk::Device device, vk::Semaphore semaphore, uint64_t signalVal);
+	
+	void					TimelineSemaphoreQueueWait(vk::Queue queue, vk::Semaphore semaphore, uint64_t waitVal, vk::PipelineStageFlags waitStage);
+	void					TimelineSemaphoreQueueSignal(vk::Queue queue, vk::Semaphore semaphore, uint64_t signalVal);
+	
+	
 	void	WriteDescriptor(vk::Device m_device, vk::WriteDescriptorSet setInfo, vk::DescriptorBufferInfo bufferInfo);
 	void	WriteDescriptor(vk::Device m_device, vk::WriteDescriptorSet setInfo, vk::DescriptorImageInfo imageInfo);
 

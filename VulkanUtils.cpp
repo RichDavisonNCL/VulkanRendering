@@ -383,6 +383,53 @@ vk::UniqueSemaphore Vulkan::CreateTimelineSemaphore(vk::Device device, uint64_t 
 	return std::move(device.createSemaphoreUnique(createInfo));
 }
 
+vk::Result	Vulkan::TimelineSemaphoreHostWait(vk::Device device, vk::Semaphore semaphore, uint64_t waitVal, uint64_t waitTime) {
+	vk::SemaphoreWaitInfo waitInfo{
+		.semaphoreCount = 1,
+		.pSemaphores	= &semaphore,
+		.pValues		= &waitVal
+	};
+	return device.waitSemaphores(waitInfo, UINT64_MAX);
+}
+
+void	Vulkan::TimelineSemaphoreHostSignal(vk::Device device, vk::Semaphore semaphore, uint64_t signalVal) {
+	vk::SemaphoreSignalInfo signalInfo{
+		.semaphore	= semaphore,
+		.value		= signalVal
+	};
+	device.signalSemaphore(signalInfo);
+}
+
+void	Vulkan::TimelineSemaphoreQueueWait(vk::Queue queue, vk::Semaphore semaphore, uint64_t waitVal, vk::PipelineStageFlags waitStage) {
+	vk::TimelineSemaphoreSubmitInfo tlSubmit{
+		.waitSemaphoreValueCount	= 1,
+		.pWaitSemaphoreValues		= &waitVal
+	};
+
+	vk::SubmitInfo queueSubmit{
+		.pNext					= &tlSubmit,
+		.waitSemaphoreCount		= 1,
+		.pWaitSemaphores		= &semaphore,
+		.pWaitDstStageMask		= &waitStage
+	};
+	queue.submit(queueSubmit);
+}
+
+void		Vulkan::TimelineSemaphoreQueueSignal(vk::Queue queue, vk::Semaphore semaphore, uint64_t signalVal) {
+	vk::TimelineSemaphoreSubmitInfo tlSubmit{
+		.signalSemaphoreValueCount	= 1,
+		.pSignalSemaphoreValues		= &signalVal
+	};
+
+	vk::SubmitInfo queueSubmit{
+		.pNext					= &tlSubmit,
+		.signalSemaphoreCount	= 1,
+		.pSignalSemaphores		= &semaphore
+	};
+
+	queue.submit(queueSubmit);
+}
+
 /*Descriptor Buffer Writing*/
 void Vulkan::WriteBufferDescriptor(vk::Device device,
 	const vk::PhysicalDeviceDescriptorBufferPropertiesEXT& props,
