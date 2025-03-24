@@ -14,7 +14,7 @@ using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-VulkanRayTracingPipelineBuilder::VulkanRayTracingPipelineBuilder(vk::Device m_device) : PipelineBuilderBase(m_device){
+VulkanRayTracingPipelineBuilder::VulkanRayTracingPipelineBuilder(vk::Device device) : PipelineBuilderBase(device){
 }
 
 VulkanRayTracingPipelineBuilder::~VulkanRayTracingPipelineBuilder() {
@@ -91,7 +91,7 @@ VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithProcedural
 
 VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithShader(VulkanRTShader& shader, vk::ShaderStageFlagBits stage, const string& entry) {
 	ShaderEntry entryInfo;
-	entryInfo.m_entryPoint = entry;
+	entryInfo.entryPoint = entry;
 	entryInfo.shader = &shader;
 	entryInfo.stage = stage;
 
@@ -107,7 +107,7 @@ VulkanPipeline VulkanRayTracingPipelineBuilder::Build(const std::string& debugNa
 	for (const auto& i : m_entries) {
 		vk::PipelineShaderStageCreateInfo stageInfo;
 
-		stageInfo.pName = i.m_entryPoint.c_str();
+		stageInfo.pName = i.entryPoint.c_str();
 		stageInfo.stage = i.stage;
 		stageInfo.module = *i.shader->GetModule();
 		m_shaderStages.push_back(stageInfo);
@@ -131,9 +131,9 @@ VulkanPipeline VulkanRayTracingPipelineBuilder::Build(const std::string& debugNa
 		.setPushConstantRanges(m_allPushConstants);
 
 	VulkanPipeline output;
-	output.m_layout = m_sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
+	output.layout = m_sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
 
-	m_pipelineCreate.layout = *output.m_layout;
+	m_pipelineCreate.layout = *output.layout;
 	m_pipelineCreate.setPDynamicState(&m_dynamicCreate);
 
 	output.pipeline = m_sourceDevice.createRayTracingPipelineKHRUnique({}, cache, m_pipelineCreate).value;

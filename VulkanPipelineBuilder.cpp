@@ -14,7 +14,7 @@ using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-PipelineBuilder::PipelineBuilder(vk::Device m_device) : PipelineBuilderBase(m_device)	{
+PipelineBuilder::PipelineBuilder(vk::Device device) : PipelineBuilderBase(device)	{
 	m_ignoreDynamicDefaults = false;
 
 	m_sampleCreate.setRasterizationSamples(vk::SampleCountFlagBits::e1);
@@ -207,10 +207,10 @@ VulkanPipeline	PipelineBuilder::Build(const std::string& debugName, vk::Pipeline
 		pipeLayoutCreate.setSetLayouts(m_allLayouts);
 		pipeLayoutCreate.setPushConstantRanges(m_allPushConstants);
 
-		output.m_layout = m_sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
-		m_pipelineCreate.setLayout(*output.m_layout);
+		output.layout = m_sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
+		m_pipelineCreate.setLayout(*output.layout);
 		if (!debugName.empty()) {
-			SetDebugName(m_sourceDevice, vk::ObjectType::ePipelineLayout, GetVulkanHandle(*output.m_layout)	 , debugName);
+			SetDebugName(m_sourceDevice, vk::ObjectType::ePipelineLayout, GetVulkanHandle(*output.layout)	 , debugName);
 		}
 	}
 

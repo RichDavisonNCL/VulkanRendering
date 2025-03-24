@@ -12,13 +12,13 @@ using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-VulkanRTShader::VulkanRTShader(const std::string& filename, vk::Device m_device) {
+VulkanRTShader::VulkanRTShader(const std::string& filename, vk::Device device) {
 	char* data;
 	size_t dataSize = 0;
 	Assets::ReadBinaryFile(Assets::SHADERDIR + "VK/" + filename, &data, dataSize);
 
 	if (dataSize > 0) {
-		m_shaderModule = m_device.createShaderModuleUnique(
+		m_shaderModule = device.createShaderModuleUnique(
 			{
 				.flags = {},
 				.codeSize = dataSize,
@@ -31,6 +31,6 @@ VulkanRTShader::VulkanRTShader(const std::string& filename, vk::Device m_device)
 	}
 
 	AddReflectionData(dataSize, data, vk::ShaderStageFlagBits::eCompute);
-	BuildLayouts(m_device);
+	BuildLayouts(device);
 	delete data;
 }

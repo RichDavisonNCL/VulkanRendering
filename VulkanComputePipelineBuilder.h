@@ -19,7 +19,7 @@ namespace NCL::Rendering::Vulkan {
 	*/
 	class ComputePipelineBuilder : public PipelineBuilderBase<ComputePipelineBuilder, vk::ComputePipelineCreateInfo>	{
 	public:
-		ComputePipelineBuilder(vk::Device m_device);
+		ComputePipelineBuilder(vk::Device device);
 		~ComputePipelineBuilder() {}
 
 		ComputePipelineBuilder& WithShader(const UniqueVulkanCompute& shader);

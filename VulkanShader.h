@@ -38,7 +38,7 @@ namespace NCL::Rendering::Vulkan {
 
 	protected:
 		void AddBinaryShaderModule(ShaderStages::Type stage, vk::UniqueShaderModule& m_shaderModule, const std::string& m_entryPoint = "main");
-		void AddBinaryShaderModule(const std::string& fromFile, ShaderStages::Type stage, vk::Device m_device, const std::string& m_entryPoint = "main");
+		void AddBinaryShaderModule(const std::string& fromFile, ShaderStages::Type stage, vk::Device device, const std::string& m_entryPoint = "main");
 
 		void Init();
 

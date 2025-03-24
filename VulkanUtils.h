@@ -12,8 +12,8 @@ namespace NCL::Rendering::Vulkan {
 
 	extern vk::detail::DynamicLoader dynamicLoader;
 
-	void SetNullDescriptor(vk::Device m_device, vk::DescriptorSetLayout m_layout);
-	vk::DescriptorSetLayout GetNullDescriptor(vk::Device m_device);
+	void SetNullDescriptor(vk::Device device, vk::DescriptorSetLayout layout);
+	vk::DescriptorSetLayout GetNullDescriptor(vk::Device device);
 
 	void SetDescriptorSizes(vk::Device, vk::PhysicalDeviceDescriptorBufferPropertiesEXT& props);
 
@@ -55,9 +55,9 @@ namespace NCL::Rendering::Vulkan {
 	vk::AccessFlags	 DefaultAccessFlags(vk::ImageLayout forLayout);
 	vk::AccessFlags2 DefaultAccessFlags2(vk::ImageLayout forLayout);
 
-	vk::UniqueDescriptorSet CreateDescriptorSet(vk::Device m_device, vk::DescriptorPool m_pool, vk::DescriptorSetLayout  m_layout, uint32_t variableDescriptorCount = 0);
+	vk::UniqueDescriptorSet CreateDescriptorSet(vk::Device device, vk::DescriptorPool m_pool, vk::DescriptorSetLayout  m_layout, uint32_t variableDescriptorCount = 0);
 
-	vk::UniqueSemaphore		CreateTimelineSemaphore(vk::Device m_device, uint64_t initialValue = 0);
+	vk::UniqueSemaphore		CreateTimelineSemaphore(vk::Device device, uint64_t initialValue = 0);
 	vk::Result				TimelineSemaphoreHostWait(vk::Device device, vk::Semaphore semaphore, uint64_t waitVal, uint64_t waitTime);
 	void					TimelineSemaphoreHostSignal(vk::Device device, vk::Semaphore semaphore, uint64_t signalVal);
 	
@@ -65,26 +65,26 @@ namespace NCL::Rendering::Vulkan {
 	void					TimelineSemaphoreQueueSignal(vk::Queue queue, vk::Semaphore semaphore, uint64_t signalVal);
 	
 	
-	void	WriteDescriptor(vk::Device m_device, vk::WriteDescriptorSet setInfo, vk::DescriptorBufferInfo bufferInfo);
-	void	WriteDescriptor(vk::Device m_device, vk::WriteDescriptorSet setInfo, vk::DescriptorImageInfo imageInfo);
+	void	WriteDescriptor(vk::Device device, vk::WriteDescriptorSet setInfo, vk::DescriptorBufferInfo bufferInfo);
+	void	WriteDescriptor(vk::Device device, vk::WriteDescriptorSet setInfo, vk::DescriptorImageInfo imageInfo);
 
-	void	WriteBufferDescriptor(vk::Device m_device, vk::DescriptorSet set, uint32_t bindingSlot, vk::DescriptorType bufferType, vk::Buffer buff, size_t offset = 0, size_t range = VK_WHOLE_SIZE);
-	void	WriteImageDescriptor(vk::Device m_device, vk::DescriptorSet set, uint32_t bindingSlot, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
-	void	WriteImageDescriptor(vk::Device m_device, vk::DescriptorSet set, uint32_t bindingSlot, uint32_t subIndex, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
-	void	WriteStorageImageDescriptor(vk::Device m_device, vk::DescriptorSet set, uint32_t bindingSlot, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
-	void	WriteTLASDescriptor(vk::Device m_device, vk::DescriptorSet set, uint32_t bindingSlot, vk::AccelerationStructureKHR tlas);
+	void	WriteBufferDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::DescriptorType bufferType, vk::Buffer buff, size_t offset = 0, size_t range = VK_WHOLE_SIZE);
+	void	WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
+	void	WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, uint32_t subIndex, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
+	void	WriteStorageImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
+	void	WriteTLASDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::AccelerationStructureKHR tlas);
 
-	vk::UniqueCommandBuffer	CmdBufferCreate(vk::Device m_device, vk::CommandPool fromPool, const std::string& debugName = "");
-	vk::UniqueCommandBuffer	CmdBufferCreateBegin(vk::Device m_device, vk::CommandPool fromPool, const std::string& debugName = "");
+	vk::UniqueCommandBuffer	CmdBufferCreate(vk::Device device, vk::CommandPool fromPool, const std::string& debugName = "");
+	vk::UniqueCommandBuffer	CmdBufferCreateBegin(vk::Device device, vk::CommandPool fromPool, const std::string& debugName = "");
 
 	void	CmdBufferResetBegin(vk::CommandBuffer  buffer);
 	void	CmdBufferResetBegin(const vk::UniqueCommandBuffer&  buffer);
 
 	void	CmdBufferEndSubmit(vk::CommandBuffer  buffer, vk::Queue m_queue, vk::Fence fence = {}, vk::Semaphore waitSemaphore = {}, vk::Semaphore signalSempahore = {});
-	void	CmdBufferEndSubmitWait(vk::CommandBuffer  buffer, vk::Device m_device, vk::Queue m_queue);
-	void	CmdBufferEndSubmitWait(vk::CommandBuffer  buffer, vk::Device m_device, vk::Queue m_queue, vk::Fence fence);
+	void	CmdBufferEndSubmitWait(vk::CommandBuffer  buffer, vk::Device device, vk::Queue m_queue);
+	void	CmdBufferEndSubmitWait(vk::CommandBuffer  buffer, vk::Device device, vk::Queue m_queue, vk::Fence fence);
 
-	void WriteBufferDescriptor(vk::Device m_device,
+	void WriteBufferDescriptor(vk::Device device,
 		const vk::PhysicalDeviceDescriptorBufferPropertiesEXT& props,
 		void* descriptorBufferMemory,
 		vk::DescriptorSetLayout m_layout,

@@ -38,21 +38,21 @@ namespace NCL::Rendering::Vulkan {
 
 		VulkanShaderBindingTableBuilder& WithLibrary(const vk::RayTracingPipelineCreateInfoKHR& createInfo);
 
-		ShaderBindingTable Build(vk::Device m_device, VmaAllocator m_allocator);
+		ShaderBindingTable Build(vk::Device device, VmaAllocator m_allocator);
 
 	protected:
 		void FillCounts(const vk::RayTracingPipelineCreateInfoKHR* fromInfo);
 
-		vk::PhysicalDeviceRayTracingPipelinePropertiesKHR properties;
+		vk::PhysicalDeviceRayTracingPipelinePropertiesKHR m_properties;
 
-		const vk::RayTracingPipelineCreateInfoKHR* pipeCreateInfo;
+		const vk::RayTracingPipelineCreateInfoKHR* m_pipeCreateInfo;
 
-		std::vector<const vk::RayTracingPipelineCreateInfoKHR*> libraries;
+		std::vector<const vk::RayTracingPipelineCreateInfoKHR*> m_libraries;
 
-		vk::Pipeline pipeline;
+		vk::Pipeline m_pipeline;
 
-		std::string debugName;
+		std::string m_debugName;
 
-		uint32_t handleCounts[BindingTableOrder::MAX_SIZE] = { };
+		uint32_t m_handleCounts[BindingTableOrder::MAX_SIZE] = { };
 	};
 }

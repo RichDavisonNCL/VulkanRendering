@@ -18,25 +18,25 @@ namespace NCL::Rendering::Vulkan {
 
 		VmaAllocation		allocationHandle;
 		VmaAllocationInfo	allocationInfo;
-		VmaAllocator		m_allocator;
+		VmaAllocator		allocator;
 
 		VulkanBuffer() {
 			buffer				= nullptr;
 			size				= 0;
 			deviceAddress		= 0;
 			allocationHandle	= 0;
-			m_allocator			= 0;
+			allocator = 0;
 		}
 
 		VulkanBuffer(VulkanBuffer&& obj) {
 			if (buffer) {
-				vmaDestroyBuffer(m_allocator, buffer, allocationHandle);
+				vmaDestroyBuffer(allocator, buffer, allocationHandle);
 			}
 			buffer = obj.buffer;
 			deviceAddress = obj.deviceAddress;
 			allocationHandle = obj.allocationHandle;
 			allocationInfo = obj.allocationInfo;
-			m_allocator = obj.m_allocator;
+			allocator = obj.allocator;
 			size = obj.size;
 
 			obj.buffer = VK_NULL_HANDLE;
@@ -45,13 +45,13 @@ namespace NCL::Rendering::Vulkan {
 		VulkanBuffer& operator=(VulkanBuffer&& obj) {
 			if (this != &obj) {
 				if (buffer) {
-					vmaDestroyBuffer(m_allocator, buffer, allocationHandle);
+					vmaDestroyBuffer(allocator, buffer, allocationHandle);
 				}
 				buffer = obj.buffer;
 				deviceAddress = obj.deviceAddress;
 				allocationHandle = obj.allocationHandle;
 				allocationInfo = obj.allocationInfo;
-				m_allocator = obj.m_allocator;
+				allocator = obj.allocator;
 				size = obj.size;
 
 				obj.buffer = VK_NULL_HANDLE;
@@ -61,7 +61,7 @@ namespace NCL::Rendering::Vulkan {
 
 		~VulkanBuffer() {
 			if (buffer) {
-				vmaDestroyBuffer(m_allocator, buffer, allocationHandle);
+				vmaDestroyBuffer(allocator, buffer, allocationHandle);
 			}
 		}
 

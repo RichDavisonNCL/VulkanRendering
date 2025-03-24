@@ -44,8 +44,8 @@ namespace NCL::Rendering::Vulkan {
 		vk::UniqueAccelerationStructureKHR Build(vk::BuildAccelerationStructureFlagsKHR flags, const std::string& debugName = "");
 	protected:
 
-		void BuildBLAS(vk::Device m_device, VmaAllocator m_allocator, vk::BuildAccelerationStructureFlagsKHR flags);
-		void BuildTLAS(vk::Device m_device, VmaAllocator m_allocator, vk::BuildAccelerationStructureFlagsKHR flags);
+		void BuildBLAS(vk::Device device, VmaAllocator m_allocator, vk::BuildAccelerationStructureFlagsKHR flags);
+		void BuildTLAS(vk::Device device, VmaAllocator m_allocator, vk::BuildAccelerationStructureFlagsKHR flags);
 
 		vk::BuildAccelerationStructureFlagsKHR m_flags;
 

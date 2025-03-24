@@ -51,8 +51,8 @@ namespace NCL::Rendering::Vulkan {
 			return m_pipelineCreate;
 		}
 	protected:
-		PipelineBuilderBase(vk::Device m_device) {
-			m_sourceDevice = m_device;
+		PipelineBuilderBase(vk::Device device) {
+			m_sourceDevice = device;
 		}
 		~PipelineBuilderBase() {}
 

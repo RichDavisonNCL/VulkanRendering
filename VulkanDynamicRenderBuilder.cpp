@@ -12,17 +12,17 @@ using namespace Rendering;
 using namespace Vulkan;
 
 DynamicRenderBuilder::DynamicRenderBuilder() {
-	usingStencil	= false;
-	renderInfo.setLayerCount(1);
+	m_usingStencil	= false;
+	m_renderInfo.setLayerCount(1);
 }
 
 DynamicRenderBuilder& DynamicRenderBuilder::WithColourAttachment(vk::RenderingAttachmentInfoKHR const&  info) {
-	colourAttachments.push_back(info);
+	m_colourAttachments.push_back(info);
 	return *this;
 }
 
 DynamicRenderBuilder& DynamicRenderBuilder::WithDepthAttachment(vk::RenderingAttachmentInfoKHR const&  info) {
-	depthAttachment = info;
+	m_depthAttachment = info;
 	//TODO check stencil state, maybe in Build...
 	return *this;
 }
@@ -38,7 +38,7 @@ DynamicRenderBuilder& DynamicRenderBuilder::WithColourAttachment(
 		.setStoreOp(vk::AttachmentStoreOp::eStore)
 		.setClearValue(clearValue);
 
-	colourAttachments.push_back(colourAttachment);
+	m_colourAttachments.push_back(colourAttachment);
 
 	return *this;
 }
@@ -47,20 +47,20 @@ DynamicRenderBuilder& DynamicRenderBuilder::WithDepthAttachment(
 	vk::ImageView	texture, vk::ImageLayout m_layout, bool clear, vk::ClearValue clearValue, bool withStencil
 )
 {
-	depthAttachment.setImageView(texture)
+	m_depthAttachment.setImageView(texture)
 		.setImageLayout(m_layout)
 		.setLoadOp(clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eDontCare)
 		.setStoreOp(vk::AttachmentStoreOp::eStore)
 		.setClearValue(clearValue);
 
-	usingStencil = withStencil;
+	m_usingStencil = withStencil;
 
 	return *this;
 }
 
 DynamicRenderBuilder& DynamicRenderBuilder::WithRenderArea(vk::Rect2D area, bool useAutoViewstate) {
-	renderInfo.setRenderArea(area);
-	usingAutoViewstate = useAutoViewstate;
+	m_renderInfo.setRenderArea(area);
+	m_usingAutoViewstate = useAutoViewstate;
 	return *this;
 }
 
@@ -70,55 +70,55 @@ DynamicRenderBuilder& DynamicRenderBuilder::WithRenderArea(int32_t offsetX, int3
 		.extent{extentX, extentY}
 	};
 	
-	renderInfo.setRenderArea(area);
-	usingAutoViewstate = useAutoViewstate;
+	m_renderInfo.setRenderArea(area);
+	m_usingAutoViewstate = useAutoViewstate;
 	return *this;
 }
 
 DynamicRenderBuilder& DynamicRenderBuilder::WithRenderArea(vk::Offset2D offset, vk::Extent2D extent, bool useAutoViewstate) {
 	vk::Rect2D area = { offset, extent };
 
-	renderInfo.setRenderArea(area);
-	usingAutoViewstate = useAutoViewstate;
+	m_renderInfo.setRenderArea(area);
+	m_usingAutoViewstate = useAutoViewstate;
 	return *this;
 }
 
 DynamicRenderBuilder& DynamicRenderBuilder::WithLayerCount(int count) {
-	renderInfo.setLayerCount(count);
+	m_renderInfo.setLayerCount(count);
 	return *this;
 }
 
 DynamicRenderBuilder& DynamicRenderBuilder::WithRenderingFlags(vk::RenderingFlags flags) {
-	renderInfo.setFlags(flags);
+	m_renderInfo.setFlags(flags);
 	return *this;
 }
 
 DynamicRenderBuilder& DynamicRenderBuilder::WithViewMask(uint32_t viewMask) {
-	renderInfo.setViewMask(viewMask);
+	m_renderInfo.setViewMask(viewMask);
 	return *this;
 }
 
 DynamicRenderBuilder& DynamicRenderBuilder::WithRenderInfo(vk::RenderingInfoKHR const& info) {
-	renderInfo = info;
+	m_renderInfo = info;
 	return *this;
 }
 
 const vk::RenderingInfoKHR& DynamicRenderBuilder::Build() {
-	renderInfo
-		.setColorAttachments(colourAttachments)
-		.setPDepthAttachment(&depthAttachment);
+	m_renderInfo
+		.setColorAttachments(m_colourAttachments)
+		.setPDepthAttachment(&m_depthAttachment);
 
-	if (usingStencil) {
-		renderInfo.setPStencilAttachment(&depthAttachment);
+	if (m_usingStencil) {
+		m_renderInfo.setPStencilAttachment(&m_depthAttachment);
 	}
-	return renderInfo;
+	return m_renderInfo;
 }
 
 void DynamicRenderBuilder::BeginRendering(vk::CommandBuffer m_cmdBuffer) {
 	m_cmdBuffer.beginRendering(Build());
-	if (usingAutoViewstate) {
+	if (m_usingAutoViewstate) {
 
-		vk::Extent2D	extent		= renderInfo.renderArea.extent;
+		vk::Extent2D	extent		= m_renderInfo.renderArea.extent;
 		vk::Viewport	viewport	= vk::Viewport(0.0f, (float)extent.height, (float)extent.width, -(float)extent.height, 0.0f, 1.0f);
 		vk::Rect2D		scissor		= vk::Rect2D(vk::Offset2D(0, 0), extent);
 

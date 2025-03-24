@@ -13,7 +13,7 @@ using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-ComputePipelineBuilder::ComputePipelineBuilder(vk::Device m_device) : PipelineBuilderBase(m_device){
+ComputePipelineBuilder::ComputePipelineBuilder(vk::Device device) : PipelineBuilderBase(device){
 
 }
 
@@ -43,9 +43,9 @@ VulkanPipeline	ComputePipelineBuilder::Build(const std::string& debugName, vk::P
 		.setPushConstantRangeCount((uint32_t)m_allPushConstants.size());
 
 
-	output.m_layout = m_sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
+	output.layout = m_sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
 
-	m_pipelineCreate.setLayout(*output.m_layout);
+	m_pipelineCreate.setLayout(*output.layout);
 
 
 	output.pipeline = m_sourceDevice.createComputePipelineUnique(cache, m_pipelineCreate).value;

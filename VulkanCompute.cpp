@@ -12,13 +12,13 @@ using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-VulkanCompute::VulkanCompute(vk::Device m_device, const std::string& filename) : m_localThreadSize{ 0,0,0 } {
+VulkanCompute::VulkanCompute(vk::Device device, const std::string& filename) : m_localThreadSize{ 0,0,0 } {
 	char* data;
 	size_t dataSize = 0;
 	Assets::ReadBinaryFile(Assets::SHADERDIR + "VK/" + filename, &data, dataSize);
 
 	if (dataSize > 0) {
-		m_computeModule = m_device.createShaderModuleUnique(//vk::ShaderModuleCreateInfo(
+		m_computeModule = device.createShaderModuleUnique(//vk::ShaderModuleCreateInfo(
 			{
 				.flags = {},
 				.codeSize = dataSize,
@@ -37,7 +37,7 @@ VulkanCompute::VulkanCompute(vk::Device m_device, const std::string& filename) :
 	m_createInfo.pName	= "main";
 
 	AddReflectionData(dataSize, data, vk::ShaderStageFlagBits::eCompute);
-	BuildLayouts(m_device);
+	BuildLayouts(device);
 
 	delete data;
 }

@@ -19,9 +19,9 @@ void VulkanBuffer::CopyData(void* data, size_t size) {
 	else {
 		//We should be able to safely map this?
 		void* mappedData = nullptr;
-		vmaMapMemory(m_allocator, allocationHandle, &mappedData);
+		vmaMapMemory(allocator, allocationHandle, &mappedData);
 		memcpy(mappedData, data, size);
-		vmaUnmapMemory(m_allocator, allocationHandle);
+		vmaUnmapMemory(allocator, allocationHandle);
 	}
 }
 
@@ -30,12 +30,12 @@ void* VulkanBuffer::Map() const {
 		return allocationInfo.pMappedData;
 	}
 	void* mappedData = nullptr;
-	vmaMapMemory(m_allocator, allocationHandle, &mappedData);
+	vmaMapMemory(allocator, allocationHandle, &mappedData);
 	return mappedData;
 }
 
 void	VulkanBuffer::Unmap() const {
-	vmaUnmapMemory(m_allocator, allocationHandle);
+	vmaUnmapMemory(allocator, allocationHandle);
 }
 
 void* VulkanBuffer::Data() const{

@@ -13,15 +13,15 @@ using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-BufferBuilder::BufferBuilder(vk::Device m_device, VmaAllocator m_allocator) {
-	m_sourceDevice	= m_device;
+BufferBuilder::BufferBuilder(vk::Device device, VmaAllocator m_allocator) {
+	m_sourceDevice	= device;
 	m_sourceAllocator = m_allocator;
 	m_vmaCreateInfo = {};
 	m_vmaCreateInfo.usage		= VMA_MEMORY_USAGE_AUTO;
 }
 
-BufferBuilder::BufferBuilder(VkDevice m_device, VmaAllocator m_allocator) {
-	m_sourceDevice = m_device;
+BufferBuilder::BufferBuilder(VkDevice device, VmaAllocator m_allocator) {
+	m_sourceDevice = device;
 	m_sourceAllocator = m_allocator;
 	m_vmaCreateInfo = {};
 	m_vmaCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
@@ -87,7 +87,7 @@ VulkanBuffer BufferBuilder::Build(size_t byteSize, const std::string& debugName)
 	outputBuffer.size = byteSize;
 	m_vkCreateInfo.size = byteSize;
 
-	outputBuffer.m_allocator = m_sourceAllocator;
+	outputBuffer.allocator = m_sourceAllocator;
 
 	vmaCreateBuffer(m_sourceAllocator, (VkBufferCreateInfo*)&m_vkCreateInfo, &m_vmaCreateInfo, (VkBuffer*)&(outputBuffer.buffer), &outputBuffer.allocationHandle, &outputBuffer.allocationInfo);
 

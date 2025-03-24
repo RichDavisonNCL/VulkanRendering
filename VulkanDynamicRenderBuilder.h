@@ -54,10 +54,10 @@ namespace NCL::Rendering::Vulkan {
 		void BeginRendering(vk::CommandBuffer m_cmdBuffer);
 
 	protected:
-		vk::RenderingInfoKHR renderInfo;
-		std::vector< vk::RenderingAttachmentInfoKHR > colourAttachments;
-		vk::RenderingAttachmentInfoKHR depthAttachment;
-		bool		usingStencil;
-		bool		usingAutoViewstate;
+		vk::RenderingInfoKHR m_renderInfo;
+		std::vector< vk::RenderingAttachmentInfoKHR > m_colourAttachments;
+		vk::RenderingAttachmentInfoKHR m_depthAttachment;
+		bool		m_usingStencil;
+		bool		m_usingAutoViewstate;
 	};
 }

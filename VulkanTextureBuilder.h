@@ -12,7 +12,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 namespace NCL::Rendering::Vulkan {
 	class TextureBuilder	{
 	public:
-		TextureBuilder(vk::Device m_device, VmaAllocator m_allocator);
+		TextureBuilder(vk::Device device, VmaAllocator m_allocator);
 		~TextureBuilder() {}
 
 		TextureBuilder& WithFormat(vk::Format m_format);

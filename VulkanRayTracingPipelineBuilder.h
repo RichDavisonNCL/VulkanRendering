@@ -15,7 +15,7 @@ namespace NCL::Rendering::Vulkan {
 	class VulkanRayTracingPipelineBuilder : 
 		public PipelineBuilderBase< VulkanRayTracingPipelineBuilder, vk::RayTracingPipelineCreateInfoKHR> {
 	public:
-		VulkanRayTracingPipelineBuilder(vk::Device m_device);
+		VulkanRayTracingPipelineBuilder(vk::Device device);
 		~VulkanRayTracingPipelineBuilder();
 
 		VulkanRayTracingPipelineBuilder& WithShader(VulkanRTShader& shader, vk::ShaderStageFlagBits stage, const string& entry = "main");
@@ -31,7 +31,7 @@ namespace NCL::Rendering::Vulkan {
 
 	protected:
 		struct ShaderEntry {
-			std::string				m_entryPoint;
+			std::string				entryPoint;
 			VulkanRTShader*			shader;
 			vk::ShaderStageFlagBits	stage;
 		};

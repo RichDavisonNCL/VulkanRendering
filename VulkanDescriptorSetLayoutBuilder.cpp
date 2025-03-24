@@ -16,8 +16,8 @@ using namespace Rendering;
 using namespace Vulkan;
 
 DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::WithDescriptor(vk::DescriptorSetLayoutBinding binding, vk::DescriptorBindingFlags bindingFlags) {
-	addedBindings.emplace_back(binding);
-	addedFlags.emplace_back(bindingFlags);
+	m_addedBindings.emplace_back(binding);
+	m_addedFlags.emplace_back(bindingFlags);
 
 	return *this;
 }
@@ -30,15 +30,15 @@ DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::WithDescriptor(vk::Descr
 		.stageFlags			= inShaders,
 	};
 
-	addedBindings.emplace_back(binding);
-	addedFlags.emplace_back(bindingFlags);
+	m_addedBindings.emplace_back(binding);
+	m_addedFlags.emplace_back(bindingFlags);
 
 	return *this;
 }
 
 DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::WithDescriptors(const std::vector<vk::DescriptorSetLayoutBinding>& bindings, vk::DescriptorBindingFlags flags) {
-	addedBindings = bindings;
-	addedFlags = std::vector< vk::DescriptorBindingFlags>(addedBindings.size(), flags);
+	m_addedBindings = bindings;
+	m_addedFlags = std::vector< vk::DescriptorBindingFlags>(m_addedBindings.size(), flags);
 
 	return *this;
 }
@@ -88,18 +88,18 @@ DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::WithAccelStructures(uint
 }
 
 DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::WithCreationFlags(vk::DescriptorSetLayoutCreateFlags flags) {
-	createInfo.flags |= flags;
+	m_createInfo.flags |= flags;
 	return *this;
 }
 
 vk::UniqueDescriptorSetLayout DescriptorSetLayoutBuilder::Build(const std::string& debugName) {
-	createInfo.setBindings(addedBindings);
+	m_createInfo.setBindings(m_addedBindings);
 	vk::DescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsInfo;
 	
-	bindingFlagsInfo.setBindingFlags(addedFlags);
+	bindingFlagsInfo.setBindingFlags(m_addedFlags);
 
-	createInfo.pNext = &bindingFlagsInfo;
-	vk::UniqueDescriptorSetLayout m_layout = std::move(m_sourceDevice.createDescriptorSetLayoutUnique(createInfo));
+	m_createInfo.pNext = &bindingFlagsInfo;
+	vk::UniqueDescriptorSetLayout m_layout = std::move(m_sourceDevice.createDescriptorSetLayoutUnique(m_createInfo));
 	if (!debugName.empty()) {
 		SetDebugName(m_sourceDevice, vk::ObjectType::eDescriptorSetLayout, GetVulkanHandle(*m_layout), debugName);
 	}

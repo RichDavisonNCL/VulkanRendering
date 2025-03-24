@@ -13,8 +13,8 @@ namespace NCL::Rendering::Vulkan {
 
 	class BufferBuilder	{
 	public:
-		BufferBuilder(vk::Device m_device, VmaAllocator m_allocator);
-		BufferBuilder(VkDevice m_device, VmaAllocator m_allocator);
+		BufferBuilder(vk::Device device, VmaAllocator m_allocator);
+		BufferBuilder(VkDevice device, VmaAllocator m_allocator);
 
 		BufferBuilder& WithBufferUsage(vk::BufferUsageFlags flags);
 		BufferBuilder& WithBufferUsage(VkBufferUsageFlags flags);

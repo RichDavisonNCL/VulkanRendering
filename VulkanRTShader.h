@@ -12,7 +12,7 @@ namespace NCL::Rendering::Vulkan {
 	class VulkanRTShader : public VulkanShaderBase
 	{
 	public:
-		VulkanRTShader(const std::string& filename, vk::Device m_device);
+		VulkanRTShader(const std::string& filename, vk::Device device);
 	
 		const vk::UniqueShaderModule& GetModule() const {
 			return m_shaderModule;

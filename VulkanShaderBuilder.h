@@ -17,7 +17,7 @@ namespace NCL::Rendering::Vulkan {
 	*/
 	class ShaderBuilder {
 	public:
-		ShaderBuilder(vk::Device m_device) { m_sourceDevice = m_device; };
+		ShaderBuilder(vk::Device device) { m_sourceDevice = device; };
 		~ShaderBuilder()	{};
 
 		ShaderBuilder& WithMeshBinary(const std::string& name, const std::string& entry = "main");

@@ -9,30 +9,30 @@ License: MIT (see LICENSE file at the top of the source tree)
 namespace NCL::Rendering::Vulkan {
 	class DescriptorSetWriter {
 	public:
-		DescriptorSetWriter(vk::Device m_device, vk::DescriptorSet set) {
-			this->m_device = m_device;
-			this->set = set;
+		DescriptorSetWriter(vk::Device device, vk::DescriptorSet set) {
+			m_device	= device;
+			m_set		= set;
 		}
 		~DescriptorSetWriter() {
 		}
 
 		DescriptorSetWriter& WriteImage(uint32_t binding, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal) {
-			Vulkan::WriteImageDescriptor(m_device, set, binding, view, sampler, m_layout);
+			Vulkan::WriteImageDescriptor(m_device, m_set, binding, view, sampler, m_layout);
 			return *this;
 		}
 
 		DescriptorSetWriter& WriteStorageImage(uint32_t binding, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal) {
-			Vulkan::WriteStorageImageDescriptor(m_device, set, binding, view, sampler, m_layout);
+			Vulkan::WriteStorageImageDescriptor(m_device, m_set, binding, view, sampler, m_layout);
 			return *this;
 		}
 
 		DescriptorSetWriter& WriteBuffer(uint32_t binding, vk::Buffer buffer, vk::DescriptorType type, size_t offset = 0, size_t range = VK_WHOLE_SIZE) {
-			Vulkan::WriteBufferDescriptor(m_device, set, binding, type, buffer, offset, range);
+			Vulkan::WriteBufferDescriptor(m_device, m_set, binding, type, buffer, offset, range);
 			return *this;
 		}
 
 	protected:
-		vk::Device m_device;
-		vk::DescriptorSet set;
+		vk::Device			m_device;
+		vk::DescriptorSet	m_set;
 	};
 }

@@ -147,10 +147,10 @@ void VulkanMesh::UploadToGPU(RendererBase* r, vk::BufferUsageFlags extraUses) {
 	VulkanRenderer* renderer = (VulkanRenderer*)r;
 
 	vk::Queue gfxQueue		= renderer->GetQueue(CommandType::Graphics);
-	vk::CommandPool m_pool	= renderer->GetCommandPool(CommandType::Graphics);
-	vk::Device m_device		= renderer->GetDevice();
+	vk::CommandPool pool	= renderer->GetCommandPool(CommandType::Graphics);
+	vk::Device device		= renderer->GetDevice();
 
-	vk::UniqueCommandBuffer m_cmdBuffer = CmdBufferCreateBegin(m_device, m_pool, "VulkanMesh upload");
+	vk::UniqueCommandBuffer m_cmdBuffer = CmdBufferCreateBegin(device, pool, "VulkanMesh upload");
 
 	size_t allocationSize = CalculateGPUAllocationSize();
 
@@ -178,7 +178,7 @@ void VulkanMesh::UploadToGPU(RendererBase* r, vk::BufferUsageFlags extraUses) {
 
 	UploadToGPU(*m_cmdBuffer, stagingBuffer, gpuBuffer, vk::Semaphore());
 
-	CmdBufferEndSubmitWait(*m_cmdBuffer, m_device, gfxQueue);
+	CmdBufferEndSubmitWait(*m_cmdBuffer, device, gfxQueue);
 	//The staging buffer is auto destroyed, but that's fine!
 	//We made the GPU wait for the commands to complete, so 
 	//the staging buffer has been read from at this point

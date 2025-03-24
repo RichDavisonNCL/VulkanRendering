@@ -28,7 +28,7 @@ namespace NCL::Rendering::Vulkan {
 		void AddDescriptorSetLayoutState(std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& data, std::vector<vk::UniqueDescriptorSetLayout>& layouts);
 		void AddPushConstantState(std::vector<vk::PushConstantRange>& data);
 		void AddReflectionData(uint32_t dataSize, const void* data, vk::ShaderStageFlags stage);
-		void BuildLayouts(vk::Device m_device);
+		void BuildLayouts(vk::Device device);
 	
 	protected:			
 		VulkanShaderBase() {
