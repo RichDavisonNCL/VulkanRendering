@@ -108,7 +108,7 @@ namespace NCL::Rendering::Vulkan {
 		friend class VulkanMesh;
 		friend class VulkanTexture;
 	public:
-		VulkanRenderer(Window& window, const VulkanInitialisation& m_vkInit);
+		VulkanRenderer(Window& window, const VulkanInitialisation& vkInit);
 		~VulkanRenderer();
 
 		virtual bool HasInitialised() const { return m_device; }

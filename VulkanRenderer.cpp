@@ -529,7 +529,7 @@ void VulkanRenderer::WaitForSwapImage() {
 }
 
 void	VulkanRenderer::BeginFrame() {
-	//First we need to prevent the renderer from going too far ahead of the frames in flight max
+	//First we need to prevent the m_renderer from going too far ahead of the frames in flight max
 	m_currentFrameContext = (m_currentFrameContext + 1) % m_frameContexts.size();
 
 	//block on the waiting frame's timeline semaphore

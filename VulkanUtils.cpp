@@ -264,7 +264,7 @@ void	Vulkan::WriteDescriptor(vk::Device device, vk::WriteDescriptorSet setInfo, 
 	device.updateDescriptorSets(1, &setInfo, 0, nullptr);
 }
 
-void	Vulkan::WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout layout) {
+void	Vulkan::WriteCombinedImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout layout) {
 	vk::DescriptorImageInfo imageInfo = {
 		.sampler = sampler,
 		.imageView = view,
@@ -283,20 +283,20 @@ void	Vulkan::WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
 }
 
-void	Vulkan::WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, uint32_t subIndex, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout layout) {
+void	Vulkan::WriteCombinedImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, uint32_t subIndex, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout layout) {
 	vk::DescriptorImageInfo imageInfo = {
-		.sampler = sampler,
-		.imageView = view,
-		.imageLayout = layout
+		.sampler		= sampler,
+		.imageView		= view,
+		.imageLayout	= layout
 	};
 
 	vk::WriteDescriptorSet descriptorWrite = {
-		.dstSet = set,
-		.dstBinding = bindingNum,
-		.dstArrayElement = subIndex,
-		.descriptorCount = 1,
-		.descriptorType = vk::DescriptorType::eCombinedImageSampler,
-		.pImageInfo = &imageInfo
+		.dstSet				= set,
+		.dstBinding			= bindingNum,
+		.dstArrayElement	= subIndex,
+		.descriptorCount	= 1,
+		.descriptorType		= vk::DescriptorType::eCombinedImageSampler,
+		.pImageInfo			= &imageInfo
 	};
 
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
@@ -310,12 +310,12 @@ void	Vulkan::WriteStorageImageDescriptor(vk::Device device, vk::DescriptorSet se
 	};
 
 	vk::WriteDescriptorSet descriptorWrite = {
-		.dstSet			= set,
-		.dstBinding		= bindingNum,
-		.dstArrayElement = 0,
-		.descriptorCount = 1,
-		.descriptorType = vk::DescriptorType::eStorageImage,
-		.pImageInfo = &imageInfo
+		.dstSet				= set,
+		.dstBinding			= bindingNum,
+		.dstArrayElement	= 0,
+		.descriptorCount	= 1,
+		.descriptorType		= vk::DescriptorType::eStorageImage,
+		.pImageInfo			= &imageInfo
 	};
 
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
@@ -325,15 +325,15 @@ void	Vulkan::WriteBufferDescriptor(vk::Device device, vk::DescriptorSet set, uin
 	vk::DescriptorBufferInfo descriptorInfo = {
 		.buffer = buff,
 		.offset = offset,
-		.range = (range > 0 ? range : VK_WHOLE_SIZE)
+		.range	= (range > 0 ? range : VK_WHOLE_SIZE)
 	};
 
 	vk::WriteDescriptorSet descriptorWrite = {
-		.dstSet = set,
-		.dstBinding = bindingSlot,
-		.descriptorCount = 1,
-		.descriptorType = bufferType,
-		.pBufferInfo = &descriptorInfo
+		.dstSet				= set,
+		.dstBinding			= bindingSlot,
+		.descriptorCount	= 1,
+		.descriptorType		= bufferType,
+		.pBufferInfo		= &descriptorInfo
 	};
 
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
@@ -342,15 +342,15 @@ void	Vulkan::WriteBufferDescriptor(vk::Device device, vk::DescriptorSet set, uin
 void	Vulkan::WriteTLASDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::AccelerationStructureKHR tlas) {
 	vk::WriteDescriptorSetAccelerationStructureKHR descriptorInfo = {
 		.accelerationStructureCount = 1,
-		.pAccelerationStructures = &tlas
+		.pAccelerationStructures	= &tlas
 	};
 
 	vk::WriteDescriptorSet descriptorWrite = {
-		.pNext = &descriptorInfo,
-		.dstSet = set,
-		.dstBinding = bindingSlot,
-		.descriptorCount = 1,
-		.descriptorType = vk::DescriptorType::eAccelerationStructureKHR,
+		.pNext				= &descriptorInfo,
+		.dstSet				= set,
+		.dstBinding			= bindingSlot,
+		.descriptorCount	= 1,
+		.descriptorType		= vk::DescriptorType::eAccelerationStructureKHR,
 	};
 
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
@@ -358,9 +358,9 @@ void	Vulkan::WriteTLASDescriptor(vk::Device device, vk::DescriptorSet set, uint3
 
 vk::UniqueDescriptorSet Vulkan::CreateDescriptorSet(vk::Device device, vk::DescriptorPool pool, vk::DescriptorSetLayout  layout, uint32_t variableDescriptorCount) {
 	vk::DescriptorSetAllocateInfo allocateInfo = {
-		.descriptorPool = pool,
+		.descriptorPool		= pool,
 		.descriptorSetCount = 1,
-		.pSetLayouts = &layout
+		.pSetLayouts		= &layout
 	};
 		
 	vk::DescriptorSetVariableDescriptorCountAllocateInfoEXT variableDescriptorInfo;
@@ -440,8 +440,8 @@ void Vulkan::WriteBufferDescriptor(vk::Device device,
 	size_t bufferSize
 ) {
 	vk::DescriptorAddressInfoEXT address{
-		.address = bufferAddress,
-		.range = bufferSize
+		.address	= bufferAddress,
+		.range		= bufferSize
 	};
 	vk::DescriptorGetInfoEXT getInfo{
 		.type = vk::DescriptorType::eUniformBuffer,

@@ -159,7 +159,7 @@ void VulkanMesh::UploadToGPU(RendererBase* r, vk::BufferUsageFlags extraUses) {
 		.WithHostVisibility()
 		.Build(allocationSize, "Staging Buffer");
 
-	//VulkanBuffer gpuBuffer = BufferBuilder(renderer->GetDevice(), renderer->GetMemoryAllocator())
+	//VulkanBuffer gpuBuffer = BufferBuilder(m_renderer->GetDevice(), m_renderer->GetMemoryAllocator())
 	//	.WithBufferUsage(vk::BufferUsageFlagBits::eTransferSrc)
 	//	.WithHostVisibility()
 	//	.Build(allocationSize, "Staging Buffer");
@@ -172,9 +172,9 @@ void VulkanMesh::UploadToGPU(RendererBase* r, vk::BufferUsageFlags extraUses) {
 			extraUses)
 		.Build(allocationSize, debugName + " mesh Data");
 
-	//const VulkanBuffer* stagingBuffer = renderer->GetStagingBuffers().GetStagingBuffer(allocationSize);
+	//const VulkanBuffer* stagingBuffer = m_renderer->GetStagingBuffers().GetStagingBuffer(allocationSize);
 
-	//UploadToGPU(renderer, gfxQueue, *m_cmdBuffer, stagingBuffer, extraUses);
+	//UploadToGPU(m_renderer, gfxQueue, *m_cmdBuffer, stagingBuffer, extraUses);
 
 	UploadToGPU(*m_cmdBuffer, stagingBuffer, gpuBuffer, vk::Semaphore());
 
