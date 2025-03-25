@@ -64,6 +64,9 @@ namespace NCL::Rendering::Vulkan {
 
 		vk::Viewport		viewport;
 		vk::Rect2D			screenRect;
+
+		int					frameID;
+		int					cycleID;
 	};
 
 	struct ChainState {
@@ -98,10 +101,10 @@ namespace NCL::Rendering::Vulkan {
 		std::vector<const char*> deviceExtensions;
 		std::vector<const char*> deviceLayers;
 
-		bool				autoTransitionFrameBuffer = true;
-		bool				autoBeginDynamicRendering = true;
-		bool				useOpenGLCoordinates = false;
-		bool				skipDynamicState = false;
+		bool				autoTransitionFrameBuffer	= true;
+		bool				autoBeginDynamicRendering	= true;
+		bool				useOpenGLCoordinates		= false;
+		bool				skipDynamicState			= false;
 	};
 
 	class VulkanRenderer : public RendererBase {
@@ -157,19 +160,17 @@ namespace NCL::Rendering::Vulkan {
 			return *m_stagingBuffers;
 		}
 
-
-
-		void WaitForGPUIdle();
+		void	WaitForGPUIdle();
 
 		void	BeginDefaultRenderPass(vk::CommandBuffer cmds);
 		void	BeginDefaultRendering(vk::CommandBuffer  cmds);
 
-		void BeginFrame()		override;
-		void RenderFrame()		override;
-		void EndFrame()			override;
-		void SwapBuffers()		override;
+		void	BeginFrame()		override;
+		void	RenderFrame()		override;
+		void	EndFrame()			override;
+		void	SwapBuffers()		override;
 
-		void OnWindowResize(int w, int h)	override;
+		void	OnWindowResize(int w, int h)	override;
 	protected:
 
 		virtual void	CompleteResize();
@@ -201,7 +202,7 @@ namespace NCL::Rendering::Vulkan {
 
 		VmaAllocatorCreateInfo	m_allocatorInfo;
 
-		VulkanInitialisation m_vkInit;
+		VulkanInitialisation	m_vkInit;
 	private: 
 		void	InitCommandPools();
 		bool	InitInstance();
@@ -221,34 +222,34 @@ namespace NCL::Rendering::Vulkan {
 
 		bool	InitDeviceQueueIndices();
 
-		vk::Instance		m_instance;			//API Instance
-		vk::PhysicalDevice	m_physicalDevice;	//GPU in use
+		std::vector<FrameContext>	m_frameContexts;
+		std::vector<ChainState>		m_swapStates;
+
+		vk::Instance				m_instance;			//API Instance
+		vk::PhysicalDevice			m_physicalDevice;	//GPU in use
 
 		vk::PhysicalDeviceProperties		m_deviceProperties;
 		vk::PhysicalDeviceMemoryProperties	m_deviceMemoryProperties;
 
-		vk::PipelineCache		m_pipelineCache;
-		vk::Device				m_device;		//Device handle	
+		vk::PipelineCache			m_pipelineCache;
+		vk::Device					m_device;		//Device handle	
 
-		vk::SurfaceKHR		m_surface;
-		vk::Format			m_surfaceFormat;
-		vk::ColorSpaceKHR	m_surfaceSpace;
+		vk::SurfaceKHR				m_surface;
+		vk::Format					m_surfaceFormat;
+		vk::ColorSpaceKHR			m_surfaceSpace;
 
-		vk::DebugUtilsMessengerEXT m_debugMessenger;
+		uint32_t					m_currentFrameContext	= 0; //Frame context for this frame
+		uint32_t					m_currentSwap			= 0; //To index our swapchain 
 
-		std::vector<FrameContext>	m_frameContexts;
-		std::vector<ChainState>		m_swapStates;
+		uint64_t					m_globalFrameID		= 0;
 
-		uint32_t				m_currentFrameContext	= 0; //Frame context for this frame
-		uint32_t				m_currentSwap			= 0; //To index our swapchain 
+		vk::Fence					m_currentSwapFence;
 
-		uint64_t				m_globalFrameID		= 0;
+		vk::SwapchainKHR			m_swapChain;
 
-		vk::Fence			m_currentSwapFence;
+		VmaAllocator				m_memoryAllocator;
 
-		vk::SwapchainKHR	m_swapChain;
-		VmaAllocator		m_memoryAllocator;
+		vk::DebugUtilsMessengerEXT	m_debugMessenger;
 
-	
 	};
 }

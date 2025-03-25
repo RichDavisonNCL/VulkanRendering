@@ -261,8 +261,8 @@ void	VulkanRenderer::InitFrameStates(uint32_t m_framesInFlight) {
 
 		context.workSempaphore		= Vulkan::CreateTimelineSemaphore(GetDevice());
 
-		context.viewport		= m_defaultViewport;
-		context.screenRect	= m_defaultScreenRect;
+		context.viewport			= m_defaultViewport;
+		context.screenRect			= m_defaultScreenRect;
 
 		context.colourFormat		= m_surfaceFormat;
 
@@ -552,8 +552,12 @@ void	VulkanRenderer::BeginFrame() {
 	//Now we know the swap image, we can fill out our current frame state...
 	//Our current frame
 
-	m_frameContexts[m_currentFrameContext].viewport		= m_defaultViewport;
-	m_frameContexts[m_currentFrameContext].screenRect	= m_defaultScreenRect;
+	m_frameContexts[m_currentFrameContext].frameID = m_globalFrameID;
+	m_frameContexts[m_currentFrameContext].cycleID = m_currentFrameContext;
+
+
+	m_frameContexts[m_currentFrameContext].viewport			= m_defaultViewport;
+	m_frameContexts[m_currentFrameContext].screenRect		= m_defaultScreenRect;
 
 	m_frameContexts[m_currentFrameContext].colourImage		= m_swapStates[m_currentSwap].colourImage;
 	m_frameContexts[m_currentFrameContext].colourView		= m_swapStates[m_currentSwap].colourView;
