@@ -58,7 +58,6 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 
 VulkanRenderer::~VulkanRenderer() {
 	m_device.waitIdle();
-	//m_depthBuffer.reset();
 
 	for(ChainState & c : m_swapStates) {
 		m_device.destroyFramebuffer(c.frameBuffer);
@@ -469,6 +468,18 @@ bool VulkanRenderer::InitDeviceQueueIndices() {
 	return true;
 }
 
+bool VulkanRenderer::SupportsAsyncCompute() const {
+	return m_queueFamilies[CommandType::AsyncCompute] != m_queueFamilies[CommandType::Graphics];
+}
+
+bool VulkanRenderer::SupportsAsyncCopy()	const {
+	return m_queueFamilies[CommandType::Copy] != m_queueFamilies[CommandType::Graphics];
+}
+
+bool VulkanRenderer::SupportsAsyncPresent() const {
+	return m_queueFamilies[CommandType::Present] != m_queueFamilies[CommandType::Graphics];
+}
+
 void VulkanRenderer::OnWindowResize(int width, int height) {
 	if (!hostWindow.IsMinimised() && width == windowSize.x && height == windowSize.y) {
 		return;
@@ -755,26 +766,6 @@ bool	VulkanRenderer::MemoryTypeFromPhysicalDeviceProps(vk::MemoryPropertyFlags r
 	}
 	return false;
 }
-
-/*
-void	VulkanTexture::InitTextureDeviceMemory(VulkanTexture& img) {
-	vk::MemoryRequirements memReqs = vkRenderer->GetDevice().getImageMemoryRequirements(*img.image);
-
-	img.allocInfo = vk::MemoryAllocateInfo(memReqs.size);
-
-	bool found = vkRenderer->MemoryTypeFromPhysicalDeviceProps({}, memReqs.memoryTypeBits, img.allocInfo.memoryTypeIndex);
-
-	img.deviceMem = vkRenderer->GetDevice().allocateMemory(img.allocInfo);
-
-	vkRenderer->GetDevice().bindImageMemory(*img.image, img.deviceMem, 0);
-}
-
-
-	imageCreateInfo = vk::ImageCreateInfo()
-		.setUsage(texUsage)
-
-		image = vkRenderer->GetDevice().createImageUnique(imageCreateInfo);
-	*/
 
 void	VulkanRenderer::CreateDepthBufer(uint32_t width, uint32_t height) {
 	m_device.destroyImageView(m_depthView);

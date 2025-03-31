@@ -15,12 +15,6 @@ License: MIT (see LICENSE file at the top of the source tree)
 using std::string;
 
 namespace NCL::Rendering::Vulkan {
-	class VulkanMesh;
-	class VulkanShader;
-	class VulkanCompute;
-	class VulkanTexture;
-	struct VulkanBuffer;
-
 	namespace CommandType {
 		enum Type : uint32_t {
 			Graphics,
@@ -28,17 +22,6 @@ namespace NCL::Rendering::Vulkan {
 			Copy,
 			Present,
 			MAX_COMMAND_TYPES
-		};
-	};
-	//Some auto-generated descriptor set layouts for quick prototyping
-	struct DefaultSetLayouts {
-		enum Type : uint32_t {
-			Single_Texture,
-			Single_UBO,
-			Single_SSBO,
-			Single_Storage_Image,
-			Single_TLAS,
-			MAX_SIZE
 		};
 	};
 
@@ -85,25 +68,25 @@ namespace NCL::Rendering::Vulkan {
 
 		vk::PhysicalDeviceType idealGPU		= vk::PhysicalDeviceType::eDiscreteGpu;
 
-		int majorVersion = 1;
-		int minorVersion = 1;
+		VmaAllocatorCreateFlags		vmaFlags = {};
 
-		uint32_t	framesInFlight = 3;
+		uint32_t	majorVersion	= 1;
+		uint32_t	minorVersion	= 1;
 
-		std::vector<void*> features;
+		uint32_t	framesInFlight	= 3;
 
-		VmaAllocatorCreateFlags vmaFlags = {};
+		bool				autoTransitionFrameBuffer	= true;
+		bool				autoBeginDynamicRendering	= true;
+		bool				useOpenGLCoordinates		= false;
+		bool				skipDynamicState			= false;
+
+		std::vector<void*>			features;
 
 		std::vector<const char*>	instanceExtensions;
 		std::vector<const char*>	instanceLayers;
 
-		std::vector<const char*> deviceExtensions;
-		std::vector<const char*> deviceLayers;
-
-		bool				autoTransitionFrameBuffer = true;
-		bool				autoBeginDynamicRendering = true;
-		bool				useOpenGLCoordinates = false;
-		bool				skipDynamicState = false;
+		std::vector<const char*>	deviceExtensions;	
+		std::vector<const char*>	deviceLayers;
 	};
 
 	class VulkanRenderer : public RendererBase {
@@ -150,6 +133,10 @@ namespace NCL::Rendering::Vulkan {
 		FrameContext const& GetFrameContext() const {
 			return m_frameContexts[m_currentFrameContext];
 		}
+
+		bool SupportsAsyncCompute() const;
+		bool SupportsAsyncCopy()	const;
+		bool SupportsAsyncPresent() const;
 
 		//UniqueVulkanTexture const & GetDepthBuffer() const {
 		//	return m_depthBuffer;
