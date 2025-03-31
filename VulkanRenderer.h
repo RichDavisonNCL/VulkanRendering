@@ -63,6 +63,9 @@ namespace NCL::Rendering::Vulkan {
 
 		vk::Viewport		viewport;
 		vk::Rect2D			screenRect;
+
+		uint32_t			frameID;
+		uint32_t			cycleID;
 	};
 
 	struct ChainState {
