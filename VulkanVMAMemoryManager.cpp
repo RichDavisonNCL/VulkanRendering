@@ -5,7 +5,7 @@ Author:Rich Davison
 Contact:richgdavison@gmail.com
 License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
-#include "VulkanBasicBufferManager.h"
+#include "VulkanVMAMemoryManager.h"
 #include "VulkanTexture.h"
 #include "Vulkanrenderer.h"
 #include "VulkanUtils.h"
@@ -14,23 +14,23 @@ using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-VulkanBasicBufferManager::VulkanBasicBufferManager() {
+VulkanVMAMemoryManager::VulkanVMAMemoryManager() {
 
 }
 
-VulkanBasicBufferManager::~VulkanBasicBufferManager() {
+VulkanVMAMemoryManager::~VulkanVMAMemoryManager() {
 
 }
 
-void VulkanBasicBufferManager::CreateBuffer(BufferCreationInfo& createInfo, const std::string& debugName) {
+void VulkanVMAMemoryManager::CreateBuffer(BufferCreationInfo& createInfo, const std::string& debugName) {
 
 }
 
-void VulkanBasicBufferManager::CreateStagingBuffer(size_t size, const std::string& debugName) {
+void VulkanVMAMemoryManager::CreateStagingBuffer(size_t size, const std::string& debugName) {
 
 }
 
-void VulkanBasicBufferManager::DiscardBuffer(VulkanBuffer& buffer) {
+void VulkanVMAMemoryManager::DiscardBuffer(VulkanBuffer& buffer) {
 
 }
 

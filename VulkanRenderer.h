@@ -8,9 +8,8 @@ License: MIT (see LICENSE file at the top of the source tree)
 #pragma once
 #include "../NCLCoreClasses/RendererBase.h"
 #include "../NCLCoreClasses/Maths.h"
-
+#include "VulkanMemoryManager.h"
 #include "VulkanPipeline.h"
-#include "VulkanStagingBuffers.h"
 #include "SmartTypes.h"
 #include "vma/vk_mem_alloc.h"
 using std::string;
@@ -242,7 +241,7 @@ namespace NCL::Rendering::Vulkan {
 
 
 	//Buffer Management
-		VulkanBufferManager* m_bufferManager;
+		VulkanMemoryManager* m_memoryManager;
 
 		VmaAllocator		m_memoryAllocator;
 	};
