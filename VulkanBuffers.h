@@ -9,6 +9,8 @@ License: MIT (see LICENSE file at the top of the source tree)
 #include "vma/vk_mem_alloc.h"
 
 namespace NCL::Rendering::Vulkan {
+
+
 	//A buffer, backed by memory we have allocated elsewhere
 	struct VulkanBuffer {
 		vk::Buffer	buffer;
@@ -85,5 +87,29 @@ namespace NCL::Rendering::Vulkan {
 		operator vk::Buffer() const {
 			return buffer;
 		}
+	};
+
+	struct BufferCreationInfo {
+		vk::BufferCreateInfo	createInfo;
+		vk::MemoryPropertyFlags memProperties;
+		vk::BufferUsageFlags	bufferUsage;
+	};
+
+	class VulkanBufferManager {
+		virtual void CreateBuffer(BufferCreationInfo& createInfo, const std::string& debugName = "")	= 0;
+		virtual void CreateStagingBuffer(size_t size, const std::string& debugName = "")				= 0;
+		virtual void DiscardBuffer(VulkanBuffer& buffer)												= 0;
+	};
+
+
+
+	using BufferCreationFunction		= std::function<void>(BufferCreationInfo&, const std::string&);
+	using BufferDestructionFunction		= std::function<void>(VulkanBuffer&);
+	using StagingBufferCreationFunction = std::function<VulkanBuffer>(size_t);
+
+	struct BufferManagementFuncs {
+		BufferCreationFunction			bufferCreation;
+		StagingBufferCreationFunction	stagingCreation;
+		BufferDestructionFunction		bufferDestruction;
 	};
 };

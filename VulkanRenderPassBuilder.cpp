@@ -14,9 +14,9 @@ using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-RenderPassBuilder::RenderPassBuilder(vk::Device device) {
+RenderPassBuilder::RenderPassBuilder(vk::Device m_device) {
 	m_subPass.setPDepthStencilAttachment(nullptr);
-	m_sourceDevice = device;
+	m_sourceDevice = m_device;
 }
 
 RenderPassBuilder& RenderPassBuilder::WithColourAttachment(VulkanTexture* texture, bool clear, vk::ImageLayout startLayout, vk::ImageLayout useLayout,  vk::ImageLayout endLayout) {

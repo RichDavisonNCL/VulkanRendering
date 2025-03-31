@@ -13,7 +13,7 @@ namespace NCL::Rendering::Vulkan {
     {
     public:
         VulkanStagingBuffers() {};
-        VulkanStagingBuffers(vk::Device device, VmaAllocator m_allocator, uint32_t m_framesInFlight = 3);
+        VulkanStagingBuffers(vk::Device m_device, VmaAllocator m_allocator, uint32_t m_framesInFlight = 3);
         ~VulkanStagingBuffers();
 
         const VulkanBuffer* GetStagingBuffer(size_t allocationSize);
@@ -21,8 +21,8 @@ namespace NCL::Rendering::Vulkan {
         void Update();
 
     protected:
-        vk::Device      m_device;
-        VmaAllocator    m_allocator;
+        vk::Device m_device;
+        VmaAllocator m_allocator;
  
         struct StagingBuffer {
             VulkanBuffer buffer;

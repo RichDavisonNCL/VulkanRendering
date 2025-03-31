@@ -123,10 +123,10 @@ void VulkanShaderBase::AddReflectionData(uint32_t dataSize, const void* data, vk
 	spvReflectDestroyShaderModule(&module);
 }
 
-void VulkanShaderBase::BuildLayouts(vk::Device device) {
+void VulkanShaderBase::BuildLayouts(vk::Device m_device) {
 	for (const auto& i : m_allLayoutsBindings) {
 		vk::DescriptorSetLayoutCreateInfo createInfo;
 		createInfo.setBindings(i);
-		m_allLayouts.push_back(device.createDescriptorSetLayoutUnique(createInfo));
+		m_allLayouts.push_back(m_device.createDescriptorSetLayoutUnique(createInfo));
 	}
 }

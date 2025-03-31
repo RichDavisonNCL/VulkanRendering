@@ -17,8 +17,8 @@ namespace NCL::Rendering::Vulkan {
 	*/
 	class DescriptorSetLayoutBuilder {
 	public:
-		DescriptorSetLayoutBuilder(vk::Device device) {
-			m_sourceDevice = device;
+		DescriptorSetLayoutBuilder(vk::Device m_device) {
+			m_sourceDevice = m_device;
 		};
 		~DescriptorSetLayoutBuilder() {};
 

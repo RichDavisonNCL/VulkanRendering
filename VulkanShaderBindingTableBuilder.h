@@ -43,16 +43,16 @@ namespace NCL::Rendering::Vulkan {
 	protected:
 		void FillCounts(const vk::RayTracingPipelineCreateInfoKHR* fromInfo);
 
-		vk::PhysicalDeviceRayTracingPipelinePropertiesKHR m_properties;
+		vk::PhysicalDeviceRayTracingPipelinePropertiesKHR properties;
 
-		const vk::RayTracingPipelineCreateInfoKHR* m_pipeCreateInfo;
+		const vk::RayTracingPipelineCreateInfoKHR* pipeCreateInfo;
 
-		std::vector<const vk::RayTracingPipelineCreateInfoKHR*> m_libraries;
+		std::vector<const vk::RayTracingPipelineCreateInfoKHR*> libraries;
 
-		vk::Pipeline m_pipeline;
+		vk::Pipeline pipeline;
 
-		std::string m_debugName;
+		std::string debugName;
 
-		uint32_t m_handleCounts[BindingTableOrder::MAX_SIZE] = { };
+		uint32_t handleCounts[BindingTableOrder::MAX_SIZE] = { };
 	};
 }

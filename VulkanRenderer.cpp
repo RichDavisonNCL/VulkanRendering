@@ -45,8 +45,6 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 	InitGPUDevice();
 	InitMemoryAllocator();
 
-	m_stagingBuffers = std::make_unique<VulkanStagingBuffers>(GetDevice(), GetMemoryAllocator());
-
 	InitCommandPools();
 	InitDefaultDescriptorPool();
 
@@ -610,7 +608,6 @@ void	VulkanRenderer::EndFrame() {
 }
 
 void VulkanRenderer::SwapBuffers() {
-	m_stagingBuffers->Update();
 	if (!hostWindow.IsMinimised()) {
 		vk::Queue	gfxQueue		= m_queues[CommandType::Graphics];
 		vk::Result	presentResult	= gfxQueue.presentKHR(

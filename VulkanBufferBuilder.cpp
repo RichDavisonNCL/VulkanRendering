@@ -13,16 +13,16 @@ using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-BufferBuilder::BufferBuilder(vk::Device device, VmaAllocator m_allocator) {
+BufferBuilder::BufferBuilder(vk::Device device, VmaAllocator allocator) {
 	m_sourceDevice	= device;
-	m_sourceAllocator = m_allocator;
+	m_sourceAllocator = allocator;
 	m_vmaCreateInfo = {};
 	m_vmaCreateInfo.usage		= VMA_MEMORY_USAGE_AUTO;
 }
 
-BufferBuilder::BufferBuilder(VkDevice device, VmaAllocator m_allocator) {
+BufferBuilder::BufferBuilder(VkDevice device, VmaAllocator allocator) {
 	m_sourceDevice = device;
-	m_sourceAllocator = m_allocator;
+	m_sourceAllocator = allocator;
 	m_vmaCreateInfo = {};
 	m_vmaCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
 }

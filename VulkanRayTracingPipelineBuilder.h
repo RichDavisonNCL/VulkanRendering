@@ -15,7 +15,7 @@ namespace NCL::Rendering::Vulkan {
 	class VulkanRayTracingPipelineBuilder : 
 		public PipelineBuilderBase< VulkanRayTracingPipelineBuilder, vk::RayTracingPipelineCreateInfoKHR> {
 	public:
-		VulkanRayTracingPipelineBuilder(vk::Device device);
+		VulkanRayTracingPipelineBuilder(vk::Device m_device);
 		~VulkanRayTracingPipelineBuilder();
 
 		VulkanRayTracingPipelineBuilder& WithShader(VulkanRTShader& shader, vk::ShaderStageFlagBits stage, const string& entry = "main");

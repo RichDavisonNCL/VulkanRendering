@@ -153,12 +153,6 @@ namespace NCL::Rendering::Vulkan {
 			return m_depthBuffer;
 		}
 
-		VulkanStagingBuffers& GetStagingBuffers() {
-			return *m_stagingBuffers;
-		}
-
-
-
 		void WaitForGPUIdle();
 
 		void	BeginDefaultRenderPass(vk::CommandBuffer cmds);
@@ -191,8 +185,6 @@ namespace NCL::Rendering::Vulkan {
 		vk::Queue				m_queues[CommandType::Type::MAX_COMMAND_TYPES];
 		uint32_t				m_queueFamilies[CommandType::Type::MAX_COMMAND_TYPES];
 
-
-		std::unique_ptr<VulkanStagingBuffers>  m_stagingBuffers;
 
 		vk::CommandBuffer		m_frameCmds;
 		//vk::CommandBuffer		swapCmds;
@@ -247,8 +239,11 @@ namespace NCL::Rendering::Vulkan {
 		vk::Fence			m_currentSwapFence;
 
 		vk::SwapchainKHR	m_swapChain;
-		VmaAllocator		m_memoryAllocator;
 
-	
+
+	//Buffer Management
+		VulkanBufferManager* m_bufferManager;
+
+		VmaAllocator		m_memoryAllocator;
 	};
 }

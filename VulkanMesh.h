@@ -31,6 +31,8 @@ namespace NCL::Rendering::Vulkan {
 
 		void UploadToGPU(RendererBase* renderer, vk::BufferUsageFlags extraUses);
 
+		//void UploadToGPU(RendererBase* renderer, vk::BufferUsageFlags extraUses);
+
 		uint32_t	GetAttributeMask() const;
 		size_t		CalculateGPUAllocationSize() const;
 		vk::PrimitiveTopology GetVulkanTopology() const;

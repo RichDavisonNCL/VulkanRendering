@@ -10,7 +10,7 @@ namespace NCL::Rendering::Vulkan {
 	class DescriptorSetWriter {
 	public:
 		DescriptorSetWriter(vk::Device device, vk::DescriptorSet set) {
-			m_device	= device;
+			m_device = device;
 			m_set		= set;
 		}
 		~DescriptorSetWriter() {

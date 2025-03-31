@@ -12,18 +12,18 @@ License: MIT (see LICENSE file at the top of the source tree)
 namespace NCL::Rendering::Vulkan {
 	class TextureBuilder	{
 	public:
-		TextureBuilder(vk::Device device, VmaAllocator m_allocator);
+		TextureBuilder(vk::Device device, VmaAllocator allocator);
 		~TextureBuilder() {}
 
-		TextureBuilder& WithFormat(vk::Format m_format);
-		TextureBuilder& WithLayout(vk::ImageLayout m_layout);
-		TextureBuilder& WithAspects(vk::ImageAspectFlags m_aspects);
-		TextureBuilder& WithUsages(vk::ImageUsageFlags m_usages);
+		TextureBuilder& WithFormat(vk::Format format);
+		TextureBuilder& WithLayout(vk::ImageLayout layout);
+		TextureBuilder& WithAspects(vk::ImageAspectFlags aspects);
+		TextureBuilder& WithUsages(vk::ImageUsageFlags usages);
 		TextureBuilder& WithPipeFlags(vk::PipelineStageFlags2 flags);
 
 		TextureBuilder& WithCommandBuffer(vk::CommandBuffer buffer);
-		TextureBuilder& UsingQueue(vk::Queue m_queue);
-		TextureBuilder& UsingPool(vk::CommandPool m_pool);
+		TextureBuilder& UsingQueue(vk::Queue queue);
+		TextureBuilder& UsingPool(vk::CommandPool pool);
 
 		TextureBuilder& WithMips(bool state);
 		TextureBuilder& WithDimension(uint32_t width, uint32_t height, uint32_t depth = 1);
