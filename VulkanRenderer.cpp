@@ -58,7 +58,7 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 
 VulkanRenderer::~VulkanRenderer() {
 	m_device.waitIdle();
-	m_depthBuffer.reset();
+	//m_depthBuffer.reset();
 
 	for(ChainState & c : m_swapStates) {
 		m_device.destroyFramebuffer(c.frameBuffer);
@@ -76,6 +76,10 @@ VulkanRenderer::~VulkanRenderer() {
 			m_device.destroyCommandPool(c);
 		}
 	}
+
+	m_device.destroyImageView(m_depthView);
+	m_device.destroyImage(m_depthImage);
+	m_device.freeMemory(m_depthMemory);
 	
 	m_device.destroyRenderPass(m_defaultRenderPass);
 	m_device.destroyPipelineCache(m_pipelineCache);
@@ -259,14 +263,14 @@ void	VulkanRenderer::InitFrameStates(uint32_t m_framesInFlight) {
 
 		context.workSempaphore		= Vulkan::CreateTimelineSemaphore(GetDevice());
 
-		context.viewport		= m_defaultViewport;
-		context.screenRect	= m_defaultScreenRect;
+		context.viewport			= m_defaultViewport;
+		context.screenRect			= m_defaultScreenRect;
 
 		context.colourFormat		= m_surfaceFormat;
 
-		context.depthImage			= m_depthBuffer->GetImage();
-		context.depthView			= m_depthBuffer->GetDefaultView();
-		context.depthFormat			= m_depthBuffer->GetFormat();
+		context.depthImage			= m_depthImage;
+		context.depthView			= m_depthView;;
+		context.depthFormat			= m_vkInit.depthStencilFormat;
 
 		for (int i = 0; i < CommandType::Type::MAX_COMMAND_TYPES; ++i) {
 			context.commandPools[i]		= m_commandPools[i];
@@ -373,7 +377,7 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 			.setRenderPass(m_defaultRenderPass);
 
 		attachments[0] = chain.colourView;
-		attachments[1] = *m_depthBuffer->m_defaultView;
+		attachments[1] = m_depthView;
 		chain.frameBuffer = m_device.createFramebuffer(createInfo);
 	}
 	m_currentSwap = 0; //??
@@ -489,17 +493,19 @@ void VulkanRenderer::OnWindowResize(int width, int height) {
 
 	m_device.waitIdle();
 
-	m_depthBuffer = TextureBuilder(GetDevice(), GetMemoryAllocator())
-		.UsingPool(GetCommandPool(CommandType::Graphics))
-		.UsingQueue(GetQueue(CommandType::Graphics))
-		.WithDimension(hostWindow.GetScreenSize().x, hostWindow.GetScreenSize().y)
-		.WithAspects(vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil)
-		.WithFormat(m_vkInit.depthStencilFormat)
-		.WithLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
-		.WithUsages(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled)
-		.WithPipeFlags(vk::PipelineStageFlagBits2::eEarlyFragmentTests)
-		.WithMips(false)
-		.Build("Depth Buffer");
+	CreateDepthBufer(hostWindow.GetScreenSize().x, hostWindow.GetScreenSize().y);
+
+	//m_depthBuffer = TextureBuilder(GetDevice(), GetMemoryAllocator())
+	//	.UsingPool(GetCommandPool(CommandType::Graphics))
+	//	.UsingQueue(GetQueue(CommandType::Graphics))
+	//	.WithDimension(hostWindow.GetScreenSize().x, hostWindow.GetScreenSize().y)
+	//	.WithAspects(vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil)
+	//	.WithFormat(m_vkInit.depthStencilFormat)
+	//	.WithLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
+	//	.WithUsages(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled)
+	//	.WithPipeFlags(vk::PipelineStageFlagBits2::eEarlyFragmentTests)
+	//	.WithMips(false)
+	//	.Build("Depth Buffer");
 
 	InitDefaultRenderPass();
 
@@ -557,7 +563,7 @@ void	VulkanRenderer::BeginFrame() {
 	m_frameContexts[m_currentFrameContext].colourView		= m_swapStates[m_currentSwap].colourView;
 	m_frameContexts[m_currentFrameContext].colourFormat		= m_surfaceFormat;
 
-	m_frameContexts[m_currentFrameContext].depthFormat		= m_depthBuffer->GetFormat();
+	m_frameContexts[m_currentFrameContext].depthFormat		= m_vkInit.depthStencilFormat;
 	m_frameCmds = m_frameContexts[m_currentFrameContext].cmdBuffer;
 	m_frameCmds.reset({});
 
@@ -636,7 +642,7 @@ void	VulkanRenderer::InitDefaultRenderPass() {
 		vk::AttachmentDescription()
 			.setInitialLayout(vk::ImageLayout::eUndefined)
 			.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
-			.setFormat(m_depthBuffer->GetFormat())
+			.setFormat(m_vkInit.depthStencilFormat)
 			.setLoadOp(vk::AttachmentLoadOp::eClear)
 			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
@@ -703,7 +709,7 @@ void	VulkanRenderer::BeginDefaultRendering(vk::CommandBuffer  cmds) {
 		.setClearValue(vk::ClearColorValue(0.2f, 0.2f, 0.2f, 1.0f));
 
 	vk::RenderingAttachmentInfoKHR depthAttachment;
-	depthAttachment.setImageView(m_depthBuffer->GetDefaultView())
+	depthAttachment.setImageView(m_depthView)
 		.setImageLayout(vk::ImageLayout::eDepthAttachmentOptimal)
 		.setLoadOp(vk::AttachmentLoadOp::eClear)
 		.setStoreOp(vk::AttachmentStoreOp::eStore)
@@ -731,4 +737,116 @@ VkBool32 VulkanRenderer::DebugCallbackFunction(
 	void*												pUserData) {
 
 	return false;
+}
+
+bool	VulkanRenderer::MemoryTypeFromPhysicalDeviceProps(vk::MemoryPropertyFlags requirements, uint32_t type, uint32_t& index) {
+	for (uint32_t i = 0; i < 32; ++i) {
+		if ((type & 1) == 1) {	//We care about this requirement
+			if ((m_physicalDevice.getMemoryProperties().memoryTypes[i].propertyFlags & requirements) == requirements) {
+				index = i;
+				return true;
+			}
+		}
+		type >>= 1; //Check next bit
+	}
+	return false;
+}
+
+/*
+void	VulkanTexture::InitTextureDeviceMemory(VulkanTexture& img) {
+	vk::MemoryRequirements memReqs = vkRenderer->GetDevice().getImageMemoryRequirements(*img.image);
+
+	img.allocInfo = vk::MemoryAllocateInfo(memReqs.size);
+
+	bool found = vkRenderer->MemoryTypeFromPhysicalDeviceProps({}, memReqs.memoryTypeBits, img.allocInfo.memoryTypeIndex);
+
+	img.deviceMem = vkRenderer->GetDevice().allocateMemory(img.allocInfo);
+
+	vkRenderer->GetDevice().bindImageMemory(*img.image, img.deviceMem, 0);
+}
+
+
+	imageCreateInfo = vk::ImageCreateInfo()
+		.setUsage(texUsage)
+
+		image = vkRenderer->GetDevice().createImageUnique(imageCreateInfo);
+	*/
+
+void	VulkanRenderer::CreateDepthBufer(uint32_t width, uint32_t height) {
+	m_device.destroyImageView(m_depthView);
+	m_device.destroyImage(m_depthImage);
+	m_device.freeMemory(m_depthMemory);
+
+	vk::ImageCreateInfo imageCreateInfo = {
+		.imageType		= vk::ImageType::e2D,
+		.format			= m_vkInit.depthStencilFormat,
+		.extent			= {width, height, 1},
+		.mipLevels		= 1,
+		.arrayLayers	= 1,
+		.usage			= vk::ImageUsageFlagBits::eDepthStencilAttachment
+	};
+	m_depthImage = m_device.createImage(imageCreateInfo);
+
+	vk::MemoryRequirements memReqs = m_device.getImageMemoryRequirements(m_depthImage);
+
+	vk::MemoryAllocateInfo memAllocInfo = {
+		.allocationSize = memReqs.size
+	};
+
+	bool found = MemoryTypeFromPhysicalDeviceProps({}, memReqs.memoryTypeBits, memAllocInfo.memoryTypeIndex);
+
+	m_depthMemory = m_device.allocateMemory(memAllocInfo);
+
+	m_device.bindImageMemory(m_depthImage, m_depthMemory, 0);
+
+	bool depthStencil = Vulkan::FormatIsDepthStencil(m_vkInit.depthStencilFormat);
+
+	vk::ImageAspectFlags aspectFlags = vk::ImageAspectFlagBits::eDepth;
+
+	if (depthStencil) {
+		aspectFlags |= vk::ImageAspectFlagBits::eStencil;
+	}
+
+	vk::ImageViewCreateInfo viewCreateInfo = {
+		.image		= m_depthImage,			
+		.viewType	= vk::ImageViewType::e2D,	
+		.format		= m_vkInit.depthStencilFormat,
+		.subresourceRange = {
+			.aspectMask		= aspectFlags,
+			.baseMipLevel	= 0,
+			.levelCount		= 1,
+			.baseArrayLayer = 0,
+			.layerCount		= 1,
+		}
+	};
+
+	m_depthView = m_device.createImageView(viewCreateInfo);
+
+	vk::UniqueCommandBuffer tempBuffer = Vulkan::CmdBufferCreateBegin(m_device, m_commandPools[CommandType::Graphics]);
+
+	vk::ImageMemoryBarrier2 memBarier = {
+		.srcStageMask	= vk::PipelineStageFlagBits2::eTopOfPipe,
+		.srcAccessMask	= vk::AccessFlagBits2::eNone,
+
+		.dstStageMask	= vk::PipelineStageFlagBits2::eEarlyFragmentTests,
+		.dstAccessMask	= vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+
+		.oldLayout	= vk::ImageLayout::eUndefined,
+		.newLayout	= depthStencil ? vk::ImageLayout::eDepthStencilAttachmentOptimal : vk::ImageLayout::eDepthAttachmentOptimal,
+		.image		= m_depthImage,
+		.subresourceRange = {
+			.aspectMask		= aspectFlags,
+			.baseMipLevel	= 0,
+			.levelCount		= 1,
+			.baseArrayLayer = 0,
+			.layerCount		= 1,
+		}
+	};
+
+	Vulkan::ImageTransitionBarrier(*tempBuffer, m_depthImage, memBarier);
+	
+	Vulkan::CmdBufferEndSubmitWait(*tempBuffer, m_device, m_queues[CommandType::Graphics]);
+
+	Vulkan::SetDebugName(m_device, vk::ObjectType::eImage	 , Vulkan::GetVulkanHandle(m_depthImage), "DepthBuffer");
+	Vulkan::SetDebugName(m_device, vk::ObjectType::eImageView, Vulkan::GetVulkanHandle(m_depthView)	, "DepthBuffer");
 }

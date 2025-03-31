@@ -148,9 +148,11 @@ namespace NCL::Rendering::Vulkan {
 			return m_frameContexts[m_currentFrameContext];
 		}
 
-		UniqueVulkanTexture const & GetDepthBuffer() const {
-			return m_depthBuffer;
-		}
+		//UniqueVulkanTexture const & GetDepthBuffer() const {
+		//	return m_depthBuffer;
+		//}
+
+		bool MemoryTypeFromPhysicalDeviceProps(vk::MemoryPropertyFlags requirements, uint32_t type, uint32_t& index);
 
 		void WaitForGPUIdle();
 
@@ -184,15 +186,11 @@ namespace NCL::Rendering::Vulkan {
 		vk::Queue				m_queues[CommandType::Type::MAX_COMMAND_TYPES];
 		uint32_t				m_queueFamilies[CommandType::Type::MAX_COMMAND_TYPES];
 
-
 		vk::CommandBuffer		m_frameCmds;
-		//vk::CommandBuffer		swapCmds;
-
-		UniqueVulkanTexture		m_depthBuffer;
 
 		VmaAllocatorCreateInfo	m_allocatorInfo;
 
-		VulkanInitialisation m_vkInit;
+		VulkanInitialisation	m_vkInit;
 	private: 
 		void	InitCommandPools();
 		bool	InitInstance();
@@ -203,6 +201,8 @@ namespace NCL::Rendering::Vulkan {
 		void	InitBufferChain(vk::CommandBuffer  m_cmdBuffer);
 
 		void	InitFrameStates(uint32_t framesInFlight);
+
+		void	CreateDepthBufer(uint32_t width, uint32_t height);
 
 		static VkBool32 DebugCallbackFunction(
 			vk::DebugUtilsMessageSeverityFlagBitsEXT			messageSeverity,
@@ -221,9 +221,14 @@ namespace NCL::Rendering::Vulkan {
 		vk::PipelineCache		m_pipelineCache;
 		vk::Device				m_device;		//Device handle	
 
+		vk::SwapchainKHR	m_swapChain;
 		vk::SurfaceKHR		m_surface;
 		vk::Format			m_surfaceFormat;
 		vk::ColorSpaceKHR	m_surfaceSpace;
+		//New depth buffer
+		vk::Image			m_depthImage;
+		vk::ImageView		m_depthView;
+		vk::DeviceMemory	m_depthMemory;
 
 		vk::DebugUtilsMessengerEXT m_debugMessenger;
 
@@ -235,10 +240,7 @@ namespace NCL::Rendering::Vulkan {
 
 		uint64_t				m_globalFrameID		= 0;
 
-		vk::Fence			m_currentSwapFence;
-
-		vk::SwapchainKHR	m_swapChain;
-
+		vk::Fence				m_currentSwapFence;
 
 	//Buffer Management
 		VulkanMemoryManager* m_memoryManager;

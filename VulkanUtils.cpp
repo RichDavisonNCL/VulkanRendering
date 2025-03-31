@@ -490,3 +490,23 @@ void  Vulkan::UploadTextureData(vk::CommandBuffer  buffer, vk::Buffer tempBuffer
 		vk::PipelineStageFlagBits2::eAllCommands,
 		0, 1);
 }
+
+bool  Vulkan::FormatIsDepth(vk::Format format) {
+	switch (format) {
+	case vk::Format::eD16Unorm:
+	case vk::Format::eD32Sfloat:
+	case vk::Format::eX8D24UnormPack32:
+		return true;
+	}
+	return false;
+}
+
+bool  Vulkan::FormatIsDepthStencil(vk::Format format) {
+	switch (format) {
+	case vk::Format::eD16UnormS8Uint:
+	case vk::Format::eD24UnormS8Uint:
+	case vk::Format::eD32SfloatS8Uint:
+		return true;
+	}
+	return false;
+}

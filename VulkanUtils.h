@@ -96,4 +96,7 @@ namespace NCL::Rendering::Vulkan {
 	size_t GetDescriptorSize(vk::DescriptorType type, const vk::PhysicalDeviceDescriptorBufferPropertiesEXT& props);
 
 	void  UploadTextureData(vk::CommandBuffer  buffer, vk::Buffer tempBuffer, vk::Image image, vk::ImageLayout currentLyout, vk::ImageLayout endLayout, vk::BufferImageCopy copyInfo);
+
+	bool FormatIsDepth(vk::Format format);
+	bool FormatIsDepthStencil(vk::Format format);
 }
