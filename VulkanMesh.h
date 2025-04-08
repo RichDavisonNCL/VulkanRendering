@@ -7,9 +7,12 @@ License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #pragma once
 #include "../NCLCoreClasses/Mesh.h"
+#include "SmartTypes.h"
 #include "VulkanBuffers.h"
 
 namespace NCL::Rendering::Vulkan {
+	class VulkanMemoryManager;
+
 	class VulkanMesh : public Mesh {
 	public:
 		friend class VulkanRenderer;
@@ -27,11 +30,7 @@ namespace NCL::Rendering::Vulkan {
 
 		void UploadToGPU(RendererBase* renderer) override;
 
-		void UploadToGPU(vk::CommandBuffer cmdBuffer, const VulkanBuffer& stagingBuffer, VulkanBuffer& gpuOnlyBuffer, vk::Semaphore finishSemaphore);
-
-		void UploadToGPU(RendererBase* renderer, vk::BufferUsageFlags extraUses);
-
-		//void UploadToGPU(RendererBase* renderer, vk::BufferUsageFlags extraUses);
+		void UploadToGPU(vk::CommandBuffer cmdBuffer, VulkanMemoryManager* memManager, vk::BufferUsageFlags extraUses = {});
 
 		uint32_t	GetAttributeMask() const;
 		size_t		CalculateGPUAllocationSize() const;
@@ -53,7 +52,8 @@ namespace NCL::Rendering::Vulkan {
 		std::vector<vk::VertexInputAttributeDescription>	m_attributeDescriptions;
 		std::vector<vk::VertexInputBindingDescription>		m_attributeBindings;		
 	
-		VulkanBuffer m_gpuBuffer;
+		VulkanMemoryManager* m_memManager = nullptr;
+		UniqueVulkanBuffer m_gpuBuffer;
 		size_t m_vertexDataOffset = 0;
 		size_t m_indexDataOffset	= 0;
 

@@ -23,7 +23,7 @@ namespace NCL::Rendering::Vulkan {
 	};
 
 	struct ShaderBindingTable {
-		VulkanBuffer tableBuffer;
+		UniqueVulkanBuffer tableBuffer;
 		vk::StridedDeviceAddressRegionKHR regions[BindingTableOrder::MAX_SIZE];
 	};
 
@@ -38,7 +38,7 @@ namespace NCL::Rendering::Vulkan {
 
 		VulkanShaderBindingTableBuilder& WithLibrary(const vk::RayTracingPipelineCreateInfoKHR& createInfo);
 
-		ShaderBindingTable Build(vk::Device device, VmaAllocator m_allocator);
+		ShaderBindingTable Build(vk::Device device, VulkanMemoryManager& memManager);
 
 	protected:
 		void FillCounts(const vk::RayTracingPipelineCreateInfoKHR* fromInfo);

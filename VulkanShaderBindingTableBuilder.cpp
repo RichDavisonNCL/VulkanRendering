@@ -64,7 +64,7 @@ int MakeMultipleOf(int input, int multiple) {
 	return count * multiple;
 }
 
-ShaderBindingTable VulkanShaderBindingTableBuilder::Build(vk::Device device, VmaAllocator m_allocator) {
+ShaderBindingTable VulkanShaderBindingTableBuilder::Build(vk::Device device, VulkanMemoryManager& memManager) {
 	assert(pipeCreateInfo);
 	assert(pipeline);
 
@@ -94,17 +94,32 @@ ShaderBindingTable VulkanShaderBindingTableBuilder::Build(vk::Device device, Vma
 	}
 	table.regions[0].stride = table.regions[0].size;
 
-	table.tableBuffer = BufferBuilder(device, m_allocator)
-		.WithBufferUsage(vk::BufferUsageFlagBits::eTransferSrc | 
-						 vk::BufferUsageFlagBits::eShaderDeviceAddressKHR | 
-						 vk::BufferUsageFlagBits::eShaderBindingTableKHR)
-		.WithDeviceAddress()
-		.WithHostVisibility()
-		.Build(bufferSize, debugName + " SBT Buffer");
+	//table.tableBuffer = BufferBuilder(device, m_allocator)
+	//	.WithBufferUsage(vk::BufferUsageFlagBits::eTransferSrc | 
+	//					 vk::BufferUsageFlagBits::eShaderDeviceAddressKHR | 
+	//					 vk::BufferUsageFlagBits::eShaderBindingTableKHR)
+	//	.WithDeviceAddress()
+	//	.WithHostVisibility()
+	//	.Build(bufferSize, debugName + " SBT Buffer");
 
-	vk::DeviceAddress bufferAddress = device.getBufferAddress({ .buffer = table.tableBuffer.buffer });
+	table.tableBuffer = memManager.CreateBuffer(
+		{
+			.createInfo = {
+				.size = bufferSize,
+				.usage = vk::BufferUsageFlagBits::eShaderDeviceAddress		|
+							vk::BufferUsageFlagBits::eTransferSrc				|
+							vk::BufferUsageFlagBits::eShaderDeviceAddressKHR	|
+							vk::BufferUsageFlagBits::eShaderBindingTableKHR,
+			},
+			.memProperties = vk::MemoryPropertyFlagBits::eHostVisible,
+		},
+		debugName + " SBT Buffer"
+	);
 
-	char* bufferData = (char*)table.tableBuffer.Map();
+
+	vk::DeviceAddress bufferAddress = device.getBufferAddress({ .buffer = table.tableBuffer->buffer });
+
+	char* bufferData = (char*)table.tableBuffer->Map();
 	int dataOffset = 0;
 	int currentHandleIndex = 0;
 	for (int i = 0; i < BindingTableOrder::MAX_SIZE; ++i) { //For each group type
@@ -118,7 +133,7 @@ ShaderBindingTable VulkanShaderBindingTableBuilder::Build(vk::Device device, Vma
 		dataOffset = dataOffsetStart + table.regions[i].size;
 	}
 
-	table.tableBuffer.Unmap();
+	table.tableBuffer->Unmap();
 
 	return table;
 }

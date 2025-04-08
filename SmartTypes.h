@@ -12,6 +12,7 @@ namespace NCL::Rendering::Vulkan {
 	class VulkanShader;
 	class VulkanCompute;
 	class VulkanTexture;
+	class VulkanBuffer;
 
 	using UniqueVulkanMesh		= std::unique_ptr<VulkanMesh>;
 	using SharedVulkanMesh		= std::shared_ptr<VulkanMesh>;
@@ -24,4 +25,7 @@ namespace NCL::Rendering::Vulkan {
 
 	using UniqueVulkanTexture	= std::unique_ptr<VulkanTexture>;
 	using SharedVulkanTexture	= std::shared_ptr<VulkanTexture>;
+
+	using UniqueVulkanBuffer	= std::unique_ptr<VulkanBuffer>;
+	using SharedVulkanBuffer	= std::shared_ptr<VulkanBuffer>;
 }

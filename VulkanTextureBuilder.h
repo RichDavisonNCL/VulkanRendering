@@ -8,11 +8,14 @@ License: MIT (see LICENSE file at the top of the source tree)
 #pragma once
 #include "SmartTypes.h"
 #include "VulkanBuffers.h"
+#include "VulkanMemoryManager.h"
 
 namespace NCL::Rendering::Vulkan {
+	class VulkanMemoryManager;
+
 	class TextureBuilder	{
 	public:
-		TextureBuilder(vk::Device device, VmaAllocator allocator);
+		TextureBuilder(vk::Device device, VulkanMemoryManager& memManager);
 		~TextureBuilder() {}
 
 		TextureBuilder& WithFormat(vk::Format format);
@@ -62,7 +65,7 @@ namespace NCL::Rendering::Vulkan {
 			vk::ImageLayout endLayout;
 			vk::ImageAspectFlags aspect;
 
-			VulkanBuffer	stagingBuffer;
+			UniqueVulkanBuffer	stagingBuffer;
 
 			size_t			faceByteCount;
 
@@ -110,7 +113,9 @@ namespace NCL::Rendering::Vulkan {
 		vk::PipelineStageFlags2	m_pipeFlags;
 
 		vk::Device			m_sourceDevice;
-		VmaAllocator		m_sourceAllocator;
+//		VmaAllocator		m_sourceAllocator;
+
+		VulkanMemoryManager* m_memManager;
 
 		vk::Queue			m_queue;
 		vk::CommandPool		m_pool;

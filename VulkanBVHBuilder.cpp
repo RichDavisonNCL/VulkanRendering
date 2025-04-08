@@ -16,6 +16,7 @@ using namespace Rendering;
 using namespace Vulkan;
 
 VulkanBVHBuilder::VulkanBVHBuilder() {
+
 }
 
 VulkanBVHBuilder::~VulkanBVHBuilder() {
@@ -57,27 +58,27 @@ VulkanBVHBuilder& VulkanBVHBuilder::WithCommandPool(vk::CommandPool inPool) {
 }
 
 VulkanBVHBuilder& VulkanBVHBuilder::WithDevice(vk::Device inDevice) {
-	m_sourceDevice = inDevice;
+	m_device = inDevice;
 	return *this;
 }
 
-VulkanBVHBuilder& VulkanBVHBuilder::WithAllocator(VmaAllocator inAllocator) {
-	m_sourceAllocator = inAllocator;
+VulkanBVHBuilder& VulkanBVHBuilder::WithAllocator(VulkanMemoryManager& memoryManager) {
+	m_memoryManager = &memoryManager;
 	return *this;
 }
 
 vk::UniqueAccelerationStructureKHR VulkanBVHBuilder::Build(vk::BuildAccelerationStructureFlagsKHR inFlags, const std::string& debugName) {
-	BuildBLAS(m_sourceDevice, m_sourceAllocator, inFlags);
-	BuildTLAS(m_sourceDevice, m_sourceAllocator, inFlags);
+	BuildBLAS(inFlags);
+	BuildTLAS(inFlags);
 
 	if (!debugName.empty()) {
-		SetDebugName(m_sourceDevice, vk::ObjectType::eAccelerationStructureKHR, GetVulkanHandle(*m_tlas), debugName);
+		SetDebugName(m_device, vk::ObjectType::eAccelerationStructureKHR, GetVulkanHandle(*m_tlas), debugName);
 	}
 
 	return std::move(m_tlas);
 }
 
-void VulkanBVHBuilder::BuildBLAS(vk::Device device, VmaAllocator m_allocator, vk::BuildAccelerationStructureFlagsKHR inFlags) {
+void VulkanBVHBuilder::BuildBLAS(vk::BuildAccelerationStructureFlagsKHR inFlags) {
 	//We need to first create the BLAS entries for the unique meshes
 	for (const auto& i : m_meshes) {
 		vk::Buffer	vBuffer;
@@ -99,12 +100,12 @@ void VulkanBVHBuilder::BuildBLAS(vk::Device device, VmaAllocator m_allocator, vk
 
 		vk::AccelerationStructureGeometryTrianglesDataKHR triData;
 		triData.vertexFormat = vFormat;
-		triData.vertexData.deviceAddress = device.getBufferAddress({.buffer = vBuffer }) + vOffset;
+		triData.vertexData.deviceAddress = m_device.getBufferAddress({.buffer = vBuffer }) + vOffset;
 		triData.vertexStride = sizeof(Vector3);
 
 		if (hasIndices) {
 			triData.indexType = iFormat;
-			triData.indexData.deviceAddress = device.getBufferAddress({ .buffer = iBuffer} ) + iOffset;
+			triData.indexData.deviceAddress = m_device.getBufferAddress({ .buffer = iBuffer} ) + iOffset;
 		}
 
 		triData.maxVertex = i->GetVertexCount();
@@ -147,39 +148,61 @@ void VulkanBVHBuilder::BuildBLAS(vk::Device device, VmaAllocator m_allocator, vk
 		i.buildInfo.pGeometries		= i.geometries.data();
 		i.buildInfo.flags |= inFlags;
 
-		device.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice,
+		m_device.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice,
 			&i.buildInfo, i.maxPrims.data(), &i.sizeInfo);
 
 		totalSize	+= i.sizeInfo.accelerationStructureSize;
 		scratchSize  = std::max(scratchSize, i.sizeInfo.buildScratchSize);
 	}
 
-	VulkanBuffer scratchBuff = BufferBuilder(device, m_allocator)
-		.WithBufferUsage(	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
-							vk::BufferUsageFlagBits::eStorageBuffer)
-		.Build(scratchSize, "Scratch Buffer");
+	//VulkanBuffer scratchBuff = BufferBuilder(device, m_allocator)
+	//	.WithBufferUsage(	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
+	//						vk::BufferUsageFlagBits::eStorageBuffer)
+	//	.Build(scratchSize, "Scratch Buffer");
 
-	vk::DeviceAddress scratchAddr = device.getBufferAddress({ .buffer = scratchBuff.buffer });
+	UniqueVulkanBuffer scratchBuffer = m_memoryManager->CreateBuffer(
+		{
+			.createInfo = {
+				.size	= scratchSize,
+				.usage	= vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer,
+			},
+		},
+		"Scratch Buffer"
+	);
 
-	vk::UniqueCommandBuffer buffer = CmdBufferCreateBegin(device, m_pool, "Making BLAS");
+	//vk::DeviceAddress scratchAddr = device.getBufferAddress({ .buffer = scratchBuff.buffer });
+
+	vk::UniqueCommandBuffer buffer = CmdBufferCreateBegin(m_device, m_pool, "Making BLAS");
 
 	for (auto& i : m_blasBuildInfo) {		//Make the buffer for each blas entry...
 		vk::AccelerationStructureCreateInfoKHR createInfo;
 		createInfo.type = vk::AccelerationStructureTypeKHR::eBottomLevel;
 		createInfo.size = i.sizeInfo.accelerationStructureSize;
 
-		i.buffer = BufferBuilder(device, m_allocator)
-			.WithBufferUsage(	vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | 
-								vk::BufferUsageFlagBits::eShaderDeviceAddress)
-			.WithHostVisibility()
-			.Build(createInfo.size);
+		//i.buffer = BufferBuilder(device, m_allocator)
+		//	.WithBufferUsage(	vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | 
+		//						vk::BufferUsageFlagBits::eShaderDeviceAddress)
+		//	.WithHostVisibility()
+		//	.Build(createInfo.size);
 
-		createInfo.buffer = i.buffer;
+		i.buffer = m_memoryManager->CreateBuffer(
+			{
+				.createInfo = {
+					.size = createInfo.size,
+					.usage =	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
+								vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR,
+				},
+				.memProperties = vk::MemoryPropertyFlagBits::eHostVisible,
+			},
+			"BLAS Buffer"
+		);
 
-		i.accelStructure = device.createAccelerationStructureKHRUnique(createInfo);
+		createInfo.buffer = i.buffer->buffer;
+
+		i.accelStructure = m_device.createAccelerationStructureKHRUnique(createInfo);
 
 		i.buildInfo.dstAccelerationStructure	= *i.accelStructure;
-		i.buildInfo.scratchData.deviceAddress	= scratchAddr;
+		i.buildInfo.scratchData.deviceAddress	= scratchBuffer->deviceAddress;
 
 		const vk::AccelerationStructureBuildRangeInfoKHR* rangeInfo = i.ranges.data();
 
@@ -199,10 +222,10 @@ void VulkanBVHBuilder::BuildBLAS(vk::Device device, VmaAllocator m_allocator, vk
 			{} //imageMemoryBarriers
 		);
 	}
-	CmdBufferEndSubmitWait(*buffer, device, m_queue);
+	CmdBufferEndSubmitWait(*buffer, m_device, m_queue);
 }
 
-void VulkanBVHBuilder::BuildTLAS(vk::Device device, VmaAllocator m_allocator, vk::BuildAccelerationStructureFlagsKHR flags) {
+void VulkanBVHBuilder::BuildTLAS(vk::BuildAccelerationStructureFlagsKHR flags) {
 	std::vector<vk::AccelerationStructureInstanceKHR> tlasEntries;
 
 	const uint32_t instanceCount = m_entries.size();
@@ -231,7 +254,7 @@ void VulkanBVHBuilder::BuildTLAS(vk::Device device, VmaAllocator m_allocator, vk
 
 		tlasEntries[i].instanceCustomIndex = meshID;
 
-		tlasEntries[i].accelerationStructureReference = device.getBufferAddress({ .buffer = m_blasBuildInfo[meshID].buffer.buffer });
+		tlasEntries[i].accelerationStructureReference = m_device.getBufferAddress({ .buffer = m_blasBuildInfo[meshID].buffer->buffer });
 
 
 		tlasEntries[i].flags = (VkGeometryInstanceFlagBitsKHR)vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable;
@@ -241,18 +264,32 @@ void VulkanBVHBuilder::BuildTLAS(vk::Device device, VmaAllocator m_allocator, vk
 
 	size_t dataSize = instanceCount * sizeof(vk::AccelerationStructureInstanceKHR);
 
-	VulkanBuffer instanceBuffer = BufferBuilder(device, m_allocator)
-		.WithBufferUsage(	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
-							vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR)
-		.WithHostVisibility()
-		.Build(dataSize, "Instance Buffer");
+	//VulkanBuffer instanceBuffer = BufferBuilder(device, m_allocator)
+	//	.WithBufferUsage(	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
+	//						vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR)
+	//	.WithHostVisibility()
+	//	.Build(dataSize, "Instance Buffer");
 
-	instanceBuffer.CopyData(tlasEntries.data(), dataSize);
+	UniqueVulkanBuffer instanceBuffer = m_memoryManager->CreateBuffer(
+		{
+			.createInfo = {
+				.size  = dataSize,
+				.usage =	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
+							vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
+			},
+			.memProperties = vk::MemoryPropertyFlagBits::eHostVisible,
+		},
+		"Instance Buffer"
+	);
+
+
+
+	instanceBuffer->CopyData(tlasEntries.data(), dataSize);
 
 	vk::AccelerationStructureGeometryKHR tlasGeometry;
 	tlasGeometry.geometryType = vk::GeometryTypeKHR::eInstances;
 	tlasGeometry.geometry = vk::AccelerationStructureGeometryInstancesDataKHR();
-	tlasGeometry.geometry.instances.data = device.getBufferAddress({ .buffer = instanceBuffer.buffer });
+	tlasGeometry.geometry.instances.data = instanceBuffer->deviceAddress;
 
 	vk::AccelerationStructureBuildGeometryInfoKHR geomInfo;
 	geomInfo.flags			= flags;
@@ -263,28 +300,54 @@ void VulkanBVHBuilder::BuildTLAS(vk::Device device, VmaAllocator m_allocator, vk
 	geomInfo.srcAccelerationStructure = nullptr; //??
 
 	vk::AccelerationStructureBuildSizesInfoKHR sizesInfo;
-	device.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice, &geomInfo, &instanceCount, &sizesInfo);
+	m_device.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice, &geomInfo, &instanceCount, &sizesInfo);
 
-	m_tlasBuffer = BufferBuilder(device, m_allocator)
-		.WithDeviceAddress()
-		.WithBufferUsage(vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR)
-		.Build(sizesInfo.accelerationStructureSize, "TLAS Buffer");
+	//m_tlasBuffer = BufferBuilder(device, m_allocator)
+	//	.WithDeviceAddress()
+	//	.WithBufferUsage(vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR)
+	//	.Build(sizesInfo.accelerationStructureSize, "TLAS Buffer");
+
+	m_tlasBuffer = m_memoryManager->CreateBuffer(
+		{
+			.createInfo = {
+				.size	= sizesInfo.accelerationStructureSize,
+				.usage	=	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
+							vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR,
+			},
+			//.memProperties = vk::MemoryPropertyFlagBits::eHostVisible,
+		},
+		"Instance Buffer"
+	);
+
 
 	vk::AccelerationStructureCreateInfoKHR tlasCreateInfo;
-	tlasCreateInfo.buffer = m_tlasBuffer.buffer;
+	tlasCreateInfo.buffer = m_tlasBuffer->buffer;
 	tlasCreateInfo.size = sizesInfo.accelerationStructureSize;
 	tlasCreateInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
 	
-	m_tlas = device.createAccelerationStructureKHRUnique(tlasCreateInfo);
+	m_tlas = m_device.createAccelerationStructureKHRUnique(tlasCreateInfo);
 
-	VulkanBuffer scratchBuffer = BufferBuilder(device, m_allocator)
-		.WithBufferUsage(	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
-							vk::BufferUsageFlagBits::eStorageBuffer)
-		.WithHostVisibility()
-		.WithDeviceAddress()
-		.Build(sizesInfo.buildScratchSize, "Scratch Buffer");
+	//VulkanBuffer scratchBuffer = BufferBuilder(device, m_allocator)
+	//	.WithBufferUsage(	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
+	//						vk::BufferUsageFlagBits::eStorageBuffer)
+	//	.WithHostVisibility()
+	//	.WithDeviceAddress()
+	//	.Build(sizesInfo.buildScratchSize, "Scratch Buffer");
 
-	vk::DeviceAddress scratchAddr = device.getBufferAddress({ .buffer = scratchBuffer.buffer });
+	UniqueVulkanBuffer scratchBuffer = m_memoryManager->CreateBuffer(
+		{
+			.createInfo = {
+				.size	= sizesInfo.buildScratchSize,
+				.usage =	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
+							vk::BufferUsageFlagBits::eShaderDeviceAddress | 
+							vk::BufferUsageFlagBits::eStorageBuffer,
+			},
+			.memProperties = vk::MemoryPropertyFlagBits::eHostVisible,
+		},
+		"Instance Buffer"
+	);
+
+	vk::DeviceAddress scratchAddr = m_device.getBufferAddress({ .buffer = scratchBuffer->buffer });
 
 	geomInfo.srcAccelerationStructure = nullptr;
 	geomInfo.dstAccelerationStructure = *m_tlas;
@@ -295,7 +358,7 @@ void VulkanBVHBuilder::BuildTLAS(vk::Device device, VmaAllocator m_allocator, vk
 
 	vk::AccelerationStructureBuildRangeInfoKHR* rangeInfoPtr = &rangeInfo;
 
-	vk::UniqueCommandBuffer m_cmdBuffer = CmdBufferCreateBegin(device, m_pool, "Making TLAS");
+	vk::UniqueCommandBuffer m_cmdBuffer = CmdBufferCreateBegin(m_device, m_pool, "Making TLAS");
 	m_cmdBuffer->buildAccelerationStructuresKHR(1, &geomInfo, &rangeInfoPtr);
-	CmdBufferEndSubmitWait(*m_cmdBuffer, device, m_queue);
+	CmdBufferEndSubmitWait(*m_cmdBuffer, m_device, m_queue);
 }

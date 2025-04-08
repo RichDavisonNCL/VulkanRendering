@@ -12,6 +12,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 
 namespace NCL::Rendering::Vulkan {
 	class VulkanRenderer;
+	class VulkanMemoryManager;
 
 	class VulkanTexture : public Texture	{
 		friend class VulkanRenderer;
@@ -57,15 +58,13 @@ namespace NCL::Rendering::Vulkan {
 		VulkanTexture();
 
 		vk::UniqueImageView		m_defaultView;
-		vk::Image				m_image; //Don't use 'Unique', uses VMA
+		vk::Image				m_image; //Don't use 'Unique', must use the memory manager
 		vk::Format				m_format = vk::Format::eUndefined;
 		vk::ImageAspectFlags	m_aspectType;
 
 		vk::UniqueSemaphore		m_workSemaphore;
 
-		VmaAllocation			m_allocationHandle	= {};
-		VmaAllocationInfo		m_allocationInfo	= {};
-		VmaAllocator			m_allocator			= {};
+		VulkanMemoryManager*	m_memManager = nullptr;
 
 		uint32_t m_mipCount		= 0;
 		uint32_t m_layerCount	= 0;

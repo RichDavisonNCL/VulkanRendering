@@ -32,7 +32,7 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 
 	m_vkInit = vkInitInfo;
 
-	m_allocatorInfo		= {};
+	//m_allocatorInfo		= {};
 
 	for (uint32_t i = 0; i < CommandType::MAX_COMMAND_TYPES; ++i) {
 		m_queueFamilies[i] = -1;
@@ -43,7 +43,7 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 	InitPhysicalDevice();
 
 	InitGPUDevice();
-	InitMemoryAllocator();
+	//InitMemoryAllocator();
 
 	InitCommandPools();
 	InitDefaultDescriptorPool();
@@ -66,7 +66,7 @@ VulkanRenderer::~VulkanRenderer() {
 		m_device.destroyImageView(c.colourView);
 	}
 	m_frameContexts.clear();
-	vmaDestroyAllocator(m_memoryAllocator);
+	//vmaDestroyAllocator(m_memoryAllocator);
 	m_device.destroyDescriptorPool(m_defaultDescriptorPool);
 	m_device.destroySwapchainKHR(m_swapChain);
 
@@ -393,20 +393,20 @@ void	VulkanRenderer::InitCommandPools() {
 	}
 }
 
-void	VulkanRenderer::InitMemoryAllocator() {
-	VmaVulkanFunctions funcs = {};
-	funcs.vkGetInstanceProcAddr = ::vk::detail::defaultDispatchLoaderDynamic.vkGetInstanceProcAddr;
-	funcs.vkGetDeviceProcAddr   = ::vk::detail::defaultDispatchLoaderDynamic.vkGetDeviceProcAddr;
-
-	m_allocatorInfo.physicalDevice = m_physicalDevice;
-	m_allocatorInfo.device	= m_device;
-	m_allocatorInfo.instance	= m_instance;
-
-	m_allocatorInfo.flags |= m_vkInit.vmaFlags;
-
-	m_allocatorInfo.pVulkanFunctions = &funcs;
-	vmaCreateAllocator(&m_allocatorInfo, &m_memoryAllocator);
-}
+//void	VulkanRenderer::InitMemoryAllocator() {
+//	VmaVulkanFunctions funcs = {};
+//	funcs.vkGetInstanceProcAddr = ::vk::detail::defaultDispatchLoaderDynamic.vkGetInstanceProcAddr;
+//	funcs.vkGetDeviceProcAddr   = ::vk::detail::defaultDispatchLoaderDynamic.vkGetDeviceProcAddr;
+//
+//	m_allocatorInfo.physicalDevice = m_physicalDevice;
+//	m_allocatorInfo.device	= m_device;
+//	m_allocatorInfo.instance	= m_instance;
+//
+//	m_allocatorInfo.flags |= m_vkInit.vmaFlags;
+//
+//	m_allocatorInfo.pVulkanFunctions = &funcs;
+//	vmaCreateAllocator(&m_allocatorInfo, &m_memoryAllocator);
+//}
 
 bool VulkanRenderer::InitDeviceQueueIndices() {
 	std::vector<vk::QueueFamilyProperties> deviceQueueProps = m_physicalDevice.getQueueFamilyProperties();

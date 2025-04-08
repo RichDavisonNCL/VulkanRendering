@@ -15,9 +15,9 @@ using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-TextureBuilder::TextureBuilder(vk::Device inDevice, VmaAllocator inAllocator) {
-    m_sourceDevice    = inDevice;
-    m_sourceAllocator = inAllocator;
+TextureBuilder::TextureBuilder(vk::Device inDevice, VulkanMemoryManager& memManager) {
+    m_sourceDevice   = inDevice;
+    m_memManager     = &memManager;
 
     m_generateMips    = true;
 
@@ -303,9 +303,7 @@ UniqueVulkanTexture	TextureBuilder::GenerateTexture(vk::CommandBuffer m_cmdBuffe
 		createInfo.setFlags(vk::ImageCreateFlagBits::eCubeCompatible);
 	}
 
-	VmaAllocationCreateInfo vmaallocInfo = {};
-	vmaallocInfo.usage = VMA_MEMORY_USAGE_AUTO;
-	vmaCreateImage(m_sourceAllocator, (VkImageCreateInfo*)&createInfo, &vmaallocInfo, (VkImage*)&t->m_image, &t->m_allocationHandle, &t->m_allocationInfo);
+    t->m_image = m_memManager->CreateImage(createInfo);
 
     vk::ImageViewType viewType = m_layerCount > 1 ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
     if (isCube) {
@@ -321,12 +319,12 @@ UniqueVulkanTexture	TextureBuilder::GenerateTexture(vk::CommandBuffer m_cmdBuffe
         .setSubresourceRange(vk::ImageSubresourceRange(m_aspects, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS))
 		.setImage(t->m_image);
 
-	t->m_defaultView  = m_sourceDevice.createImageViewUnique(viewInfo);
-    t->m_allocator    = m_sourceAllocator;
-    t->m_layerCount   = genLayerCount;
-    t->m_aspectType   = m_aspects;
-    t->m_format       = m_format;
-    t->dimensions   = { dimensions.x, dimensions.y };
+	t->m_defaultView    = m_sourceDevice.createImageViewUnique(viewInfo);
+    t->m_memManager     = m_memManager;
+    t->m_layerCount     = genLayerCount;
+    t->m_aspectType     = m_aspects;
+    t->m_format         = m_format;
+    t->dimensions       = { dimensions.x, dimensions.y };
 
 	SetDebugName(m_sourceDevice, vk::ObjectType::eImage    , GetVulkanHandle(t->m_image)       , debugName);
 	SetDebugName(m_sourceDevice, vk::ObjectType::eImageView, GetVulkanHandle(*t->m_defaultView), debugName);
@@ -339,20 +337,22 @@ UniqueVulkanTexture	TextureBuilder::GenerateTexture(vk::CommandBuffer m_cmdBuffe
 void TextureBuilder::UploadTextureData(vk::CommandBuffer m_cmdBuffer, TextureJob& job) {
     int allocationSize = job.faceByteCount * job.faceCount;
 
-    job.stagingBuffer = BufferBuilder(m_sourceDevice, m_sourceAllocator)
-        .WithBufferUsage(vk::BufferUsageFlagBits::eTransferSrc)
-        .WithHostVisibility()
-        .Build(allocationSize, "Staging Buffer");
+    //job.stagingBuffer = BufferBuilder(m_sourceDevice, m_sourceAllocator)
+    //    .WithBufferUsage(vk::BufferUsageFlagBits::eTransferSrc)
+    //    .WithHostVisibility()
+    //    .Build(allocationSize, "Staging Buffer");
+
+    job.stagingBuffer = m_memManager->CreateStagingBuffer(allocationSize, "Staging Buffer");
 
     //our buffer now has memory! Copy some texture date to it...
-    char* gpuPtr = (char*)job.stagingBuffer.Map();
+    char* gpuPtr = (char*)job.stagingBuffer->Map();
     for (int i = 0; i < job.faceCount; ++i) {
         memcpy(gpuPtr, job.dataSrcs[i], job.faceByteCount);
         gpuPtr += job.faceByteCount;
     }
-    job.stagingBuffer.Unmap();
+    job.stagingBuffer->Unmap();
 
-    Vulkan::UploadTextureData(m_cmdBuffer, job.stagingBuffer.buffer, job.image, vk::ImageLayout::eUndefined, job.endLayout,
+    Vulkan::UploadTextureData(m_cmdBuffer, job.stagingBuffer->buffer, job.image, vk::ImageLayout::eUndefined, job.endLayout,
         vk::BufferImageCopy{
             .imageSubresource = {
                 .aspectMask = vk::ImageAspectFlagBits::eColor,

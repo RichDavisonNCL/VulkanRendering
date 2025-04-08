@@ -19,7 +19,7 @@ namespace NCL::Rendering::Vulkan {
 	};
 					
 	struct BLASEntry {
-		VulkanBuffer buffer;
+		UniqueVulkanBuffer buffer;
 		vk::AccelerationStructureBuildGeometryInfoKHR	buildInfo;
 		vk::AccelerationStructureBuildSizesInfoKHR		sizeInfo;
 		vk::UniqueAccelerationStructureKHR				accelStructure;
@@ -37,15 +37,15 @@ namespace NCL::Rendering::Vulkan {
 		VulkanBVHBuilder& WithObject(VulkanMesh* m, const Matrix4& transform, uint32_t mask = ~0, uint32_t hitID = 0);
 
 		VulkanBVHBuilder& WithDevice(vk::Device inDevice);
-		VulkanBVHBuilder& WithAllocator(VmaAllocator inAllocator);
+		VulkanBVHBuilder& WithAllocator(VulkanMemoryManager& inAllocator);
 		VulkanBVHBuilder& WithCommandQueue(vk::Queue inQueue);
 		VulkanBVHBuilder& WithCommandPool(vk::CommandPool inPool);
 
 		vk::UniqueAccelerationStructureKHR Build(vk::BuildAccelerationStructureFlagsKHR flags, const std::string& debugName = "");
 	protected:
 
-		void BuildBLAS(vk::Device device, VmaAllocator m_allocator, vk::BuildAccelerationStructureFlagsKHR flags);
-		void BuildTLAS(vk::Device device, VmaAllocator m_allocator, vk::BuildAccelerationStructureFlagsKHR flags);
+		void BuildBLAS(vk::BuildAccelerationStructureFlagsKHR flags);
+		void BuildTLAS(vk::BuildAccelerationStructureFlagsKHR flags);
 
 		vk::BuildAccelerationStructureFlagsKHR m_flags;
 
@@ -58,10 +58,11 @@ namespace NCL::Rendering::Vulkan {
 
 		vk::Queue		m_queue;
 		vk::CommandPool m_pool;
-		vk::Device		m_sourceDevice;
-		VmaAllocator	m_sourceAllocator;
+		vk::Device		m_device;
+
+		VulkanMemoryManager* m_memoryManager;
 
 		vk::UniqueAccelerationStructureKHR	m_tlas;
-		VulkanBuffer						m_tlasBuffer;
+		UniqueVulkanBuffer						m_tlasBuffer;
 	};
 }

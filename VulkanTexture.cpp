@@ -20,8 +20,8 @@ VulkanTexture::VulkanTexture() {
 }
 
 VulkanTexture::~VulkanTexture() {
-	if (m_image) {
-		vmaDestroyImage(m_allocator, m_image, m_allocationHandle);
+	if (m_image && m_memManager) {
+		m_memManager->DiscardImage(m_image);
 	}
 }
 

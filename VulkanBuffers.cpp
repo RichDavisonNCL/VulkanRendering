@@ -6,38 +6,58 @@ Contact:richgdavison@gmail.com
 License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #include "VulkanBuffers.h"
+#include "VulkanMemoryManager.h"
 
 using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-void VulkanBuffer::CopyData(void* data, size_t size) {
-	if (allocationInfo.pMappedData) {
-		//we're already mapped, can just copy
-		memcpy(allocationInfo.pMappedData, data, size);
+
+VulkanBuffer::VulkanBuffer() {
+	buffer = nullptr;
+	size = 0;
+	deviceAddress = 0;
+}
+
+VulkanBuffer::VulkanBuffer(VulkanBuffer&& obj) {
+	buffer			= obj.buffer;
+	deviceAddress	= obj.deviceAddress;
+	size			= obj.size;
+	sourceManager	= obj.sourceManager;
+	obj.buffer		= VK_NULL_HANDLE;
+	obj.sourceManager = nullptr;
+	obj.size		= 0;
+}
+
+VulkanBuffer& VulkanBuffer::operator=(VulkanBuffer&& obj) {
+	if (this != &obj) {
+		buffer			= obj.buffer;
+		deviceAddress	= obj.deviceAddress;
+		size			= obj.size;
+		sourceManager	= obj.sourceManager;
+		obj.buffer		= VK_NULL_HANDLE;
+		obj.sourceManager = nullptr;
+		obj.size		= 0;
 	}
-	else {
-		//We should be able to safely map this?
-		void* mappedData = nullptr;
-		vmaMapMemory(allocator, allocationHandle, &mappedData);
-		memcpy(mappedData, data, size);
-		vmaUnmapMemory(allocator, allocationHandle);
+	return *this;
+}
+
+VulkanBuffer::~VulkanBuffer() {
+	if (buffer && sourceManager) {
+		sourceManager->DiscardBuffer(*this);
 	}
+}
+
+void VulkanBuffer::CopyData(void* data, size_t size) const {
 }
 
 void* VulkanBuffer::Map() const {
-	if (allocationInfo.pMappedData) {
-		return allocationInfo.pMappedData;
-	}
-	void* mappedData = nullptr;
-	vmaMapMemory(allocator, allocationHandle, &mappedData);
-	return mappedData;
+	return mappedPtr;
 }
 
 void	VulkanBuffer::Unmap() const {
-	vmaUnmapMemory(allocator, allocationHandle);
 }
 
 void* VulkanBuffer::Data() const{
-	return allocationInfo.pMappedData;
+	return mappedPtr;
 }

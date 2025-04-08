@@ -6,88 +6,48 @@ Contact:richgdavison@gmail.com
 License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #pragma once
-#include "vma/vk_mem_alloc.h"
-
+#include "Buffer.h"
 namespace NCL::Rendering::Vulkan {
-
-
+	class VulkanMemoryManager;
 	//A buffer, backed by memory we have allocated elsewhere
-	struct VulkanBuffer {
+	class VulkanBuffer : Buffer {
+	public:
+		VulkanBuffer(VulkanBuffer&& obj);
+
+		VulkanBuffer& operator=(VulkanBuffer&& obj);
+
+		virtual ~VulkanBuffer();
+
 		vk::Buffer	buffer;
-		size_t		size;
+		size_t		size = 0;
+
+		void* mappedPtr = nullptr;
 
 		vk::DeviceAddress	deviceAddress;
-
-		VmaAllocation		allocationHandle;
-		VmaAllocationInfo	allocationInfo;
-		VmaAllocator		allocator;
-
-		VulkanBuffer() {
-			buffer				= nullptr;
-			size				= 0;
-			deviceAddress		= 0;
-			allocationHandle	= 0;
-			allocator = 0;
-		}
-
-		VulkanBuffer(VulkanBuffer&& obj) {
-			if (buffer) {
-				vmaDestroyBuffer(allocator, buffer, allocationHandle);
-			}
-			buffer = obj.buffer;
-			deviceAddress = obj.deviceAddress;
-			allocationHandle = obj.allocationHandle;
-			allocationInfo = obj.allocationInfo;
-			allocator = obj.allocator;
-			size = obj.size;
-
-			obj.buffer = VK_NULL_HANDLE;
-		}
-
-		VulkanBuffer& operator=(VulkanBuffer&& obj) {
-			if (this != &obj) {
-				if (buffer) {
-					vmaDestroyBuffer(allocator, buffer, allocationHandle);
-				}
-				buffer = obj.buffer;
-				deviceAddress = obj.deviceAddress;
-				allocationHandle = obj.allocationHandle;
-				allocationInfo = obj.allocationInfo;
-				allocator = obj.allocator;
-				size = obj.size;
-
-				obj.buffer = VK_NULL_HANDLE;
-			}
-			return *this;
-		}
-
-		~VulkanBuffer() {
-			if (buffer) {
-				vmaDestroyBuffer(allocator, buffer, allocationHandle);
-			}
-		}
 
 		//A convenience func to help get around vma holding various
 		//mapped pointers etc, so us calling mapBuffer can cause
 		//validation errors
-		void	CopyData(void* data, size_t size);
+		virtual void	CopyData(void* data, size_t size) const;
 
-		void*	Data() const;
+		virtual void*	Data()		const;
 
-		void*	Map() const;
+		virtual void*	Map()		const;
+		virtual void	Unmap()		const;
+
 		template<typename T>
 		T* Map() const {
 			void* data = Map();
 			return static_cast<T*>(data);
 		}
 
-		void	Unmap() const;
-
 		//Convenience function so we can use this struct in place of a vkBuffer when necessary
 		operator vk::Buffer() const {
 			return buffer;
 		}
+
+	protected:
+		VulkanBuffer();
+		VulkanMemoryManager* sourceManager = nullptr;
 	};
-
-
 };

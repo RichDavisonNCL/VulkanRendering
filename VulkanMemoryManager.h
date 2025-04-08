@@ -9,22 +9,32 @@ License: MIT (see LICENSE file at the top of the source tree)
 #include "VulkanBuffers.h"
 #include "VulkanTexture.h"
 
-#include "vma/vk_mem_alloc.h"
-
 namespace NCL::Rendering::Vulkan {
 	struct BufferCreationInfo {
-		vk::BufferCreateInfo	createInfo;
-		vk::MemoryPropertyFlags memProperties;
-		vk::BufferUsageFlags	bufferUsage;
+		vk::BufferCreateInfo	createInfo = {
+			.usage = vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer
+		};
+		vk::MemoryPropertyFlags memProperties	= vk::MemoryPropertyFlagBits::eDeviceLocal;
+	};
+
+	enum class DiscardMode {
+		Immediate,
+		Deferred
 	};
 
 	class VulkanMemoryManager {
 	public:
-		virtual void CreateBuffer(BufferCreationInfo& createInfo, const std::string& debugName = "")	= 0;
-		virtual void CreateStagingBuffer(size_t size, const std::string& debugName = "")				= 0;
-		virtual void DiscardBuffer(VulkanBuffer& buffer)												= 0;
+		virtual ~VulkanMemoryManager() {};
+		virtual UniqueVulkanBuffer	CreateBuffer(const BufferCreationInfo& createInfo, const std::string& debugName = "")	= 0;
+		virtual UniqueVulkanBuffer	CreateStagingBuffer(size_t size, const std::string& debugName = "")						= 0;
+		virtual void				DiscardBuffer(VulkanBuffer& buffer, DiscardMode discard = DiscardMode::Deferred)		= 0;
 
-		virtual void CreateTexture(vk::ImageCreateInfo& createInfo, const std::string& debugName = "")	= 0;
-		virtual void DiscardTexture(VulkanTexture& tex)													= 0;
+		//virtual void*			MapBuffer(VulkanBuffer& buffer)		= 0;
+		//virtual void			UnmapBuffer(VulkanBuffer& buffer)	= 0;
+
+		virtual void			Update() = 0;
+
+		virtual vk::Image		CreateImage(vk::ImageCreateInfo& createInfo, const std::string& debugName = "")		= 0;
+		virtual void			DiscardImage(vk::Image& img, DiscardMode discard = DiscardMode::Deferred)			= 0;
 	};
 }
