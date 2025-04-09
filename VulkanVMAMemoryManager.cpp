@@ -37,22 +37,21 @@ VulkanVMAMemoryManager::~VulkanVMAMemoryManager() {
 	for (std::vector<DeferredBufferDeletion>::iterator i = m_deferredDeleteBuffers.begin();
 		i != m_deferredDeleteBuffers.end(); ++i )
 	{
-		if (VMABuffer* b = dynamic_cast<VMABuffer*>(&i->buffer)) {
-			b->Destroy();
-		}
+		DeleteBuffer(i->buffer);
 	}
 
 	vmaDestroyAllocator(m_memoryAllocator);
 }
 
-UniqueVulkanBuffer VulkanVMAMemoryManager::CreateBuffer(const BufferCreationInfo& createInfo, const std::string& debugName) {
-	VMABuffer* newBuffer = new VMABuffer(*this);
+VulkanBuffer VulkanVMAMemoryManager::CreateBuffer(const BufferCreationInfo& createInfo, const std::string& debugName) {
+	VulkanBuffer newBuffer = AllocateBuffer();
 
-	newBuffer->m_allocator = m_memoryAllocator;
-	
+	uint32_t id = GetSpareBufferID();
+	newBuffer.SetAssetID(id);
+
 	size_t allocSize = createInfo.createInfo.size;
 	
-	newBuffer->size = allocSize;
+	newBuffer.size = allocSize;
 		
 	VmaAllocationCreateInfo alloCreateInfo = {};
 	alloCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
@@ -66,28 +65,32 @@ UniqueVulkanBuffer VulkanVMAMemoryManager::CreateBuffer(const BufferCreationInfo
 	if (createInfo.memProperties & vk::MemoryPropertyFlagBits::eHostCoherent) {
 		alloCreateInfo.flags |= (VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT);
 	}
+
+	Allocation allocation;
 	
-	vmaCreateBuffer(m_memoryAllocator, (VkBufferCreateInfo*)&createInfo, &alloCreateInfo, (VkBuffer*)&(newBuffer->buffer), &newBuffer->m_allocationHandle, &newBuffer->m_allocationInfo);
+	vmaCreateBuffer(m_memoryAllocator, (VkBufferCreateInfo*)&createInfo, &alloCreateInfo, (VkBuffer*)&(newBuffer.buffer), &allocation.m_allocationHandle, &allocation.m_allocationInfo);
 	
 	if (createInfo.createInfo.usage & vk::BufferUsageFlagBits::eShaderDeviceAddress) {
 
 		vk::Device d = m_allocatorInfo.device;
 
-		newBuffer->deviceAddress = d.getBufferAddress(
-			{
-				.buffer = newBuffer->buffer
+		newBuffer.deviceAddress = d.getBufferAddress(
+			{		
+				.buffer = newBuffer.buffer
 			}
 		);
 	}
 	
 	if (!debugName.empty()) {
-		SetDebugName(m_allocatorInfo.device, vk::ObjectType::eBuffer, GetVulkanHandle(newBuffer->buffer), debugName);
+		SetDebugName(m_allocatorInfo.device, vk::ObjectType::eBuffer, GetVulkanHandle(newBuffer.buffer), debugName);
 	}
+
+	m_bufferAllocations[id] = allocation;
 	
-	return UniqueVulkanBuffer(newBuffer);
+	return newBuffer;
 }
 
-UniqueVulkanBuffer VulkanVMAMemoryManager::CreateStagingBuffer(size_t size, const std::string& debugName) {
+VulkanBuffer VulkanVMAMemoryManager::CreateStagingBuffer(size_t size, const std::string& debugName) {
 	BufferCreationInfo createInfo = {
 		.createInfo = {
 			.size	= size,
@@ -101,21 +104,17 @@ UniqueVulkanBuffer VulkanVMAMemoryManager::CreateStagingBuffer(size_t size, cons
 
 void VulkanVMAMemoryManager::DiscardBuffer(VulkanBuffer& buffer, DiscardMode discard) {
 	if (discard == DiscardMode::Deferred) {
-		if (VMABuffer* b = dynamic_cast<VMABuffer*>(&buffer)) {
-			m_deferredDeleteBuffers.push_back({ std::move(*b), m_framesInFlight });
-		}
+		m_deferredDeleteBuffers.push_back({ std::move(buffer), m_framesInFlight });
 	}
 	else {
-		if (VMABuffer* b = dynamic_cast<VMABuffer*>(&buffer)) {
-			b->Destroy();
-		}
+		DeleteBuffer(buffer);
 	}
 }
 
 
 vk::Image VulkanVMAMemoryManager::CreateImage(vk::ImageCreateInfo& createInfo, const std::string& debugName) {
-	vk::Image image;
-	Allocation imageAlloc;
+	vk::Image	image;
+	Allocation	imageAlloc;
 
 	VmaAllocationCreateInfo vmaallocInfo = {};
 	vmaallocInfo.usage = VMA_MEMORY_USAGE_AUTO;
@@ -141,6 +140,7 @@ void	VulkanVMAMemoryManager::Update() {
 		(*i).framesCount--;
 
 		if ((*i).framesCount == 0) {
+			DeleteBuffer(i->buffer);
 			i = m_deferredDeleteBuffers.erase(i);
 		}
 		else {
@@ -149,62 +149,75 @@ void	VulkanVMAMemoryManager::Update() {
 	}
 }
 
-VMABuffer::VMABuffer(VulkanVMAMemoryManager& manager) {
-	sourceManager = &manager;
-}
+void* VulkanVMAMemoryManager::MapBuffer(const VulkanBuffer& buffer) {
+	uint32_t id				= buffer.GetAssetID();
+	Allocation allocation	= m_bufferAllocations[id];
 
-VMABuffer::VMABuffer(VMABuffer&& obj) : VulkanBuffer(std::move(obj)) {
-	if (this != &obj) {
-		m_allocationHandle	= obj.m_allocationHandle;
-		m_allocationInfo	= obj.m_allocationInfo;
-		m_allocator			= obj.m_allocator;
-
-		obj.m_allocator			= 0;
-		obj.m_allocationHandle	= 0;
-		obj.buffer				= VK_NULL_HANDLE;
-	}
-}
-
-VMABuffer& VMABuffer::operator=(VMABuffer&& obj) {
-	if (this != &obj) {
-		m_allocationHandle	= obj.m_allocationHandle;
-		m_allocationInfo	= obj.m_allocationInfo;
-		m_allocator			= obj.m_allocator;
-
-		obj.m_allocator			= 0;
-		obj.m_allocationHandle	= 0;
-		obj.buffer				= VK_NULL_HANDLE;
-	}
-	return *this;
-}
-
-void* VMABuffer::Map()		const {
-	if (m_allocationInfo.pMappedData) {
-		return m_allocationInfo.pMappedData;
+	if (allocation.m_allocationInfo.pMappedData) {
+		return allocation.m_allocationInfo.pMappedData;
 	}
 	void* mappedData = nullptr;
-	vmaMapMemory(m_allocator, m_allocationHandle, &mappedData);
+	vmaMapMemory(m_memoryAllocator, allocation.m_allocationHandle, &mappedData);
 	return mappedData;
+
+	return nullptr;
 }
 
-void VMABuffer::Unmap()		const {
-	vmaUnmapMemory(m_allocator, m_allocationHandle);
-};
-
-void* VMABuffer::Data() const {
-	return m_allocationInfo.pMappedData;
+void	VulkanVMAMemoryManager::UnmapBuffer(const VulkanBuffer& buffer) {
+	uint32_t id = buffer.GetAssetID();
+	Allocation allocation = m_bufferAllocations[id];
+	if (allocation.m_allocationInfo.pMappedData) {
+		return;
+	}
+	vmaUnmapMemory(m_memoryAllocator, allocation.m_allocationHandle);
 }
 
-void VMABuffer::CopyData(void* data, size_t size) const {
-	if (m_allocationInfo.pMappedData) {
+void	VulkanVMAMemoryManager::CopyData(const VulkanBuffer& buffer, void* data, size_t size, size_t offset) {
+	uint32_t id = buffer.GetAssetID();
+	Allocation allocation = m_bufferAllocations[id];
+
+	if (allocation.m_allocationInfo.pMappedData) {
 		//we're already mapped, can just copy
-		memcpy(m_allocationInfo.pMappedData, data, size);
+		memcpy((void*)((size_t)allocation.m_allocationInfo.pMappedData + offset), data, size);
 	}
 	else {
 		//We should be able to safely map this?
 		void* mappedData = nullptr;
-		vmaMapMemory(m_allocator, m_allocationHandle, &mappedData);
-		memcpy(mappedData, data, size);
-		vmaUnmapMemory(m_allocator, m_allocationHandle);
+		vmaMapMemory(m_memoryAllocator, allocation.m_allocationHandle, &mappedData);
+		memcpy((void*)((size_t)mappedData + offset), data, size);
+		vmaUnmapMemory(m_memoryAllocator, allocation.m_allocationHandle);
 	}
+}
+
+uint32_t	VulkanVMAMemoryManager::GetSpareBufferID() {
+	uint32_t id = 0;
+	if (m_spareBufferIDs.empty()) {
+		id = m_bufferAllocations.size();
+		m_bufferAllocations.resize(m_bufferAllocations.size() + 1);
+		return id;
+	}
+	else {
+		id = m_spareBufferIDs.back();
+		m_spareBufferIDs.pop_back();
+	}
+	return id;
+}
+
+void	VulkanVMAMemoryManager::DeleteBuffer(VulkanBuffer& buffer) {
+	uint32_t id				= buffer.GetAssetID();
+
+	if (!m_bufferAllocations[id].m_allocationHandle) {
+		return;
+	}
+
+	vmaDestroyBuffer(m_memoryAllocator, buffer.buffer, m_bufferAllocations[id].m_allocationHandle);
+	m_spareBufferIDs.push_back(id);
+
+	m_bufferAllocations[id].m_allocationHandle = 0;
+	m_bufferAllocations[id].m_allocationInfo = {};
+
+	buffer.buffer			= VK_NULL_HANDLE;
+	buffer.size				= 0;
+	buffer.deviceAddress	= 0;
+	buffer.mappedPtr		= 0;
 }

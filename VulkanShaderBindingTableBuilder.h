@@ -23,7 +23,7 @@ namespace NCL::Rendering::Vulkan {
 	};
 
 	struct ShaderBindingTable {
-		UniqueVulkanBuffer tableBuffer;
+		VulkanBuffer tableBuffer;
 		vk::StridedDeviceAddressRegionKHR regions[BindingTableOrder::MAX_SIZE];
 	};
 

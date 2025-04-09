@@ -8,7 +8,6 @@ License: MIT (see LICENSE file at the top of the source tree)
 #include "VulkanTextureBuilder.h"
 #include "VulkanTexture.h"
 #include "VulkanUtils.h"
-#include "VulkanBufferBuilder.h"
 #include "TextureLoader.h"
 
 using namespace NCL;
@@ -337,22 +336,17 @@ UniqueVulkanTexture	TextureBuilder::GenerateTexture(vk::CommandBuffer m_cmdBuffe
 void TextureBuilder::UploadTextureData(vk::CommandBuffer m_cmdBuffer, TextureJob& job) {
     int allocationSize = job.faceByteCount * job.faceCount;
 
-    //job.stagingBuffer = BufferBuilder(m_sourceDevice, m_sourceAllocator)
-    //    .WithBufferUsage(vk::BufferUsageFlagBits::eTransferSrc)
-    //    .WithHostVisibility()
-    //    .Build(allocationSize, "Staging Buffer");
-
     job.stagingBuffer = m_memManager->CreateStagingBuffer(allocationSize, "Staging Buffer");
 
     //our buffer now has memory! Copy some texture date to it...
-    char* gpuPtr = (char*)job.stagingBuffer->Map();
+    char* gpuPtr = (char*)job.stagingBuffer.Map();
     for (int i = 0; i < job.faceCount; ++i) {
         memcpy(gpuPtr, job.dataSrcs[i], job.faceByteCount);
         gpuPtr += job.faceByteCount;
     }
-    job.stagingBuffer->Unmap();
+    job.stagingBuffer.Unmap();
 
-    Vulkan::UploadTextureData(m_cmdBuffer, job.stagingBuffer->buffer, job.image, vk::ImageLayout::eUndefined, job.endLayout,
+    Vulkan::UploadTextureData(m_cmdBuffer, job.stagingBuffer.buffer, job.image, vk::ImageLayout::eUndefined, job.endLayout,
         vk::BufferImageCopy{
             .imageSubresource = {
                 .aspectMask = vk::ImageAspectFlagBits::eColor,

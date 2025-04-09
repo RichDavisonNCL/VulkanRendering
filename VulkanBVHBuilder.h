@@ -19,7 +19,7 @@ namespace NCL::Rendering::Vulkan {
 	};
 					
 	struct BLASEntry {
-		UniqueVulkanBuffer buffer;
+		VulkanBuffer buffer;
 		vk::AccelerationStructureBuildGeometryInfoKHR	buildInfo;
 		vk::AccelerationStructureBuildSizesInfoKHR		sizeInfo;
 		vk::UniqueAccelerationStructureKHR				accelStructure;
@@ -63,6 +63,6 @@ namespace NCL::Rendering::Vulkan {
 		VulkanMemoryManager* m_memoryManager;
 
 		vk::UniqueAccelerationStructureKHR	m_tlas;
-		UniqueVulkanBuffer						m_tlasBuffer;
+		VulkanBuffer						m_tlasBuffer;
 	};
 }

@@ -65,7 +65,7 @@ namespace NCL::Rendering::Vulkan {
 			vk::ImageLayout endLayout;
 			vk::ImageAspectFlags aspect;
 
-			UniqueVulkanBuffer	stagingBuffer;
+			VulkanBuffer	stagingBuffer;
 
 			size_t			faceByteCount;
 

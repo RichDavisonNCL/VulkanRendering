@@ -8,7 +8,6 @@ License: MIT (see LICENSE file at the top of the source tree)
 #include "VulkanMesh.h"
 #include "Vulkanrenderer.h"
 #include "VulkanUtils.h"
-#include "VulkanBufferBuilder.h"
 
 using namespace NCL;
 using namespace Rendering;
@@ -100,7 +99,7 @@ void VulkanMesh::UploadToGPU(vk::CommandBuffer cmdBuffer, VulkanMemoryManager* m
 	size_t indexDataSize		= sizeof(int) * GetIndexCount();
 	size_t totalAllocationSize	= vertexDataSize + indexDataSize;
 
-	UniqueVulkanBuffer stagingBuffer = memManager->CreateStagingBuffer(totalAllocationSize);
+	VulkanBuffer stagingBuffer = memManager->CreateStagingBuffer(totalAllocationSize);
 
 	m_gpuBuffer = memManager->CreateBuffer(
 		{
@@ -115,14 +114,14 @@ void VulkanMesh::UploadToGPU(vk::CommandBuffer cmdBuffer, VulkanMemoryManager* m
 		"Vertex / Index Buffer"
 	);
 
-	assert(stagingBuffer->size >= (totalAllocationSize));
+	assert(stagingBuffer.size >= (totalAllocationSize));
 	
 	//need to now copy vertex data to device memory
-	char* dataPtr = (char*)stagingBuffer->Map();
+	char* dataPtr = (char*)stagingBuffer.Map();
 	size_t offset = 0;
 	for (size_t i = 0; i < m_usedAttributes.size(); ++i) {
 		//We're going to use the same buffer for every attribute
-		m_usedBuffers.push_back(m_gpuBuffer->buffer);
+		m_usedBuffers.push_back(m_gpuBuffer.buffer);
 		//But each attribute starts at a different offset
 		m_usedOffsets.push_back(offset);
 		//Copy the data from CPU to GPU-visible memory
@@ -136,16 +135,16 @@ void VulkanMesh::UploadToGPU(vk::CommandBuffer cmdBuffer, VulkanMemoryManager* m
 		m_indexType = vk::IndexType::eUint32;
 		m_indexDataOffset = offset;
 	}
-	stagingBuffer->Unmap();
+	stagingBuffer.Unmap();
 	
 	{//Now to transfer the mesh data from the staging buffer to the gpu-only buffer
 		vk::BufferCopy copyRegion;
 		copyRegion.size = vertexDataSize + indexDataSize;
-		cmdBuffer.copyBuffer(stagingBuffer->buffer, m_gpuBuffer->buffer, copyRegion);
+		cmdBuffer.copyBuffer(stagingBuffer.buffer, m_gpuBuffer.buffer, copyRegion);
 	}
 	
 	//Shove in a semaphore
-	memManager->DiscardBuffer(*stagingBuffer);
+	memManager->DiscardBuffer(stagingBuffer);
 }
 
 void VulkanMesh::UploadToGPU(RendererBase* r)  {
@@ -156,7 +155,7 @@ void VulkanMesh::BindToCommandBuffer(vk::CommandBuffer  buffer) const {
 	buffer.bindVertexBuffers(0, m_usedBuffers.size(), &m_usedBuffers[0], &m_usedOffsets[0]);
 
 	if (GetIndexCount() > 0) {
-		buffer.bindIndexBuffer(m_gpuBuffer->buffer, m_indexDataOffset, m_indexType);
+		buffer.bindIndexBuffer(m_gpuBuffer.buffer, m_indexDataOffset, m_indexType);
 	}
 }
 
@@ -240,7 +239,7 @@ bool VulkanMesh::GetIndexInformation(vk::Buffer& outBuffer, uint32_t& outOffset,
 
 	int elementSize = (m_indexType == vk::IndexType::eUint32) ? 4: 2;
 	
-	outBuffer	= m_gpuBuffer->buffer;
+	outBuffer	= m_gpuBuffer.buffer;
 	outOffset	= m_indexDataOffset;
 	outRange	= elementSize * GetIndexCount();
 	outType		= m_indexType;

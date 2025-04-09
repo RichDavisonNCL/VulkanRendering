@@ -53,7 +53,7 @@ namespace NCL::Rendering::Vulkan {
 		std::vector<vk::VertexInputBindingDescription>		m_attributeBindings;		
 	
 		VulkanMemoryManager* m_memManager = nullptr;
-		UniqueVulkanBuffer m_gpuBuffer;
+		VulkanBuffer m_gpuBuffer;
 		size_t m_vertexDataOffset = 0;
 		size_t m_indexDataOffset	= 0;
 

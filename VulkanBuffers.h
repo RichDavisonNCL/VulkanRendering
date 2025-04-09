@@ -10,13 +10,13 @@ License: MIT (see LICENSE file at the top of the source tree)
 namespace NCL::Rendering::Vulkan {
 	class VulkanMemoryManager;
 	//A buffer, backed by memory we have allocated elsewhere
-	class VulkanBuffer : Buffer {
-	public:
+	class VulkanBuffer : public Buffer {
+	public:		
+		friend class VulkanMemoryManager;
+		VulkanBuffer();
 		VulkanBuffer(VulkanBuffer&& obj);
-
-		VulkanBuffer& operator=(VulkanBuffer&& obj);
-
 		virtual ~VulkanBuffer();
+		VulkanBuffer& operator=(VulkanBuffer&& obj);
 
 		vk::Buffer	buffer;
 		size_t		size = 0;
@@ -30,7 +30,7 @@ namespace NCL::Rendering::Vulkan {
 		//validation errors
 		virtual void	CopyData(void* data, size_t size) const;
 
-		virtual void*	Data()		const;
+		//virtual void*	Data()		const;
 
 		virtual void*	Map()		const;
 		virtual void	Unmap()		const;
@@ -47,7 +47,7 @@ namespace NCL::Rendering::Vulkan {
 		}
 
 	protected:
-		VulkanBuffer();
+
 		VulkanMemoryManager* sourceManager = nullptr;
 	};
 };

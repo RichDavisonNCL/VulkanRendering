@@ -94,14 +94,6 @@ ShaderBindingTable VulkanShaderBindingTableBuilder::Build(vk::Device device, Vul
 	}
 	table.regions[0].stride = table.regions[0].size;
 
-	//table.tableBuffer = BufferBuilder(device, m_allocator)
-	//	.WithBufferUsage(vk::BufferUsageFlagBits::eTransferSrc | 
-	//					 vk::BufferUsageFlagBits::eShaderDeviceAddressKHR | 
-	//					 vk::BufferUsageFlagBits::eShaderBindingTableKHR)
-	//	.WithDeviceAddress()
-	//	.WithHostVisibility()
-	//	.Build(bufferSize, debugName + " SBT Buffer");
-
 	table.tableBuffer = memManager.CreateBuffer(
 		{
 			.createInfo = {
@@ -117,9 +109,9 @@ ShaderBindingTable VulkanShaderBindingTableBuilder::Build(vk::Device device, Vul
 	);
 
 
-	vk::DeviceAddress bufferAddress = device.getBufferAddress({ .buffer = table.tableBuffer->buffer });
+	vk::DeviceAddress bufferAddress = device.getBufferAddress({ .buffer = table.tableBuffer.buffer });
 
-	char* bufferData = (char*)table.tableBuffer->Map();
+	char* bufferData = (char*)table.tableBuffer.Map();
 	int dataOffset = 0;
 	int currentHandleIndex = 0;
 	for (int i = 0; i < BindingTableOrder::MAX_SIZE; ++i) { //For each group type
@@ -133,7 +125,7 @@ ShaderBindingTable VulkanShaderBindingTableBuilder::Build(vk::Device device, Vul
 		dataOffset = dataOffsetStart + table.regions[i].size;
 	}
 
-	table.tableBuffer->Unmap();
+	table.tableBuffer.Unmap();
 
 	return table;
 }
