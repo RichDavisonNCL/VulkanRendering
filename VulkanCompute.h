@@ -14,7 +14,7 @@ namespace NCL::Rendering::Vulkan {
 	*/
 	class VulkanCompute : public VulkanShaderBase	{
 	public:
-		VulkanCompute(vk::Device m_sourceDevice, const std::string& filename);
+		VulkanCompute(vk::Device m_sourceDevice, const std::string& filename, const std::string& entryPoint = "main");
 		~VulkanCompute() {}
 
 		Maths::Vector3i GetThreadCount() const { return m_localThreadSize; }

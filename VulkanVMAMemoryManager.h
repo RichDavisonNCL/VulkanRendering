@@ -16,38 +16,6 @@ License: MIT (see LICENSE file at the top of the source tree)
 namespace NCL::Rendering::Vulkan {
 	struct VulkanInitialisation;
 	class VMABuffer;
-	class VulkanVMAMemoryManager;
-
-	//struct VMABuffer : public VulkanBuffer {
-	//	friend class VulkanVMAMemoryManager;
-
-	//	void*	Map()		const override;
-	//	void	Unmap()		const override;
-	//	void*	Data()		const override;
-	//	void	CopyData(void* data, size_t size) const override;
-	//protected:
-	//	VMABuffer() {}
-	//	VMABuffer(VulkanVMAMemoryManager& manager);
-	//	VMABuffer(VMABuffer&& obj);
-	//	~VMABuffer() {
-	//		Destroy();
-	//	}
-	//	VMABuffer& operator=(VMABuffer&& obj);
-
-	//	void Destroy() {
-	//		if (m_allocator) {
-	//			vmaDestroyBuffer(m_allocator, buffer, m_allocationHandle);
-
-	//			m_allocator = 0;
-	//			m_allocationHandle = 0;
-	//			buffer = VK_NULL_HANDLE;
-	//		}
-	//	}
-
-	//	VmaAllocation			m_allocationHandle = {};
-	//	VmaAllocationInfo		m_allocationInfo = {};
-	//	VmaAllocator			m_allocator = {};
-	//};
 
 	class VulkanVMAMemoryManager : public VulkanMemoryManager {
 	public:

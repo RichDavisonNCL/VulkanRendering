@@ -289,11 +289,6 @@ void VulkanBVHBuilder::BuildTLAS(vk::BuildAccelerationStructureFlagsKHR flags) {
 	vk::AccelerationStructureBuildSizesInfoKHR sizesInfo;
 	m_device.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice, &geomInfo, &instanceCount, &sizesInfo);
 
-	//m_tlasBuffer = BufferBuilder(device, m_allocator)
-	//	.WithDeviceAddress()
-	//	.WithBufferUsage(vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR)
-	//	.Build(sizesInfo.accelerationStructureSize, "TLAS Buffer");
-
 	m_tlasBuffer = m_memoryManager->CreateBuffer(
 		{
 			.createInfo = {

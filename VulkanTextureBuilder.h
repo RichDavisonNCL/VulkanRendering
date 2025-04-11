@@ -25,8 +25,6 @@ namespace NCL::Rendering::Vulkan {
 		TextureBuilder& WithPipeFlags(vk::PipelineStageFlags2 flags);
 
 		TextureBuilder& WithCommandBuffer(vk::CommandBuffer buffer);
-		TextureBuilder& UsingQueue(vk::Queue queue);
-		TextureBuilder& UsingPool(vk::CommandPool pool);
 
 		TextureBuilder& WithMips(bool state);
 		TextureBuilder& WithDimension(uint32_t width, uint32_t height, uint32_t depth = 1);
@@ -51,22 +49,11 @@ namespace NCL::Rendering::Vulkan {
 			const std::string& negativeZFile, const std::string& positiveZFile,	
 			const std::string& debugName = "");
 
-
-		//If processing textures via a cmd list provided, the builder doesn't
-		bool	IsProcessing() const;
-		bool	IsProcessing(const std::string& debugName) const;
-		void	WaitForProcessing();
-
 	protected:
 		struct TextureJob {
-			std::string		jobName;
 			vk::Image		image;
-			vk::Fence		workFence;
 			vk::ImageLayout endLayout;
 			vk::ImageAspectFlags aspect;
-
-			VulkanBuffer	stagingBuffer;
-
 			size_t			faceByteCount;
 
 			NCL::Maths::Vector3ui		dimensions;
@@ -74,29 +61,9 @@ namespace NCL::Rendering::Vulkan {
 			uint32_t faceCount		= 0;
 
 			char* dataSrcs[6]		= { nullptr };
-			bool dataOwnership[6]	= { false };
-
-			TextureJob() {
-
-			}
-
-			TextureJob(TextureJob& other) {
-				jobName = other.jobName;
-				image = other.image;
-				workFence = other.workFence;
-				stagingBuffer = std::move(other.stagingBuffer);
-			}
-
-			TextureJob(TextureJob&& other) {
-				jobName = other.jobName;
-				image = other.image;
-				workFence = other.workFence;
-				stagingBuffer = std::move(other.stagingBuffer);
-			}
 		};
 
-		void BeginTexture(const std::string& debugName, vk::UniqueCommandBuffer& uniqueBuffer, vk::CommandBuffer& usingBuffer);
-		void EndTexture(const std::string& debugName, vk::UniqueCommandBuffer& uniqueBuffer, vk::CommandBuffer& usingBuffer, TextureJob& job, UniqueVulkanTexture& t);
+		void FinaliseTexture(const std::string& debugName, vk::CommandBuffer& usingBuffer, TextureJob& job, UniqueVulkanTexture& t);
 
 		UniqueVulkanTexture	GenerateTexture(vk::CommandBuffer m_cmdBuffer, Maths::Vector3ui dimensions, bool isCube, const std::string& debugName);
 
@@ -112,15 +79,10 @@ namespace NCL::Rendering::Vulkan {
 		vk::ImageUsageFlags		m_usages;
 		vk::PipelineStageFlags2	m_pipeFlags;
 
-		vk::Device			m_sourceDevice;
-//		VmaAllocator		m_sourceAllocator;
+		vk::Device				m_sourceDevice;
 
-		VulkanMemoryManager* m_memManager;
+		VulkanMemoryManager*	m_memManager;
 
-		vk::Queue			m_queue;
-		vk::CommandPool		m_pool;
-		vk::CommandBuffer	m_cmdBuffer;
-
-		std::vector<TextureJob> m_activeJobs;
+		vk::CommandBuffer		m_cmdBuffer;
 	};
 }

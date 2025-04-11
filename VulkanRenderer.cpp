@@ -506,18 +506,6 @@ void VulkanRenderer::OnWindowResize(int width, int height) {
 
 	CreateDepthBufer(hostWindow.GetScreenSize().x, hostWindow.GetScreenSize().y);
 
-	//m_depthBuffer = TextureBuilder(GetDevice(), GetMemoryAllocator())
-	//	.UsingPool(GetCommandPool(CommandType::Graphics))
-	//	.UsingQueue(GetQueue(CommandType::Graphics))
-	//	.WithDimension(hostWindow.GetScreenSize().x, hostWindow.GetScreenSize().y)
-	//	.WithAspects(vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil)
-	//	.WithFormat(m_vkInit.depthStencilFormat)
-	//	.WithLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
-	//	.WithUsages(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled)
-	//	.WithPipeFlags(vk::PipelineStageFlagBits2::eEarlyFragmentTests)
-	//	.WithMips(false)
-	//	.Build("Depth Buffer");
-
 	InitDefaultRenderPass();
 
 	vk::UniqueCommandBuffer cmds = CmdBufferCreateBegin(m_device, m_commandPools[CommandType::Graphics], "Window resize cmds");

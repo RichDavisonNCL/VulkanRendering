@@ -70,103 +70,46 @@ TextureBuilder& TextureBuilder::WithMips(bool inMips) {
 }
 
 TextureBuilder& TextureBuilder::WithCommandBuffer(vk::CommandBuffer inBuffer) {
-    assert(MessageAssert(m_queue == 0 && m_pool == 0, "Builder is either passed a command buffer OR uses a queue and pool!"));
     m_cmdBuffer = inBuffer;
     return *this;
 }
 
-TextureBuilder& TextureBuilder::UsingQueue(vk::Queue inQueue) {
-    assert(MessageAssert(m_cmdBuffer == 0, "Builder is either passed a command buffer OR uses a queue and pool!"));
-    m_queue = inQueue;
-    return *this;
-}
-
-TextureBuilder& TextureBuilder::UsingPool(vk::CommandPool inPool) {
-    assert(MessageAssert(m_cmdBuffer == 0, "Builder is either passed a command buffer OR uses a queue and pool!"));
-    m_pool = inPool;
-    return *this;
-}
-
 UniqueVulkanTexture TextureBuilder::Build(const std::string& debugName) {
-    vk::UniqueCommandBuffer	uniqueBuffer;
-    vk::CommandBuffer	    usingBuffer;
-    BeginTexture(debugName, uniqueBuffer, usingBuffer);
-
-    UniqueVulkanTexture tex = GenerateTexture(usingBuffer, m_requestedSize, false, debugName);
-
-    //ImageTransitionBarrier(usingBuffer, tex->GetImage(), vk::ImageLayout::eUndefined, layout, aspects, vk::PipelineStageFlagBits::eTopOfPipe, pipeFlags);
+    UniqueVulkanTexture tex = GenerateTexture(m_cmdBuffer, m_requestedSize, false, debugName);
 
     TextureJob job;
     job.image = tex->GetImage();
-    EndTexture(debugName, uniqueBuffer, usingBuffer, job, tex);
+    FinaliseTexture(debugName, m_cmdBuffer, job, tex);
 
     return tex;
 }
 
 UniqueVulkanTexture TextureBuilder::BuildFromData(void* dataSrc, size_t byteCount, const std::string& debugName) {
-    vk::UniqueCommandBuffer	uniqueBuffer;
-    vk::CommandBuffer	    usingBuffer;
-    BeginTexture(debugName, uniqueBuffer, usingBuffer);
-
-    UniqueVulkanTexture tex = GenerateTexture(usingBuffer, m_requestedSize, false, debugName);
-
-    //ImageTransitionBarrier(usingBuffer, tex->GetImage(), vk::ImageLayout::eUndefined, layout, aspects, vk::PipelineStageFlagBits::eTopOfPipe, pipeFlags);
+    UniqueVulkanTexture tex = GenerateTexture(m_cmdBuffer, m_requestedSize, false, debugName);
 
     TextureJob job;
     job.faceCount = 1;
     job.dataSrcs[0] = (char*)dataSrc;
-    job.dataOwnership[0] = false;
     job.image = tex->GetImage();
     job.endLayout = m_layout;
     job.aspect = vk::ImageAspectFlagBits::eColor;
     job.faceByteCount = byteCount;
     job.dimensions = m_requestedSize;
 
-    UploadTextureData(usingBuffer, job);
+    UploadTextureData(m_cmdBuffer, job);
 
-    EndTexture(debugName, uniqueBuffer, usingBuffer, job, tex);
+    FinaliseTexture(debugName, m_cmdBuffer, job, tex);
 
     return tex;
 }
 
-void TextureBuilder::BeginTexture(const std::string& debugName, vk::UniqueCommandBuffer& uniqueBuffer, vk::CommandBuffer& usingBuffer) {
-    //We're appending to an external command buffer
-    if (m_cmdBuffer) {
-        usingBuffer = m_cmdBuffer;
-    }
-    //We're in charge of our own command buffers
-    else if (m_queue && m_pool) {
-        uniqueBuffer = Vulkan::CmdBufferCreateBegin(m_sourceDevice, m_pool, debugName + " Creation");
-        usingBuffer = *uniqueBuffer;
-    }
-    else {
-        assert(MessageAssert(true, "Cannot build without either a command buffer OR a queue and pool"));
-    }
-}
-
-void TextureBuilder::EndTexture(const std::string& debugName, vk::UniqueCommandBuffer& uniqueBuffer, vk::CommandBuffer& usingBuffer, TextureJob& job, UniqueVulkanTexture& t) {
+void TextureBuilder::FinaliseTexture(const std::string& debugName, vk::CommandBuffer& usingBuffer, TextureJob& job, UniqueVulkanTexture& t) {
     if (m_generateMips) {
         int mipCount = VulkanTexture::GetMaxMips(t->GetDimensions());
         if (mipCount > 1) {
             t->m_mipCount = mipCount;
-            t->GenerateMipMaps(usingBuffer, job.endLayout);
+            t->GenerateMipMaps(usingBuffer, job.endLayout, job.endLayout);
         }
-    }
-
-    //If we're in charge of our own buffers, we just stop and wait for completion now
-    if (uniqueBuffer) {
-        CmdBufferEndSubmitWait(usingBuffer, m_sourceDevice, m_queue);
-        for (int i = 0; i < job.faceCount; ++i) {
-            if (job.dataOwnership[i]) {
-                TextureLoader::DeleteTextureData(job.dataSrcs[i]);
-            }
-        }
-    }
-    //Otherwise, this is going to be handled external to the builder, and placed as a 'job'
-    else {
-        job.workFence   = m_sourceDevice.createFence({});
-        job.jobName     = debugName;
-        m_activeJobs.emplace_back(job);
     }
 }
 
@@ -177,30 +120,25 @@ UniqueVulkanTexture TextureBuilder::BuildFromFile(const std::string& filename) {
     uint32_t flags       = 0;
     TextureLoader::LoadTexture(filename, texData, dimensions.x, dimensions.y, channels, flags);
 
-    vk::UniqueCommandBuffer	uniqueBuffer;
-    vk::CommandBuffer	    usingBuffer;
-
-    BeginTexture(filename, uniqueBuffer, usingBuffer);
-
     vk::ImageUsageFlags	realUsages = m_usages;
 
     m_usages |= vk::ImageUsageFlagBits::eTransferDst;
 
-    UniqueVulkanTexture tex = GenerateTexture(usingBuffer, dimensions, false, filename);
+    UniqueVulkanTexture tex = GenerateTexture(m_cmdBuffer, dimensions, false, filename);
 
     TextureJob job;
     job.faceCount = 1;
     job.dataSrcs[0] = texData;
-    job.dataOwnership[0] = true;
     job.image = tex->GetImage();
     job.endLayout = m_layout;
     job.aspect = vk::ImageAspectFlagBits::eColor;
     job.dimensions = dimensions;
     job.faceByteCount = dimensions.x * dimensions.y * dimensions.z * channels * sizeof(char);
 
-    UploadTextureData(usingBuffer, job);
+    UploadTextureData(m_cmdBuffer, job);
+    TextureLoader::DeleteTextureData(job.dataSrcs[0]);
 
-    EndTexture(filename, uniqueBuffer, usingBuffer, job, tex);
+    FinaliseTexture(filename, m_cmdBuffer, job, tex);
 
     m_usages = realUsages;
 
@@ -233,12 +171,7 @@ UniqueVulkanTexture TextureBuilder::BuildCubemapFromFile(
 
     for (int i = 0; i < 6; ++i) {
         TextureLoader::LoadTexture(*filenames[i], job.dataSrcs[i], dimensions[i].x, dimensions[i].y, channels[i], flags[i]);
-        job.dataOwnership[i] = true;
     }
-
-    vk::UniqueCommandBuffer	uniqueBuffer;
-    vk::CommandBuffer	    usingBuffer;
-    BeginTexture(debugName, uniqueBuffer, usingBuffer);
 
     vk::ImageUsageFlags	realUsages = m_usages;
 
@@ -249,11 +182,15 @@ UniqueVulkanTexture TextureBuilder::BuildCubemapFromFile(
     job.faceByteCount = dimensions[0].x * dimensions[0].y * dimensions[0].z * channels[0] * sizeof(char);
     job.dimensions = dimensions[0];
 
-    UniqueVulkanTexture tex = GenerateTexture(usingBuffer, dimensions[0], true, debugName);
+    UniqueVulkanTexture tex = GenerateTexture(m_cmdBuffer, dimensions[0], true, debugName);
     job.image = tex->GetImage();
 
-    UploadTextureData(usingBuffer, job);
-    EndTexture(debugName, uniqueBuffer, usingBuffer, job, tex);
+    UploadTextureData(m_cmdBuffer, job);
+    for (int i = 0; i < 6; ++i) {
+        TextureLoader::DeleteTextureData(job.dataSrcs[i]);
+    }
+
+    FinaliseTexture(debugName, m_cmdBuffer, job, tex);
 
     m_usages = realUsages;
 
@@ -261,16 +198,12 @@ UniqueVulkanTexture TextureBuilder::BuildCubemapFromFile(
 }
 
 UniqueVulkanTexture TextureBuilder::BuildCubemap(const std::string& debugName) {
-    vk::UniqueCommandBuffer	uniqueBuffer;
-    vk::CommandBuffer	    usingBuffer;
-    BeginTexture(debugName, uniqueBuffer, usingBuffer);
-
-    UniqueVulkanTexture tex = GenerateTexture(usingBuffer, m_requestedSize, true, debugName);
+    UniqueVulkanTexture tex = GenerateTexture(m_cmdBuffer, m_requestedSize, true, debugName);
 
     TextureJob job;
     job.image = tex->GetImage();
     job.endLayout = m_layout;
-    EndTexture(debugName, uniqueBuffer, usingBuffer, job, tex);
+    FinaliseTexture(debugName, m_cmdBuffer, job, tex);
 
     return tex;
 }
@@ -291,7 +224,7 @@ UniqueVulkanTexture	TextureBuilder::GenerateTexture(vk::CommandBuffer m_cmdBuffe
 
     auto createInfo = vk::ImageCreateInfo()
         .setImageType(dimensions.z > 1 ? vk::ImageType::e3D : vk::ImageType::e2D)
-        .setExtent(vk::Extent3D(dimensions.x, dimensions.y, dimensions.z))
+        .setExtent({ dimensions.x, dimensions.y, dimensions.z })
         .setFormat(m_format)
         .setUsage(creationUsages)
         .setMipLevels(m_generateMips ? mipCount : 1)
@@ -336,17 +269,17 @@ UniqueVulkanTexture	TextureBuilder::GenerateTexture(vk::CommandBuffer m_cmdBuffe
 void TextureBuilder::UploadTextureData(vk::CommandBuffer m_cmdBuffer, TextureJob& job) {
     int allocationSize = job.faceByteCount * job.faceCount;
 
-    job.stagingBuffer = m_memManager->CreateStagingBuffer(allocationSize, "Staging Buffer");
+    VulkanBuffer stagingBuffer = m_memManager->CreateStagingBuffer(allocationSize, "Staging Buffer");
 
     //our buffer now has memory! Copy some texture date to it...
-    char* gpuPtr = (char*)job.stagingBuffer.Map();
+    char* gpuPtr = (char*)stagingBuffer.Map();
     for (int i = 0; i < job.faceCount; ++i) {
         memcpy(gpuPtr, job.dataSrcs[i], job.faceByteCount);
         gpuPtr += job.faceByteCount;
     }
-    job.stagingBuffer.Unmap();
+    stagingBuffer.Unmap();
 
-    Vulkan::UploadTextureData(m_cmdBuffer, job.stagingBuffer.buffer, job.image, vk::ImageLayout::eUndefined, job.endLayout,
+    Vulkan::UploadTextureData(m_cmdBuffer, stagingBuffer, job.image, vk::ImageLayout::eUndefined, job.endLayout,
         vk::BufferImageCopy{
             .imageSubresource = {
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
@@ -356,28 +289,5 @@ void TextureBuilder::UploadTextureData(vk::CommandBuffer m_cmdBuffer, TextureJob
             .imageExtent{job.dimensions.x, job.dimensions.y, job.dimensions.z},          
         }
     );
-}
-
-bool	TextureBuilder::IsProcessing() const {
-    return !m_activeJobs.empty();
-}
-
-bool	TextureBuilder::IsProcessing(const std::string& debugName) const {
-    if (m_activeJobs.empty()) {
-        return false;
-    }
-    return false;
-}
-
-void	TextureBuilder::WaitForProcessing() {
-    for (const auto& i : m_activeJobs) {
-        if (m_sourceDevice.waitForFences(1, &i.workFence, true, UINT64_MAX) != vk::Result::eSuccess) {
-        };
-        m_sourceDevice.destroyFence(i.workFence);
-
-        for (int j = 0; j < 6; ++j) {
-            TextureLoader::DeleteTextureData(i.dataSrcs[j]);
-        }
-    }
-    m_activeJobs.clear();
+    m_memManager->DiscardBuffer(stagingBuffer);
 }
