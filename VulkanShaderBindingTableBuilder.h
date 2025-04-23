@@ -8,8 +8,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 #pragma once
 #include "../VulkanRendering/VulkanRenderer.h"
 #include "../VulkanRendering/VulkanPipelineBuilderBase.h"
-#include "VulkanRTShader.h"
-#include "VulkanBuffers.h"
+
 
 namespace NCL::Rendering::Vulkan {
 	namespace BindingTableOrder {

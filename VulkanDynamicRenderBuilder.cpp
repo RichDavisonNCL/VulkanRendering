@@ -12,7 +12,6 @@ using namespace Rendering;
 using namespace Vulkan;
 
 DynamicRenderBuilder::DynamicRenderBuilder() {
-	m_usingStencil	= false;
 	m_renderInfo.setLayerCount(1);
 }
 

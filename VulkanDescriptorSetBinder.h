@@ -58,9 +58,9 @@ namespace NCL::Rendering::Vulkan {
 	public:
 		DescriptorSetMultiBinder(int inFirstSlot = 0) {
 			m_slotOffset	= inFirstSlot;
-			m_firstSlot	= INT_MAX;
-			m_lastSlot	= 0;
-			m_slotCount	= 0;
+			m_firstSlot		= INT_MAX;
+			m_lastSlot		= 0;
+			m_slotCount		= 0;
 		}
 		~DescriptorSetMultiBinder() {
 		}

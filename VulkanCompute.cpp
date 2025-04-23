@@ -18,7 +18,7 @@ VulkanCompute::VulkanCompute(vk::Device m_device, const std::string& filename, c
 	Assets::ReadBinaryFile(Assets::SHADERDIR + "VK/" + filename, &data, dataSize);
 
 	if (dataSize > 0) {
-		m_computeModule = m_device.createShaderModuleUnique(//vk::ShaderModuleCreateInfo(
+		m_computeModule = m_device.createShaderModuleUnique(
 			{
 				.flags = {},
 				.codeSize = dataSize,

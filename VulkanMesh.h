@@ -8,7 +8,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 #pragma once
 #include "../NCLCoreClasses/Mesh.h"
 #include "SmartTypes.h"
-#include "VulkanBuffers.h"
+#include "VulkanBuffer.h"
 
 namespace NCL::Rendering::Vulkan {
 	class VulkanMemoryManager;

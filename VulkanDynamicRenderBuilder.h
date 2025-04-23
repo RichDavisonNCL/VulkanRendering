@@ -57,7 +57,7 @@ namespace NCL::Rendering::Vulkan {
 		vk::RenderingInfoKHR m_renderInfo;
 		std::vector< vk::RenderingAttachmentInfoKHR > m_colourAttachments;
 		vk::RenderingAttachmentInfoKHR m_depthAttachment;
-		bool		m_usingStencil;
-		bool		m_usingAutoViewstate;
+		bool		m_usingStencil			= false;
+		bool		m_usingAutoViewstate	= true;
 	};
 }

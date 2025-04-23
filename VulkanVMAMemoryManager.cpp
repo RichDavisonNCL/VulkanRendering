@@ -219,5 +219,4 @@ void	VulkanVMAMemoryManager::DeleteBuffer(VulkanBuffer& buffer) {
 	buffer.buffer			= VK_NULL_HANDLE;
 	buffer.size				= 0;
 	buffer.deviceAddress	= 0;
-	buffer.mappedPtr		= 0;
 }

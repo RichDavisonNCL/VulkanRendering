@@ -110,10 +110,6 @@ namespace NCL::Rendering::Vulkan {
 			return m_instance;
 		}
 
-		//VmaAllocator GetMemoryAllocator() const {
-		//	return m_memoryAllocator;
-		//}
-
 		vk::Queue GetQueue(CommandType::Type type) const {
 			return m_queues[type];
 		}
@@ -137,10 +133,6 @@ namespace NCL::Rendering::Vulkan {
 		bool SupportsAsyncCompute() const;
 		bool SupportsAsyncCopy()	const;
 		bool SupportsAsyncPresent() const;
-
-		//UniqueVulkanTexture const & GetDepthBuffer() const {
-		//	return m_depthBuffer;
-		//}
 
 		bool MemoryTypeFromPhysicalDeviceProps(vk::MemoryPropertyFlags requirements, uint32_t type, uint32_t& index);
 
@@ -178,8 +170,6 @@ namespace NCL::Rendering::Vulkan {
 
 		vk::CommandBuffer		m_frameCmds;
 
-//		VmaAllocatorCreateInfo	m_allocatorInfo;
-
 		VulkanInitialisation	m_vkInit;
 	private: 
 		void	InitCommandPools();
@@ -187,7 +177,6 @@ namespace NCL::Rendering::Vulkan {
 		bool	InitPhysicalDevice();
 		bool	InitGPUDevice();
 		bool	InitSurface();
-		//void	InitMemoryAllocator();
 		void	InitBufferChain(vk::CommandBuffer  m_cmdBuffer);
 
 		void	InitFrameStates(uint32_t framesInFlight);
@@ -231,10 +220,5 @@ namespace NCL::Rendering::Vulkan {
 		uint64_t				m_globalFrameID		= 0;
 
 		vk::Fence				m_currentSwapFence;
-
-	//Buffer Management
-		//VulkanMemoryManager* m_memoryManager;
-
-		//VmaAllocator		m_memoryAllocator;
 	};
 }

@@ -6,7 +6,7 @@ Contact:richgdavison@gmail.com
 License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #pragma once
-#include "VulkanBuffers.h"
+#include "VulkanBuffer.h"
 #include "VulkanTexture.h"
 
 namespace NCL::Rendering::Vulkan {

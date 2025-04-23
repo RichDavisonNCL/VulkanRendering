@@ -5,7 +5,7 @@ Author:Rich Davison
 Contact:richgdavison@gmail.com
 License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
-#include "VulkanBuffers.h"
+#include "VulkanBuffer.h"
 #include "VulkanMemoryManager.h"
 
 using namespace NCL;

@@ -8,7 +8,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 #pragma once
 
 #include "VulkanMemoryManager.h"
-#include "VulkanBuffers.h"
+#include "VulkanBuffer.h"
 #include "VulkanTexture.h"
 
 #include "vma/vk_mem_alloc.h"

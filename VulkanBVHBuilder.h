@@ -7,7 +7,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #pragma once
 #include "../VulkanRendering/VulkanRenderer.h"
-#include "../VulkanRendering/VulkanBuffers.h"
+#include "../VulkanRendering/VulkanBuffer.h"
 #include "VulkanBVHBuilder.h"
 
 namespace NCL::Rendering::Vulkan {

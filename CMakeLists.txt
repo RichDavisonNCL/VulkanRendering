@@ -5,7 +5,7 @@ set(PROJECT_NAME VulkanRendering)
 ################################################################################
 set(Header_Files
     "VulkanUtils.h"
-    "VulkanBuffers.h"
+    "VulkanBuffer.h"
     "VulkanCompute.h"
     "VulkanComputePipelineBuilder.h"
     "VulkanDescriptorSetLayoutBuilder.h"
@@ -37,7 +37,7 @@ source_group("Header Files" FILES ${Header_Files})
 
 set(Source_Files
 	"VulkanUtils.cpp"
-    "VulkanBuffers.cpp"
+    "VulkanBuffer.cpp"
     "VulkanCompute.cpp"
     "VulkanComputePipelineBuilder.cpp"
     "VulkanDescriptorSetLayoutBuilder.cpp"

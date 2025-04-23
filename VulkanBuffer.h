@@ -21,8 +21,6 @@ namespace NCL::Rendering::Vulkan {
 		vk::Buffer	buffer;
 		size_t		size = 0;
 
-		void* mappedPtr = nullptr;
-
 		vk::DeviceAddress	deviceAddress;
 
 		//A convenience func to help get around vma holding various
