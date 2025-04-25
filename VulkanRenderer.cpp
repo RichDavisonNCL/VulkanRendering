@@ -54,6 +54,7 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 	m_pipelineCache = m_device.createPipelineCache(vk::PipelineCacheCreateInfo());
 
 	m_frameCmds = m_frameContexts[m_currentSwap].cmdBuffer;
+	m_frameCmds.begin(vk::CommandBufferBeginInfo());
 }
 
 VulkanRenderer::~VulkanRenderer() {
@@ -66,7 +67,6 @@ VulkanRenderer::~VulkanRenderer() {
 		m_device.destroyImageView(c.colourView);
 	}
 	m_frameContexts.clear();
-	//vmaDestroyAllocator(m_memoryAllocator);
 	m_device.destroyDescriptorPool(m_defaultDescriptorPool);
 	m_device.destroySwapchainKHR(m_swapChain);
 
@@ -525,6 +525,7 @@ void VulkanRenderer::CompleteResize() {
 }
 
 void VulkanRenderer::WaitForSwapImage() {
+	
 	if (!hostWindow.IsMinimised()) {
 		vk::Result waitResult = m_device.waitForFences(m_currentSwapFence, true, ~0);
 	}
@@ -532,6 +533,11 @@ void VulkanRenderer::WaitForSwapImage() {
 }
 
 void	VulkanRenderer::BeginFrame() {
+	//Clear out any commands from the constructor
+	if (m_globalFrameID == 0) {
+		CmdBufferEndSubmitWait(m_frameCmds, m_device, m_queues[CommandType::Graphics]);
+	}
+
 	//First we need to prevent the m_renderer from going too far ahead of the frames in flight max
 	m_currentFrameContext = (m_currentFrameContext + 1) % m_frameContexts.size();
 
