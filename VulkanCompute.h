@@ -25,6 +25,8 @@ namespace NCL::Rendering::Vulkan {
 		Maths::Vector3i						m_localThreadSize;
 		vk::PipelineShaderStageCreateInfo	m_createInfo;
 		vk::UniqueShaderModule				m_computeModule;
+
+		std::string							m_entryPoint;
 	};
 
 	using UniqueVulkanCompute = std::unique_ptr<VulkanCompute>;

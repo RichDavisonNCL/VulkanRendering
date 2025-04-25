@@ -32,7 +32,7 @@ void VulkanShader::ReloadShader() {
 
 }
 
-void VulkanShader::AddBinaryShaderModule(const std::string& fromFile, ShaderStages::Type stage, vk::Device device, const std::string& m_entryPoint) {
+void VulkanShader::AddBinaryShaderModule(const std::string& fromFile, ShaderStages::Type stage, vk::Device device, const std::string& entryPoint) {
 	char* data;
 	size_t dataSize = 0;
 	Assets::ReadBinaryFile(Assets::SHADERDIR + "VK/" + fromFile, &data, dataSize);
@@ -52,14 +52,14 @@ void VulkanShader::AddBinaryShaderModule(const std::string& fromFile, ShaderStag
 	}
 
 	m_shaderFiles[stage] = fromFile;
-	m_entryPoints[stage] = m_entryPoint;
+	m_entryPoints[stage] = entryPoint;
 
 	delete data;
 }
 
-void VulkanShader::AddBinaryShaderModule(ShaderStages::Type stage, vk::UniqueShaderModule& m_shaderModule, const std::string& m_entryPoint) {
+void VulkanShader::AddBinaryShaderModule(ShaderStages::Type stage, vk::UniqueShaderModule& m_shaderModule, const std::string& entryPoint) {
 	m_shaderModule.swap(m_shaderModules[stage]);
-	m_entryPoints[stage]		= m_entryPoint;
+	m_entryPoints[stage]		= entryPoint;
 }
 
 void VulkanShader::Init() {

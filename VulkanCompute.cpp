@@ -31,9 +31,11 @@ VulkanCompute::VulkanCompute(vk::Device m_device, const std::string& filename, c
 		std::cout << __FUNCTION__ << " Problem loading shader file " << filename << "!\n";
 		return;
 	}
+	m_entryPoint = entryPoint;
+
 	m_createInfo.stage	= vk::ShaderStageFlagBits::eCompute;
 	m_createInfo.module = *m_computeModule;
-	m_createInfo.pName	= entryPoint.c_str();
+	m_createInfo.pName	= m_entryPoint.c_str();
 
 	AddReflectionData(dataSize, data, vk::ShaderStageFlagBits::eCompute);
 	BuildLayouts(m_device);
