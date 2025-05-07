@@ -20,18 +20,13 @@ void	VulkanShaderBase::FillDescriptorSetLayouts(std::vector<vk::DescriptorSetLay
 	}
 }
 
-void	VulkanShaderBase::FillPushConstants(std::vector<vk::PushConstantRange>& constants) const {
-	constants.clear();
-	constants = m_pushConstants;
-}
-
-vk::DescriptorSetLayout VulkanShaderBase::GetLayout(uint32_t index) const {
+vk::DescriptorSetLayout VulkanShaderBase::GetSetLayout(uint32_t index) const {
 	assert(index < m_allLayouts.size());
 	assert(!m_allLayouts.empty());
 	return *m_allLayouts[index];
 }
 
-std::vector<vk::DescriptorSetLayoutBinding> VulkanShaderBase::GetLayoutBinding(uint32_t index) const {
+std::vector<vk::DescriptorSetLayoutBinding> VulkanShaderBase::GetBindingsForSetLayout(uint32_t index) const {
 	if (index >= m_allLayoutsBindings.size()) {
 		return {};
 	}
@@ -41,6 +36,11 @@ std::vector<vk::DescriptorSetLayoutBinding> VulkanShaderBase::GetLayoutBinding(u
 void VulkanShaderBase::AddDescriptorSetLayoutState(std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& data, std::vector<vk::UniqueDescriptorSetLayout>& layouts) {
 	m_allLayoutsBindings = std::move(data);
 	m_allLayouts = std::move(layouts);
+}
+
+void	VulkanShaderBase::FillPushConstants(std::vector<vk::PushConstantRange>& constants) const {
+	constants.clear();
+	constants = m_pushConstants;
 }
 
 void VulkanShaderBase::AddPushConstantState(std::vector<vk::PushConstantRange>& data) {

@@ -196,9 +196,10 @@ namespace NCL::Rendering::Vulkan {
 
 		vk::PhysicalDeviceProperties		m_deviceProperties;
 		vk::PhysicalDeviceMemoryProperties	m_deviceMemoryProperties;
+		vk::DebugUtilsMessengerEXT			m_debugMessenger;
 
-		vk::PipelineCache		m_pipelineCache;
-		vk::Device				m_device;		//Device handle	
+		vk::PipelineCache	m_pipelineCache;
+		vk::Device			m_device;		//Device handle	
 
 		vk::SwapchainKHR	m_swapChain;
 		vk::SurfaceKHR		m_surface;
@@ -209,15 +210,13 @@ namespace NCL::Rendering::Vulkan {
 		vk::ImageView		m_depthView;
 		vk::DeviceMemory	m_depthMemory;
 
-		vk::DebugUtilsMessengerEXT m_debugMessenger;
-
 		std::vector<FrameContext>	m_frameContexts;
 		std::vector<ChainState>		m_swapStates;
 
 		uint32_t				m_currentFrameContext	= 0; //Frame context for this frame
 		uint32_t				m_currentSwap			= 0; //To index our swapchain 
 
-		uint64_t				m_globalFrameID		= 0;
+		uint64_t				m_globalFrameID			= 0;
 
 		vk::Fence				m_currentSwapFence;
 	};

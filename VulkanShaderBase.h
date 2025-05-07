@@ -20,9 +20,9 @@ namespace NCL::Rendering::Vulkan {
 
 		void	FillDescriptorSetLayouts(std::vector<vk::DescriptorSetLayout>& layouts) const;
 		void	FillPushConstants(std::vector<vk::PushConstantRange>& constants) const;
-		vk::DescriptorSetLayout GetLayout(uint32_t) const;
+		vk::DescriptorSetLayout GetSetLayout(uint32_t) const;
 
-		std::vector<vk::DescriptorSetLayoutBinding>  GetLayoutBinding(uint32_t index) const;
+		std::vector<vk::DescriptorSetLayoutBinding>  GetBindingsForSetLayout(uint32_t index) const;
 
 	protected:
 		void AddDescriptorSetLayoutState(std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& data, std::vector<vk::UniqueDescriptorSetLayout>& layouts);
