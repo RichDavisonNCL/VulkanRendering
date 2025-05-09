@@ -32,8 +32,6 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 
 	m_vkInit = vkInitInfo;
 
-	//m_allocatorInfo		= {};
-
 	for (uint32_t i = 0; i < CommandType::MAX_COMMAND_TYPES; ++i) {
 		m_queueFamilies[i] = -1;
 	}
@@ -43,7 +41,6 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 	InitPhysicalDevice();
 
 	InitGPUDevice();
-	//InitMemoryAllocator();
 
 	InitCommandPools();
 	InitDefaultDescriptorPool();
@@ -393,21 +390,6 @@ void	VulkanRenderer::InitCommandPools() {
 	}
 }
 
-//void	VulkanRenderer::InitMemoryAllocator() {
-//	VmaVulkanFunctions funcs = {};
-//	funcs.vkGetInstanceProcAddr = ::vk::detail::defaultDispatchLoaderDynamic.vkGetInstanceProcAddr;
-//	funcs.vkGetDeviceProcAddr   = ::vk::detail::defaultDispatchLoaderDynamic.vkGetDeviceProcAddr;
-//
-//	m_allocatorInfo.physicalDevice = m_physicalDevice;
-//	m_allocatorInfo.device	= m_device;
-//	m_allocatorInfo.instance	= m_instance;
-//
-//	m_allocatorInfo.flags |= m_vkInit.vmaFlags;
-//
-//	m_allocatorInfo.pVulkanFunctions = &funcs;
-//	vmaCreateAllocator(&m_allocatorInfo, &m_memoryAllocator);
-//}
-
 bool VulkanRenderer::InitDeviceQueueIndices() {
 	std::vector<vk::QueueFamilyProperties> deviceQueueProps = m_physicalDevice.getQueueFamilyProperties();
 
@@ -677,27 +659,39 @@ void	VulkanRenderer::InitDefaultRenderPass() {
 	m_defaultRenderPass = m_device.createRenderPass(renderPassInfo);
 }
 
-void	VulkanRenderer::InitDefaultDescriptorPool(uint32_t maxSets) {
-	vk::DescriptorPoolSize poolSizes[] = {
-		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, maxSets),
-		vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, maxSets),
-		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBufferDynamic, maxSets),
-		vk::DescriptorPoolSize(vk::DescriptorType::eStorageBufferDynamic, maxSets),		
-		
-		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, maxSets),
-		vk::DescriptorPoolSize(vk::DescriptorType::eSampledImage, maxSets),
-		vk::DescriptorPoolSize(vk::DescriptorType::eStorageImage, maxSets),
+void	VulkanRenderer::InitDefaultDescriptorPool() {
+	std::vector< vk::DescriptorPoolSize> poolSizes;
 
-	//	vk::DescriptorPoolSize(vk::DescriptorType::eAccelerationStructureKHR, maxSets),
+	if (m_vkInit.defaultDescriptorPoolBufferCount > 0) {
+		poolSizes.emplace_back(vk::DescriptorType::eUniformBuffer, m_vkInit.defaultDescriptorPoolBufferCount);
+		poolSizes.emplace_back(vk::DescriptorType::eStorageBuffer, m_vkInit.defaultDescriptorPoolBufferCount);
+		poolSizes.emplace_back(vk::DescriptorType::eUniformBufferDynamic, m_vkInit.defaultDescriptorPoolBufferCount);
+		poolSizes.emplace_back(vk::DescriptorType::eStorageBufferDynamic, m_vkInit.defaultDescriptorPoolBufferCount);
+	}
+	if (m_vkInit.defaultDescriptorPoolImageCount > 0) {
+		poolSizes.emplace_back(vk::DescriptorType::eCombinedImageSampler, m_vkInit.defaultDescriptorPoolImageCount);
+		poolSizes.emplace_back(vk::DescriptorType::eSampledImage, m_vkInit.defaultDescriptorPoolImageCount);
+		poolSizes.emplace_back(vk::DescriptorType::eStorageImage, m_vkInit.defaultDescriptorPoolImageCount);
+	}
+	if (m_vkInit.defaultDescriptorPoolSamplerCount > 0) {
+		poolSizes.emplace_back(vk::DescriptorType::eSampler, m_vkInit.defaultDescriptorPoolSamplerCount);
+	}
+	if (m_vkInit.defaultDescriptorPoolAccelerationStructureCount > 0) {
+		poolSizes.emplace_back(vk::DescriptorType::eSampler, m_vkInit.defaultDescriptorPoolAccelerationStructureCount);
+	}
+	
+	uint32_t maxSets = 0;
+	maxSets += m_vkInit.defaultDescriptorPoolBufferCount * 4;
+	maxSets += m_vkInit.defaultDescriptorPoolImageCount * 3;
+	maxSets += m_vkInit.defaultDescriptorPoolSamplerCount;
+	maxSets += m_vkInit.defaultDescriptorPoolAccelerationStructureCount;
+
+	vk::DescriptorPoolCreateInfo poolCreate = {
+		.flags			= vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet | m_vkInit.defaultDescriptorPoolFlags,
+		.maxSets		= maxSets,
+		.poolSizeCount	= uint32_t(poolSizes.size()),
+		.pPoolSizes		= poolSizes.data(),
 	};
-
-	uint32_t poolCount = sizeof(poolSizes) / sizeof(vk::DescriptorPoolSize);
-
-	vk::DescriptorPoolCreateInfo poolCreate;
-	poolCreate.setPoolSizeCount(sizeof(poolSizes) / sizeof(vk::DescriptorPoolSize));
-	poolCreate.setPPoolSizes(poolSizes);
-	poolCreate.setMaxSets(maxSets * poolCount);
-	poolCreate.setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
 
 	m_defaultDescriptorPool = m_device.createDescriptorPool(poolCreate);
 }

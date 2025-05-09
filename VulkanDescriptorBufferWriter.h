@@ -46,28 +46,36 @@ namespace NCL::Rendering::Vulkan {
 
 			vk::DeviceSize		offset = m_device.getDescriptorSetLayoutBindingOffsetEXT(m_layout, binding);
 
-			m_device.getDescriptorEXT(&getInfo, Vulkan::GetDescriptorSize(type, *m_props), ((char*)m_descriptorBufferMemory) + offset);
+			size_t descriptorSize = Vulkan::GetDescriptorSize(type, *m_props);
+
+			m_device.getDescriptorEXT(&getInfo, descriptorSize, ((char*)m_descriptorBufferMemory) + offset);
 
 			return *this;
 		}
 
-		//DescriptorBufferWriter& WriteStorageBuffer(uint32_t binding, const VulkanBuffer& buffer) {
-		//	vk::DescriptorAddressInfoEXT descriptorAddress = {
-		//		.address = uniformBuffer.deviceAddress,
-		//		.range = uniformBuffer.size
-		//	};
+		DescriptorBufferWriter& WriteCombinedImageSampler(uint32_t binding,vk::ImageView view, vk::Sampler sampler, vk::ImageLayout layout, uint32_t arrayIndex = 0) {
+			vk::DescriptorImageInfo imageInfo = {
+				.sampler		= sampler,
+				.imageView		= view,
+				.imageLayout	= layout
+			};
 
-		//	vk::DescriptorGetInfoEXT getInfo = {
-		//		.type = vk::DescriptorType::eUniformBuffer,
-		//		.data = &descriptorAddress
-		//	};
+			vk::DescriptorType type = vk::DescriptorType::eCombinedImageSampler;
 
-		//	vk::DeviceSize		offset = device.getDescriptorSetLayoutBindingOffsetEXT(layout, binding);
+			vk::DescriptorGetInfoEXT getInfo = {
+				.type = type,
+				.data = &imageInfo
+			};
 
-		//	device.getDescriptorEXT(&getInfo, props->uniformBufferDescriptorSize, ((char*)descriptorBufferMemory) + offset);
+			vk::DeviceSize		offset = m_device.getDescriptorSetLayoutBindingOffsetEXT(m_layout, binding);
 
-		//	return *this;
-		//}
+			size_t descriptorSize = Vulkan::GetDescriptorSize(type, *m_props);
+
+			m_device.getDescriptorEXT(&getInfo, descriptorSize, ((char*)m_descriptorBufferMemory) + offset);
+
+			return *this;
+		}
+
 
 		void Finish() {
 			m_destBuffer.Unmap();

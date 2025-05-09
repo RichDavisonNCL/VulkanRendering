@@ -68,6 +68,14 @@ namespace NCL::Rendering::Vulkan {
 
 		vk::PhysicalDeviceType idealGPU		= vk::PhysicalDeviceType::eDiscreteGpu;
 
+
+		vk::DescriptorPoolCreateFlags	defaultDescriptorPoolFlags = {};
+
+		uint32_t	defaultDescriptorPoolBufferCount	= 128;
+		uint32_t	defaultDescriptorPoolImageCount		= 128;
+		uint32_t	defaultDescriptorPoolSamplerCount	= 32;
+		uint32_t	defaultDescriptorPoolAccelerationStructureCount	= 0;
+
 		VmaAllocatorCreateFlags		vmaFlags = {};
 
 		uint32_t	majorVersion	= 1;
@@ -151,7 +159,7 @@ namespace NCL::Rendering::Vulkan {
 
 		virtual void	CompleteResize();
 		virtual void	InitDefaultRenderPass();
-		virtual void	InitDefaultDescriptorPool(uint32_t maxSets = 128);
+		virtual void	InitDefaultDescriptorPool();
 
 		virtual void WaitForSwapImage();
 
