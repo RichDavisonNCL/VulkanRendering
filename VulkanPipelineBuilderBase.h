@@ -58,7 +58,7 @@ namespace NCL::Rendering::Vulkan {
 		}
 		~PipelineBuilderBase() {}
 
-		void FillShaderState(P& pipelineCreate, VulkanPipeline& output) {
+		void FillShaderState(VulkanPipeline& output) {
 			for (int i = 0; i < m_usedModules.size(); ++i) {
 				vk::PipelineShaderStageCreateInfo stageInfo;
 
@@ -73,7 +73,7 @@ namespace NCL::Rendering::Vulkan {
 			m_pipelineCreate.setPStages(m_shaderStages.data());
 
 			if (m_externalLayout) {
-				pipelineCreate.setLayout(m_externalLayout);
+				m_pipelineCreate.setLayout(m_externalLayout);
 			}
 			else {
 				vk::PipelineLayoutCreateInfo pipeLayoutCreate = vk::PipelineLayoutCreateInfo();
@@ -100,7 +100,7 @@ namespace NCL::Rendering::Vulkan {
 				pipeLayoutCreate.setPushConstantRanges(output.m_pushConstants);
 
 				output.layout = m_sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
-				pipelineCreate.setLayout(*output.layout);
+				m_pipelineCreate.setLayout(*output.layout);
 			}
 		}
 

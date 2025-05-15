@@ -121,18 +121,8 @@ VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithShaderModu
 VulkanPipeline VulkanRayTracingPipelineBuilder::Build(const std::string& debugName, vk::PipelineCache cache) {
 	VulkanPipeline output;	
 	
-	FillShaderState(m_pipelineCreate, output);
+	FillShaderState(output);
 	
-	for (int i = 0; i < m_usedModules.size(); ++i) {
-		vk::PipelineShaderStageCreateInfo stageInfo;
-
-		stageInfo.pName = m_moduleEntryPoints[i].c_str();
-		stageInfo.stage = m_usedModules[i]->m_shaderStage;
-		stageInfo.module = *m_usedModules[i]->m_shaderModule;
-
-		m_shaderStages.push_back(stageInfo);
-	}
-
 	m_allGroups.clear();
 	m_allGroups.insert(m_allGroups.end(), m_genGroups.begin() , m_genGroups.end());
 	m_allGroups.insert(m_allGroups.end(), m_missGroups.begin(), m_missGroups.end());
@@ -143,13 +133,6 @@ VulkanPipeline VulkanRayTracingPipelineBuilder::Build(const std::string& debugNa
 
 	//m_pipelineCreate.stageCount	= m_shaderStages.size();
 	//m_pipelineCreate.pStages	= m_shaderStages.data();
-
-	//vk::PipelineLayoutCreateInfo pipeLayoutCreate = vk::PipelineLayoutCreateInfo()
-	//	.setSetLayouts(m_allLayouts)
-	//	.setPushConstantRanges(m_pushConstants);
-
-
-	//output.layout = m_sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
 
 	//m_pipelineCreate.layout = *output.layout;
 	m_pipelineCreate.setPDynamicState(&m_dynamicCreate);
