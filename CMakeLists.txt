@@ -37,7 +37,6 @@ set(Source_Files
     "VulkanComputePipelineBuilder.cpp"
     "VulkanDescriptorSetLayoutBuilder.cpp"
     "VulkanDynamicRenderBuilder.cpp"
-    "VulkanPipelineBuilderBase.cpp"
 	"VulkanTextureBuilder.cpp"
     "VulkanMesh.cpp"
     "VulkanPipelineBuilder.cpp"
