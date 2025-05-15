@@ -7,7 +7,6 @@ License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #include "VulkanPipelineBuilder.h"
 #include "VulkanMesh.h"
-#include "VulkanShader.h"
 #include "VulkanUtils.h"
 
 using namespace NCL;
@@ -57,20 +56,6 @@ PipelineBuilder& PipelineBuilder::WithVertexInputState(const vk::PipelineVertexI
 
 PipelineBuilder& PipelineBuilder::WithTopology(vk::PrimitiveTopology topology, bool primitiveRestart) {
 	m_inputAsmCreate.setTopology(topology).setPrimitiveRestartEnable(primitiveRestart);
-	return *this;
-}
-
-PipelineBuilder& PipelineBuilder::WithShader(const UniqueVulkanShader& shader) {
-	shader->FillShaderStageCreateInfo(m_pipelineCreate);
-	shader->FillDescriptorSetLayouts(m_reflectionLayouts);
-	shader->FillPushConstants(m_allPushConstants);
-	return *this;
-}
-
-PipelineBuilder& PipelineBuilder::WithShader(const VulkanShader& shader) {
-	shader.FillShaderStageCreateInfo(m_pipelineCreate);
-	shader.FillDescriptorSetLayouts(m_reflectionLayouts);
-	shader.FillPushConstants(m_allPushConstants);
 	return *this;
 }
 
@@ -173,6 +158,20 @@ PipelineBuilder& PipelineBuilder::WithTessellationPatchVertexCount(uint32_t cont
 	return *this;
 }
 
+PipelineBuilder& PipelineBuilder::WithShaderBinary(const std::string& filename, vk::ShaderStageFlagBits stage, const std::string& entrypoint) {
+	m_loadedShaderModules.push_back(std::make_unique<VulkanShaderModule>(filename, stage, m_sourceDevice));
+	m_usedModules.push_back(m_loadedShaderModules.back().get());
+	m_moduleEntryPoints.push_back(entrypoint);
+	return *this;
+}
+
+
+PipelineBuilder& PipelineBuilder::WithShaderModule(const VulkanShaderModule& module, const std::string& entrypoint) {
+	m_usedModules.push_back(&module);
+	m_moduleEntryPoints.push_back(entrypoint);
+	return *this;
+}
+
 VulkanPipeline	PipelineBuilder::Build(const std::string& debugName, vk::PipelineCache cache) {
 	m_blendCreate.setAttachments(m_blendAttachStates);
 	m_blendCreate.setBlendConstants({ 1.0f, 1.0f, 1.0f, 1.0f });
@@ -189,8 +188,6 @@ VulkanPipeline	PipelineBuilder::Build(const std::string& debugName, vk::Pipeline
 
 	VulkanPipeline output;
 
-	FinaliseDescriptorLayouts();
-
 	m_pipelineCreate.setPColorBlendState(&m_blendCreate)
 		.setPDepthStencilState(&m_depthStencilCreate)
 		.setPDynamicState(&m_dynamicCreate)
@@ -199,20 +196,7 @@ VulkanPipeline	PipelineBuilder::Build(const std::string& debugName, vk::Pipeline
 		.setPRasterizationState(&m_rasterCreate)
 		.setPVertexInputState(&m_vertexCreate);
 
-	if (m_externalLayout) {
-		m_pipelineCreate.setLayout(m_externalLayout);
-	}
-	else {	
-		vk::PipelineLayoutCreateInfo pipeLayoutCreate = vk::PipelineLayoutCreateInfo();
-		pipeLayoutCreate.setSetLayouts(m_allLayouts);
-		pipeLayoutCreate.setPushConstantRanges(m_allPushConstants);
-
-		output.layout = m_sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
-		m_pipelineCreate.setLayout(*output.layout);
-		if (!debugName.empty()) {
-			SetDebugName(m_sourceDevice, vk::ObjectType::ePipelineLayout, GetVulkanHandle(*output.layout)	 , debugName);
-		}
-	}
+	FillShaderState(m_pipelineCreate, output);
 
 	//We must be using dynamic rendering, better set it up!
 	if (!m_allColourRenderingFormats.empty() || m_depthRenderingFormat != vk::Format::eUndefined) {
@@ -228,7 +212,8 @@ VulkanPipeline	PipelineBuilder::Build(const std::string& debugName, vk::Pipeline
 	output.pipeline			= m_sourceDevice.createGraphicsPipelineUnique(cache, m_pipelineCreate).value;
 
 	if (!debugName.empty()) {
-		SetDebugName(m_sourceDevice, vk::ObjectType::ePipeline	  , GetVulkanHandle(*output.pipeline), debugName);
+		SetDebugName(m_sourceDevice, vk::ObjectType::ePipeline		, GetVulkanHandle(*output.pipeline)	, debugName);
+		SetDebugName(m_sourceDevice, vk::ObjectType::ePipelineLayout, GetVulkanHandle(*output.layout)	, debugName);
 	}
 
 	return output;

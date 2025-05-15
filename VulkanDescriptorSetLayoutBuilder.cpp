@@ -7,7 +7,6 @@ License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #include "VulkanDescriptorSetLayoutBuilder.h"
 #include "VulkanMesh.h"
-#include "VulkanShader.h"
 #include "Vulkanrenderer.h"
 #include "VulkanUtils.h"
 

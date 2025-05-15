@@ -33,16 +33,11 @@ namespace NCL::Rendering::Vulkan {
 		PipelineBuilder& WithRasterState(vk::CullModeFlagBits cullMode, vk::PolygonMode polyMode = vk::PolygonMode::eFill);
 		PipelineBuilder& WithRasterState(const vk::PipelineRasterizationStateCreateInfo& info);
 
-
 		PipelineBuilder& WithVertexInputState(const vk::PipelineVertexInputStateCreateInfo& spec);
 
 		PipelineBuilder& WithTessellationPatchVertexCount(uint32_t controlPointsPerPatch);
 
 		PipelineBuilder& WithTopology(vk::PrimitiveTopology topology, bool primitiveRestart = false);
-
-		PipelineBuilder& WithShader(const UniqueVulkanShader& shader);
-		PipelineBuilder& WithShader(const VulkanShader& shader);
-
 		PipelineBuilder& WithPass(vk::RenderPass& renderPass);
 
 		PipelineBuilder& WithLayout(vk::PipelineLayout& m_layout);
@@ -71,6 +66,9 @@ namespace NCL::Rendering::Vulkan {
 
 		PipelineBuilder& WithDynamicState(vk::DynamicState state);
 
+		PipelineBuilder& WithShaderBinary(const std::string& filename , vk::ShaderStageFlagBits stage, const std::string& entrypoint = "main");
+		PipelineBuilder& WithShaderModule(const VulkanShaderModule& module, const std::string& entrypoint = "main");
+
 		VulkanPipeline	Build(const std::string& debugName = "", vk::PipelineCache cache = {});
 
 		vk::PipelineRenderingCreateInfoKHR& GetRenderingCreateInfo()  {
@@ -90,8 +88,6 @@ namespace NCL::Rendering::Vulkan {
 		vk::PipelineTessellationStateCreateInfo		m_tessellationCreate;
 
 		vk::PipelineRenderingCreateInfoKHR			m_renderingCreate;
-
-		vk::PipelineLayout							m_externalLayout;
 
 		std::vector< vk::PipelineColorBlendAttachmentState>			m_blendAttachStates;
 

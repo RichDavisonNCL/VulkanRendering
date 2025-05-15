@@ -8,6 +8,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 #include "VulkanUtils.h"
 #include "VulkanTexture.h"
 #include "VulkanBuffer.h"
+#include "Assets.h"
 
 using namespace NCL;
 using namespace Rendering;

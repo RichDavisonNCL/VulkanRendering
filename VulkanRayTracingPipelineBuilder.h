@@ -8,7 +8,6 @@ License: MIT (see LICENSE file at the top of the source tree)
 #pragma once
 #include "../VulkanRendering/VulkanRenderer.h"
 #include "../VulkanRendering/VulkanPipelineBuilderBase.h"
-#include "VulkanRTShader.h"
 
 namespace NCL::Rendering::Vulkan {
 
@@ -18,7 +17,8 @@ namespace NCL::Rendering::Vulkan {
 		VulkanRayTracingPipelineBuilder(vk::Device m_device);
 		~VulkanRayTracingPipelineBuilder();
 
-		VulkanRayTracingPipelineBuilder& WithShader(VulkanRTShader& shader, vk::ShaderStageFlagBits stage, const string& entry = "main");
+		VulkanRayTracingPipelineBuilder& WithShaderBinary(const std::string& filename, vk::ShaderStageFlagBits stage, const std::string& entrypoint = "main");
+		VulkanRayTracingPipelineBuilder& WithShaderModule(const VulkanShaderModule& module, const std::string& entrypoint = "main");
 
 		VulkanRayTracingPipelineBuilder& WithRayGenGroup(uint32_t shaderIndex);
 		VulkanRayTracingPipelineBuilder& WithMissGroup(uint32_t shaderIndex);
@@ -30,16 +30,6 @@ namespace NCL::Rendering::Vulkan {
 		VulkanPipeline Build(const std::string& debugName = "", vk::PipelineCache cache = {});
 
 	protected:
-		struct ShaderEntry {
-			std::string				entryPoint;
-			VulkanRTShader*			shader;
-			vk::ShaderStageFlagBits	stage;
-		};
-
-		std::vector<ShaderEntry>							m_entries;
-
-		std::vector<vk::PipelineShaderStageCreateInfo>		m_shaderStages;
-
 		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> m_genGroups;
 		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> m_missGroups;
 		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> m_hitGroups;

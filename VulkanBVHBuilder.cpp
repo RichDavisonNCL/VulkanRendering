@@ -93,11 +93,6 @@ void VulkanBVHBuilder::BuildBLAS(vk::BuildAccelerationStructureFlagsKHR inFlags)
 		vk::IndexType	iFormat;
 		bool hasIndices = i->GetIndexInformation(iBuffer, iOffset, iRange, iFormat);
 
-		//vk::AccelerationStructureGeometryTrianglesDataKHR triData;
-		//triData.vertexFormat = vFormat;
-		//triData.vertexData.deviceAddress = device.getBufferAddress(vk::BufferDeviceAddressInfo(vBuffer)) + vOffset;
-		//triData.vertexStride = sizeof(Vector3);
-
 		vk::AccelerationStructureGeometryTrianglesDataKHR triData;
 		triData.vertexFormat = vFormat;
 		triData.vertexData.deviceAddress = m_device.getBufferAddress({.buffer = vBuffer }) + vOffset;

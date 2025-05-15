@@ -7,8 +7,9 @@ License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #pragma once
 #include "VulkanPipeline.h"
+#include "VulkanShaderModule.h"
 #include "VulkanUtils.h"
-
+#include "SmartTypes.h"
 
 namespace NCL::Rendering::Vulkan {
 	class VulkanRenderer;
@@ -50,21 +51,56 @@ namespace NCL::Rendering::Vulkan {
 		P& GetCreateInfo() {
 			return m_pipelineCreate;
 		}
+
 	protected:
 		PipelineBuilderBase(vk::Device device) {
 			m_sourceDevice = device;
 		}
 		~PipelineBuilderBase() {}
 
-		void FinaliseDescriptorLayouts() {
-			m_allLayouts.clear();
-			for (int i = 0; i < m_reflectionLayouts.size(); ++i) {
-				if (m_userLayouts.size() > i && m_userLayouts[i] != Vulkan::GetNullDescriptor(m_sourceDevice)) {
-					m_allLayouts.push_back(m_userLayouts[i]);
+		void FillShaderState(P& pipelineCreate, VulkanPipeline& output) {
+			for (int i = 0; i < m_usedModules.size(); ++i) {
+				vk::PipelineShaderStageCreateInfo stageInfo;
+
+				stageInfo.pName = m_moduleEntryPoints[i].c_str();
+				stageInfo.stage = m_usedModules[i]->m_shaderStage;
+				stageInfo.module = *m_usedModules[i]->m_shaderModule;
+
+				m_shaderStages.push_back(stageInfo);
+			}
+
+			m_pipelineCreate.setStageCount(m_shaderStages.size());
+			m_pipelineCreate.setPStages(m_shaderStages.data());
+
+			if (m_externalLayout) {
+				pipelineCreate.setLayout(m_externalLayout);
+			}
+			else {
+				vk::PipelineLayoutCreateInfo pipeLayoutCreate = vk::PipelineLayoutCreateInfo();
+
+				for (auto& module : m_usedModules) {
+					module->CombineLayoutBindings(output.m_allLayoutsBindings);
+					module->CombinePushConstantRanges(output.m_pushConstants);
 				}
-				else {
-					m_allLayouts.push_back(m_reflectionLayouts[i]);
+				output.m_allLayouts.resize(output.m_allLayoutsBindings.size());
+
+				for (int i = 0; i < output.m_allLayoutsBindings.size(); ++i) {
+					if (i < m_userLayouts.size() && m_userLayouts[i]) {
+						output.m_allLayouts[i] = m_userLayouts[i];
+					}
+					else {
+						vk::DescriptorSetLayoutCreateInfo createInfo;
+						createInfo.setBindings(output.m_allLayoutsBindings[i]);
+						output.m_createdLayouts.push_back(m_sourceDevice.createDescriptorSetLayoutUnique(createInfo));
+						output.m_allLayouts[i] = output.m_createdLayouts.back().get();
+					}
 				}
+
+				pipeLayoutCreate.setSetLayouts(output.m_allLayouts);
+				pipeLayoutCreate.setPushConstantRanges(output.m_pushConstants);
+
+				output.layout = m_sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
+				pipelineCreate.setLayout(*output.layout);
 			}
 		}
 
@@ -73,11 +109,13 @@ namespace NCL::Rendering::Vulkan {
 		vk::PipelineLayout	m_layout;
 		vk::Device			m_sourceDevice;
 
-		std::vector< vk::DescriptorSetLayout>	m_allLayouts;
+		vk::PipelineLayout						m_externalLayout;
 
-		std::vector< vk::DescriptorSetLayout>	m_reflectionLayouts;
 		std::vector< vk::DescriptorSetLayout>	m_userLayouts;
 
-		std::vector< vk::PushConstantRange>		m_allPushConstants;
+		std::vector<vk::PipelineShaderStageCreateInfo>	m_shaderStages;
+		std::vector<const VulkanShaderModule*>			m_usedModules;
+		std::vector<UniqueVulkanShaderModule>			m_loadedShaderModules;
+		std::vector<std::string>						m_moduleEntryPoints;
 	};
 }
