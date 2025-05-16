@@ -41,25 +41,6 @@ VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithMissGroup(
 	return *this;
 }
 
-//VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithShaderGroup(const vk::RayTracingShaderGroupCreateInfoKHR& groupCreateInfo) {
-//	shaderGroups.push_back(groupCreateInfo);
-//	return *this;
-//}
-//
-//VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithGeneralGroup(uint32_t index) {
-//	vk::RayTracingShaderGroupCreateInfoKHR groupCreateInfo;
-//
-//	groupCreateInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
-//	groupCreateInfo.intersectionShader	= VK_SHADER_UNUSED_KHR;
-//	groupCreateInfo.generalShader		= index;
-//	groupCreateInfo.closestHitShader	= VK_SHADER_UNUSED_KHR;
-//	groupCreateInfo.anyHitShader		= VK_SHADER_UNUSED_KHR;
-//
-//	shaderGroups.push_back(groupCreateInfo);
-//
-//	return *this;
-//}
-
 VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithTriangleHitGroup(uint32_t closestHit, uint32_t anyHit) {
 	vk::RayTracingShaderGroupCreateInfoKHR groupCreateInfo;
 
@@ -104,20 +85,6 @@ VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithShaderModu
 	return *this;
 }
 
-//VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithShader(VulkanRTShader& shader, vk::ShaderStageFlagBits stage, const string& entry) {
-//	ShaderEntry entryInfo;
-//	entryInfo.entryPoint = entry;
-//	entryInfo.shader = &shader;
-//	entryInfo.stage = stage;
-//
-//	m_entries.push_back(entryInfo);
-//
-//	//shader.FillDescriptorSetLayouts(m_reflectionLayouts);
-//	//shader.FillPushConstants(m_pushConstants);
-//	
-//	return *this;
-//}
-
 VulkanPipeline VulkanRayTracingPipelineBuilder::Build(const std::string& debugName, vk::PipelineCache cache) {
 	VulkanPipeline output;	
 	
@@ -131,10 +98,6 @@ VulkanPipeline VulkanRayTracingPipelineBuilder::Build(const std::string& debugNa
 	m_pipelineCreate.groupCount	= m_allGroups.size();
 	m_pipelineCreate.pGroups	= m_allGroups.data();
 
-	//m_pipelineCreate.stageCount	= m_shaderStages.size();
-	//m_pipelineCreate.pStages	= m_shaderStages.data();
-
-	//m_pipelineCreate.layout = *output.layout;
 	m_pipelineCreate.setPDynamicState(&m_dynamicCreate);
 
 	output.pipeline = m_sourceDevice.createRayTracingPipelineKHRUnique({}, cache, m_pipelineCreate).value;
