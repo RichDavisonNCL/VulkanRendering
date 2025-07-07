@@ -56,8 +56,12 @@ namespace NCL::Rendering::Vulkan {
 		vk::Image			colourImage;
 		vk::ImageView		colourView;
 		vk::Format			colourFormat;
+
 		vk::Semaphore		acquireSempaphore;
 		vk::Fence			acquireFence;
+
+		vk::Semaphore		presentSempaphore;
+		vk::Fence			presentFence;
 
 		vk::CommandBuffer	swapCmds;
 	};
@@ -224,8 +228,8 @@ namespace NCL::Rendering::Vulkan {
 		uint32_t				m_currentFrameContext	= 0; //Frame context for this frame
 		uint32_t				m_currentSwap			= 0; //To index our swapchain 
 
-		uint64_t				m_globalFrameID			= 0;
+		uint32_t				m_chainStateID			= 0;
 
-		vk::Fence				m_currentSwapFence;
+		uint64_t				m_globalFrameID			= 0;
 	};
 }

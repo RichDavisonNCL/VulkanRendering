@@ -340,7 +340,8 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 
 	auto images = m_device.getSwapchainImagesKHR(m_swapChain);
 
-	m_swapStates.resize(images.size());
+	m_swapStates.resize(images.size() + 1);
+	m_chainStateID = m_swapStates.size() - 1;
 
 	for(int i = 0; i < m_swapStates.size(); ++i) {
 		ChainState& chain = m_swapStates[i];
@@ -348,33 +349,37 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 		chain.acquireSempaphore = m_device.createSemaphore({});
 		chain.acquireFence		= m_device.createFence({});
 
+		chain.presentSempaphore = m_device.createSemaphore({});
+		chain.presentFence		= m_device.createFence({});
+
 		chain.swapCmds = CmdBufferCreate(m_device, GetCommandPool(CommandType::Graphics), "Window swap cmds").release();
+		if (i < images.size()) {
+			chain.colourImage = images[i];
 
-		chain.colourImage = images[i];
+			ImageTransitionBarrier(cmdBuffer, chain.colourImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageAspectFlagBits::eColor, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput);
 
-		ImageTransitionBarrier(cmdBuffer, chain.colourImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageAspectFlagBits::eColor, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput);
+			chain.colourView = m_device.createImageView(
+				vk::ImageViewCreateInfo()
+				.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
+				.setFormat(m_surfaceFormat)
+				.setImage(chain.colourImage)
+				.setViewType(vk::ImageViewType::e2D)
+			);
 
-		chain.colourView = m_device.createImageView(
-			vk::ImageViewCreateInfo()
-			.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
-			.setFormat(m_surfaceFormat)
-			.setImage(chain.colourImage)
-			.setViewType(vk::ImageViewType::e2D)	
-		);
+			vk::ImageView attachments[2];
 
-		vk::ImageView attachments[2];
+			vk::FramebufferCreateInfo createInfo = vk::FramebufferCreateInfo()
+				.setWidth(hostWindow.GetScreenSize().x)
+				.setHeight(hostWindow.GetScreenSize().y)
+				.setLayers(1)
+				.setAttachmentCount(2)
+				.setPAttachments(attachments)
+				.setRenderPass(m_defaultRenderPass);
 
-		vk::FramebufferCreateInfo createInfo = vk::FramebufferCreateInfo()
-			.setWidth(hostWindow.GetScreenSize().x)
-			.setHeight(hostWindow.GetScreenSize().y)
-			.setLayers(1)
-			.setAttachmentCount(2)
-			.setPAttachments(attachments)
-			.setRenderPass(m_defaultRenderPass);
-
-		attachments[0] = chain.colourView;
-		attachments[1] = m_depthView;
-		chain.frameBuffer = m_device.createFramebuffer(createInfo);
+			attachments[0] = chain.colourView;
+			attachments[1] = m_depthView;
+			chain.frameBuffer = m_device.createFramebuffer(createInfo);
+		}
 	}
 	m_currentSwap = 0; //??
 }
@@ -509,9 +514,10 @@ void VulkanRenderer::CompleteResize() {
 void VulkanRenderer::WaitForSwapImage() {
 	
 	if (!hostWindow.IsMinimised()) {
-		vk::Result waitResult = m_device.waitForFences(m_currentSwapFence, true, ~0);
+		vk::Result waitResult = m_device.waitForFences(m_swapStates[m_chainStateID].acquireFence, true, ~0);
 	}
-	TransitionUndefinedToColour(m_frameCmds, m_swapStates[m_currentSwap].colourImage);
+	//m_frameContexts[m_currentFrameContext].colourImage
+	TransitionUndefinedToColour(m_frameCmds, m_frameContexts[m_currentFrameContext].colourImage);
 }
 
 void	VulkanRenderer::BeginFrame() {
@@ -523,7 +529,7 @@ void	VulkanRenderer::BeginFrame() {
 	//First we need to prevent the m_renderer from going too far ahead of the frames in flight max
 	m_currentFrameContext = (m_currentFrameContext + 1) % m_frameContexts.size();
 
-	//block on the waiting frame's timeline semaphore
+	////block on the waiting frame's timeline semaphore
 	if (m_globalFrameID >= m_frameContexts.size()) {
 		uint64_t waitValue = m_globalFrameID;
 
@@ -536,16 +542,14 @@ void	VulkanRenderer::BeginFrame() {
 	}
 
 	//Acquire our next swap image
-	m_currentSwapFence = m_swapStates[m_currentSwap].acquireFence;
-	m_device.resetFences(m_currentSwapFence);
-	m_currentSwap = m_device.acquireNextImageKHR(m_swapChain, UINT64_MAX, VK_NULL_HANDLE, m_currentSwapFence).value;	//Get swap image
+	m_device.resetFences(m_swapStates[m_chainStateID].acquireFence);
+	m_currentSwap = m_device.acquireNextImageKHR(m_swapChain, UINT64_MAX,
+		m_swapStates[m_chainStateID].acquireSempaphore,
+		m_swapStates[m_chainStateID].acquireFence).value;
 
 	//Now we know the swap image, we can fill out our current frame state...
-	//Our current frame
-
 	m_frameContexts[m_currentFrameContext].frameID = m_globalFrameID;
 	m_frameContexts[m_currentFrameContext].cycleID = m_currentFrameContext;
-
 
 	m_frameContexts[m_currentFrameContext].viewport			= m_defaultViewport;
 	m_frameContexts[m_currentFrameContext].screenRect		= m_defaultScreenRect;
@@ -589,15 +593,30 @@ void	VulkanRenderer::EndFrame() {
 		CmdBufferEndSubmit(m_frameCmds, m_queues[CommandType::Graphics]);
 	}
 
-	uint64_t signalValue = m_globalFrameID + (m_frameContexts.size());
+	uint64_t signalValue[2] = {
+		m_globalFrameID + (m_frameContexts.size()),
+		m_globalFrameID + (m_frameContexts.size()),
+	};
+
 	vk::TimelineSemaphoreSubmitInfo tlSubmit;
-	tlSubmit.signalSemaphoreValueCount = 1;
-	tlSubmit.pSignalSemaphoreValues = &signalValue;
+	tlSubmit.signalSemaphoreValueCount = 2;
+	tlSubmit.pSignalSemaphoreValues = signalValue;
+
+	vk::Semaphore signalSempaphores[2] = {
+		*m_frameContexts[m_currentFrameContext].workSempaphore,
+		m_swapStates[m_chainStateID].presentSempaphore
+	};
 
 	vk::SubmitInfo queueSubmit;
 	queueSubmit.pNext = &tlSubmit;
-	queueSubmit.signalSemaphoreCount = 1;
-	queueSubmit.pSignalSemaphores = &*m_frameContexts[m_currentFrameContext].workSempaphore;
+	queueSubmit.signalSemaphoreCount = 2;
+	queueSubmit.pSignalSemaphores = signalSempaphores;
+	
+	queueSubmit.waitSemaphoreCount = 1;
+	queueSubmit.pWaitSemaphores = &m_swapStates[m_chainStateID].acquireSempaphore;
+
+	vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	queueSubmit.pWaitDstStageMask = &waitStage;
 
 	m_queues[CommandType::Graphics].submit(queueSubmit);
 
@@ -607,14 +626,17 @@ void	VulkanRenderer::EndFrame() {
 void VulkanRenderer::SwapBuffers() {
 	if (!hostWindow.IsMinimised()) {
 		vk::Queue	gfxQueue		= m_queues[CommandType::Graphics];
-		vk::Result	presentResult	= gfxQueue.presentKHR(
+		vk::Result	presentResult = gfxQueue.presentKHR(
 			{
+				.waitSemaphoreCount = 1,
+				.pWaitSemaphores = &m_swapStates[m_chainStateID].presentSempaphore,
 				.swapchainCount = 1,
 				.pSwapchains	= &m_swapChain,
-				.pImageIndices	= &m_currentSwap
+				.pImageIndices	= &m_currentSwap,
 			}
 		);	
 	}
+	m_chainStateID = m_currentSwap;
 }
 
 void	VulkanRenderer::InitDefaultRenderPass() {
