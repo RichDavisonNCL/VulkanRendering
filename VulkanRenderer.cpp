@@ -60,7 +60,11 @@ VulkanRenderer::~VulkanRenderer() {
 	for(ChainState & c : m_swapStates) {
 		m_device.destroyFramebuffer(c.frameBuffer);
 		m_device.destroySemaphore(c.acquireSempaphore);
+		m_device.destroySemaphore(c.presentSempaphore);
+
 		m_device.destroyFence(c.acquireFence);
+		m_device.destroyFence(c.presentFence);
+
 		m_device.destroyImageView(c.colourView);
 	}
 	m_frameContexts.clear();
@@ -87,8 +91,8 @@ VulkanRenderer::~VulkanRenderer() {
 
 bool VulkanRenderer::InitInstance() {
 	vk::ApplicationInfo appInfo = {
-		.pApplicationName = this->hostWindow.GetTitle().c_str(),
-		.apiVersion = VK_MAKE_VERSION(m_vkInit.majorVersion, m_vkInit.minorVersion, 0)
+		.pApplicationName	= hostWindow.GetTitle().c_str(),
+		.apiVersion			= VK_MAKE_VERSION(m_vkInit.majorVersion, m_vkInit.minorVersion, 0)
 	};
 		
 	vk::InstanceCreateInfo instanceInfo = {
@@ -512,11 +516,9 @@ void VulkanRenderer::CompleteResize() {
 }
 
 void VulkanRenderer::WaitForSwapImage() {
-	
 	if (!hostWindow.IsMinimised()) {
 		vk::Result waitResult = m_device.waitForFences(m_swapStates[m_chainStateID].acquireFence, true, ~0);
 	}
-	//m_frameContexts[m_currentFrameContext].colourImage
 	TransitionUndefinedToColour(m_frameCmds, m_frameContexts[m_currentFrameContext].colourImage);
 }
 
@@ -533,11 +535,11 @@ void	VulkanRenderer::BeginFrame() {
 	if (m_globalFrameID >= m_frameContexts.size()) {
 		uint64_t waitValue = m_globalFrameID;
 
-		vk::SemaphoreWaitInfo waitInfo;
-		waitInfo.pSemaphores = &*m_frameContexts[m_currentFrameContext].workSempaphore;
-		waitInfo.semaphoreCount = 1;
-		waitInfo.pValues = &waitValue;
-
+		vk::SemaphoreWaitInfo waitInfo = {
+			.semaphoreCount = 1,
+			.pSemaphores = &*m_frameContexts[m_currentFrameContext].workSempaphore,
+			.pValues = &waitValue
+		};
 		m_device.waitSemaphores(waitInfo, UINT64_MAX);
 	}
 
@@ -595,28 +597,30 @@ void	VulkanRenderer::EndFrame() {
 
 	uint64_t signalValue[2] = {
 		m_globalFrameID + (m_frameContexts.size()),
-		m_globalFrameID + (m_frameContexts.size()),
+		m_globalFrameID + (m_frameContexts.size()), //Dummy timeline semaphore
 	};
 
 	vk::TimelineSemaphoreSubmitInfo tlSubmit;
-	tlSubmit.signalSemaphoreValueCount = 2;
-	tlSubmit.pSignalSemaphoreValues = signalValue;
+	tlSubmit.signalSemaphoreValueCount	= 2;
+	tlSubmit.pSignalSemaphoreValues		= signalValue;
 
 	vk::Semaphore signalSempaphores[2] = {
 		*m_frameContexts[m_currentFrameContext].workSempaphore,
 		m_swapStates[m_chainStateID].presentSempaphore
 	};
 
-	vk::SubmitInfo queueSubmit;
-	queueSubmit.pNext = &tlSubmit;
-	queueSubmit.signalSemaphoreCount = 2;
-	queueSubmit.pSignalSemaphores = signalSempaphores;
-	
-	queueSubmit.waitSemaphoreCount = 1;
-	queueSubmit.pWaitSemaphores = &m_swapStates[m_chainStateID].acquireSempaphore;
-
 	vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-	queueSubmit.pWaitDstStageMask = &waitStage;
+
+	vk::SubmitInfo queueSubmit = {
+		.pNext					= &tlSubmit,
+
+		.waitSemaphoreCount		= 1,
+		.pWaitSemaphores		= &m_swapStates[m_chainStateID].acquireSempaphore,
+		.pWaitDstStageMask		= &waitStage,
+
+		.signalSemaphoreCount	= 2,
+		.pSignalSemaphores		= signalSempaphores,
+	};
 
 	m_queues[CommandType::Graphics].submit(queueSubmit);
 
@@ -629,10 +633,10 @@ void VulkanRenderer::SwapBuffers() {
 		vk::Result	presentResult = gfxQueue.presentKHR(
 			{
 				.waitSemaphoreCount = 1,
-				.pWaitSemaphores = &m_swapStates[m_chainStateID].presentSempaphore,
-				.swapchainCount = 1,
-				.pSwapchains	= &m_swapChain,
-				.pImageIndices	= &m_currentSwap,
+				.pWaitSemaphores	= &m_swapStates[m_chainStateID].presentSempaphore,
+				.swapchainCount		= 1,
+				.pSwapchains		= &m_swapChain,
+				.pImageIndices		= &m_currentSwap,
 			}
 		);	
 	}
