@@ -537,10 +537,10 @@ void	VulkanRenderer::BeginFrame() {
 
 		vk::SemaphoreWaitInfo waitInfo = {
 			.semaphoreCount = 1,
-			.pSemaphores = &*m_frameContexts[m_currentFrameContext].workSempaphore,
-			.pValues = &waitValue
+			.pSemaphores	= &*m_frameContexts[m_currentFrameContext].workSempaphore,
+			.pValues		= &waitValue
 		};
-		m_device.waitSemaphores(waitInfo, UINT64_MAX);
+		vk::Result waitResult = m_device.waitSemaphores(waitInfo, UINT64_MAX);
 	}
 
 	//Acquire our next swap image
@@ -574,6 +574,7 @@ void	VulkanRenderer::BeginFrame() {
 	if (m_vkInit.autoTransitionFrameBuffer) {
 		WaitForSwapImage();
 	}
+
 	if (m_vkInit.autoBeginDynamicRendering) {
 		BeginDefaultRendering(m_frameCmds);
 	}
