@@ -10,13 +10,6 @@ License: MIT (see LICENSE file at the top of the source tree)
 #include "VulkanTexture.h"
 
 namespace NCL::Rendering::Vulkan {
-	struct BufferCreationInfo {
-		vk::BufferCreateInfo	createInfo = {
-			.usage = vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer
-		};
-		vk::MemoryPropertyFlags memProperties	= vk::MemoryPropertyFlagBits::eDeviceLocal;
-	};
-
 	enum class DiscardMode {
 		Immediate,
 		Deferred
@@ -25,7 +18,9 @@ namespace NCL::Rendering::Vulkan {
 	class VulkanMemoryManager {
 	public:
 		virtual ~VulkanMemoryManager() {};
-		virtual VulkanBuffer	CreateBuffer(const BufferCreationInfo& createInfo, const std::string& debugName = "")	= 0;
+
+		virtual VulkanBuffer	CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties, const std::string& debugName = "") = 0;
+
 		virtual VulkanBuffer	CreateStagingBuffer(size_t size, const std::string& debugName = "")						= 0;
 		virtual void			DiscardBuffer(VulkanBuffer& buffer, DiscardMode discard = DiscardMode::Deferred)		= 0;
 

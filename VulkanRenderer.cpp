@@ -53,7 +53,15 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 	m_frameCmds = m_frameContexts[m_currentSwap].cmdBuffer;
 	m_frameCmds.begin(vk::CommandBufferBeginInfo());
 
-	m_flightSempaphore = Vulkan::CreateTimelineSemaphore(GetDevice());
+
+	vk::SemaphoreTypeCreateInfo typeCreateInfo{
+		.semaphoreType = vk::SemaphoreType::eTimeline,
+		.initialValue = 0
+	};
+	vk::SemaphoreCreateInfo createInfo{
+		.pNext = &typeCreateInfo,
+	};
+	m_flightSempaphore = m_device.createSemaphore(createInfo);
 }
 
 VulkanRenderer::~VulkanRenderer() {
@@ -73,7 +81,7 @@ VulkanRenderer::~VulkanRenderer() {
 	m_device.destroyDescriptorPool(m_defaultDescriptorPool);
 	m_device.destroySwapchainKHR(m_swapChain);
 
-	m_device.destroySemaphore(m_flightSempaphore.release());
+	m_device.destroySemaphore(m_flightSempaphore);
 
 	for (auto& c : m_commandPools) {
 		if (c) {
@@ -538,7 +546,7 @@ void	VulkanRenderer::BeginFrame() {
 	////block on the waiting frame's timeline semaphore
 	vk::SemaphoreWaitInfo waitInfo = {
 		.semaphoreCount = 1,
-		.pSemaphores	= &*m_flightSempaphore,
+		.pSemaphores	= &m_flightSempaphore,
 		.pValues		= &(m_currentContext->waitID),
 	};
 	vk::Result waitResult = m_device.waitSemaphores(waitInfo, UINT64_MAX);
@@ -609,7 +617,7 @@ void	VulkanRenderer::EndFrame() {
 	tlSubmit.pSignalSemaphoreValues		= signalValue;
 
 	vk::Semaphore signalSempaphores[2] = {
-		*m_flightSempaphore,
+		m_flightSempaphore,
 		m_currentSwapState->presentSempaphore
 	};
 

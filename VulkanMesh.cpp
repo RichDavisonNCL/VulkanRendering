@@ -103,14 +103,13 @@ void VulkanMesh::UploadToGPU(vk::CommandBuffer cmdBuffer, VulkanMemoryManager* m
 
 	m_gpuBuffer = memManager->CreateBuffer(
 		{
-			.createInfo = {
-				.size = totalAllocationSize,
-				.usage =    vk::BufferUsageFlagBits::eIndexBuffer	|
-							vk::BufferUsageFlagBits::eVertexBuffer	|
-							vk::BufferUsageFlagBits::eTransferDst	|
-							extraUses
-			},
+			.size	= totalAllocationSize,
+			.usage	=   vk::BufferUsageFlagBits::eIndexBuffer	|
+						vk::BufferUsageFlagBits::eVertexBuffer	|
+						vk::BufferUsageFlagBits::eTransferDst	|
+						extraUses
 		},
+		vk::MemoryPropertyFlagBits::eDeviceLocal,
 		"Vertex / Index Buffer"
 	);
 

@@ -230,6 +230,6 @@ namespace NCL::Rendering::Vulkan {
 		uint32_t					m_currentSwap			= 0; //To index our swapchain 
 		uint64_t					m_globalFrameID			= 0;
 
-		vk::UniqueSemaphore			m_flightSempaphore;
+		vk::Semaphore				m_flightSempaphore;
 	};
 }

@@ -14,15 +14,15 @@ License: MIT (see LICENSE file at the top of the source tree)
 #include "vma/vk_mem_alloc.h"
 
 namespace NCL::Rendering::Vulkan {
-	struct VulkanInitialisation;
-	class VMABuffer;
+	struct	VulkanInitialisation;
+	class	VMABuffer;
 
 	class VulkanVMAMemoryManager : public VulkanMemoryManager {
 	public:
 		VulkanVMAMemoryManager(vk::Device device, vk::PhysicalDevice physicalDevice, vk::Instance instance, const VulkanInitialisation& vkInit);
 		virtual ~VulkanVMAMemoryManager();
 
-		VulkanBuffer	CreateBuffer(const BufferCreationInfo& createInfo, const std::string& debugName = "")	override;
+		VulkanBuffer	CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags flags, const std::string& debugName = "")	override;
 		VulkanBuffer	CreateStagingBuffer(size_t size, const std::string& debugName = "")						override;
 		void			DiscardBuffer(VulkanBuffer& buffer, DiscardMode discard)								override;
 
@@ -45,8 +45,8 @@ namespace NCL::Rendering::Vulkan {
 		};
 
 		struct Allocation {
-			VmaAllocation			m_allocationHandle = {};
-			VmaAllocationInfo		m_allocationInfo = {};
+			VmaAllocation			m_allocationHandle	= {};
+			VmaAllocationInfo		m_allocationInfo	= {};
 		};
 
 		std::map<vk::Image, Allocation>		m_imageAllocations;

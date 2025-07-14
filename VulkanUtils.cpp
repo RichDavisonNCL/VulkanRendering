@@ -87,12 +87,10 @@ vk::AccessFlags2 Vulkan::DefaultAccessFlags2(vk::ImageLayout forLayout) {
 
 void Vulkan::ImageTransitionBarrier(vk::CommandBuffer  buffer, vk::Image i, vk::ImageMemoryBarrier2 barrier) {
 	barrier.image = i;
-
-	vk::DependencyInfo info;
-	info.imageMemoryBarrierCount = 1;
-	info.pImageMemoryBarriers = &barrier;
-
-	buffer.pipelineBarrier2(info);
+	buffer.pipelineBarrier2({
+		.imageMemoryBarrierCount = 1,
+		.pImageMemoryBarriers = &barrier
+	});
 }
 
 void	Vulkan::ImageTransitionBarrier(vk::CommandBuffer  cmdBuffer, vk::Image image, 
@@ -118,10 +116,10 @@ void	Vulkan::ImageTransitionBarrier(vk::CommandBuffer  cmdBuffer, vk::Image imag
 			.layerCount		= layerCount,
 		}
 	};	
-	vk::DependencyInfo info;
-	info.imageMemoryBarrierCount = 1;
-	info.pImageMemoryBarriers = &memoryBarrier2;
-	cmdBuffer.pipelineBarrier2(info);
+	cmdBuffer.pipelineBarrier2({
+		.imageMemoryBarrierCount	= 1,
+		.pImageMemoryBarriers		= &memoryBarrier2
+	});
 }
 
 void Vulkan::TransitionUndefinedToColour(vk::CommandBuffer  buffer, vk::Image t) {

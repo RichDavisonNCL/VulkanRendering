@@ -42,27 +42,27 @@ VulkanVMAMemoryManager::~VulkanVMAMemoryManager() {
 
 	vmaDestroyAllocator(m_memoryAllocator);
 }
-
-VulkanBuffer VulkanVMAMemoryManager::CreateBuffer(const BufferCreationInfo& createInfo, const std::string& debugName) {
+//VulkanBuffer VulkanVMAMemoryManager::CreateBuffer(const BufferCreationInfo& createInfo, const std::string& debugName) {
+VulkanBuffer VulkanVMAMemoryManager::CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memProperties, const std::string& debugName) {
 	VulkanBuffer newBuffer = AllocateBuffer();
 
 	uint32_t id = GetSpareBufferID();
 	newBuffer.SetAssetID(id);
 
-	size_t allocSize = createInfo.createInfo.size;
+	size_t allocSize = createInfo.size;
 	
 	newBuffer.size = allocSize;
 		
 	VmaAllocationCreateInfo alloCreateInfo = {};
 	alloCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
 	
-	alloCreateInfo.requiredFlags = (VkMemoryPropertyFlags)createInfo.memProperties;
+	alloCreateInfo.requiredFlags = (VkMemoryPropertyFlags)memProperties;
 	
-	if (createInfo.memProperties & vk::MemoryPropertyFlagBits::eHostVisible) {
+	if (memProperties & vk::MemoryPropertyFlagBits::eHostVisible) {
 		alloCreateInfo.flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
 	}
 	
-	if (createInfo.memProperties & vk::MemoryPropertyFlagBits::eHostCoherent) {
+	if (memProperties & vk::MemoryPropertyFlagBits::eHostCoherent) {
 		alloCreateInfo.flags |= (VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT);
 	}
 
@@ -70,7 +70,7 @@ VulkanBuffer VulkanVMAMemoryManager::CreateBuffer(const BufferCreationInfo& crea
 	
 	vmaCreateBuffer(m_memoryAllocator, (VkBufferCreateInfo*)&createInfo, &alloCreateInfo, (VkBuffer*)&(newBuffer.buffer), &allocation.m_allocationHandle, &allocation.m_allocationInfo);
 	
-	if (createInfo.createInfo.usage & vk::BufferUsageFlagBits::eShaderDeviceAddress) {
+	if (createInfo.usage & vk::BufferUsageFlagBits::eShaderDeviceAddress) {
 
 		vk::Device d = m_allocatorInfo.device;
 
@@ -91,15 +91,20 @@ VulkanBuffer VulkanVMAMemoryManager::CreateBuffer(const BufferCreationInfo& crea
 }
 
 VulkanBuffer VulkanVMAMemoryManager::CreateStagingBuffer(size_t size, const std::string& debugName) {
-	BufferCreationInfo createInfo = {
-		.createInfo = {
-			.size	= size,
-			.usage	= vk::BufferUsageFlagBits::eTransferSrc
-		},
-		.memProperties	= vk::MemoryPropertyFlagBits::eHostVisible,
-	};
+	//BufferCreationInfo createInfo = {
+	//	.createInfo = {
+	//		.size	= size,
+	//		.usage	= vk::BufferUsageFlagBits::eTransferSrc
+	//	},
+	//	.memProperties	= vk::MemoryPropertyFlagBits::eHostVisible,
+	//};
 
-	return CreateBuffer(createInfo, debugName);
+	return CreateBuffer(
+		{
+			.size = size,
+			.usage = vk::BufferUsageFlagBits::eTransferSrc
+		}
+		,vk::MemoryPropertyFlagBits::eHostVisible, debugName);
 }
 
 void VulkanVMAMemoryManager::DiscardBuffer(VulkanBuffer& buffer, DiscardMode discard) {

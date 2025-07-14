@@ -152,15 +152,12 @@ void VulkanBVHBuilder::BuildBLAS(vk::BuildAccelerationStructureFlagsKHR inFlags)
 
 	VulkanBuffer scratchBuffer = m_memoryManager->CreateBuffer(
 		{
-			.createInfo = {
-				.size	= scratchSize,
-				.usage	= vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer,
-			},
+			.size	= scratchSize,
+			.usage	= vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer,
 		},
+		vk::MemoryPropertyFlagBits::eDeviceLocal,
 		"Scratch Buffer"
 	);
-
-	//vk::DeviceAddress scratchAddr = device.getBufferAddress({ .buffer = scratchBuff.buffer });
 
 	vk::UniqueCommandBuffer buffer = CmdBufferCreateBegin(m_device, m_pool, "Making BLAS");
 
@@ -169,21 +166,13 @@ void VulkanBVHBuilder::BuildBLAS(vk::BuildAccelerationStructureFlagsKHR inFlags)
 		createInfo.type = vk::AccelerationStructureTypeKHR::eBottomLevel;
 		createInfo.size = i.sizeInfo.accelerationStructureSize;
 
-		//i.buffer = BufferBuilder(device, m_allocator)
-		//	.WithBufferUsage(	vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | 
-		//						vk::BufferUsageFlagBits::eShaderDeviceAddress)
-		//	.WithHostVisibility()
-		//	.Build(createInfo.size);
-
 		i.buffer = m_memoryManager->CreateBuffer(
 			{
-				.createInfo = {
-					.size = createInfo.size,
-					.usage =	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
-								vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR,
-				},
-				.memProperties = vk::MemoryPropertyFlagBits::eHostVisible,
+				.size	= createInfo.size,
+				.usage	=	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
+							vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR,
 			},
+			vk::MemoryPropertyFlagBits::eHostVisible,
 			"BLAS Buffer"
 		);
 
@@ -256,13 +245,11 @@ void VulkanBVHBuilder::BuildTLAS(vk::BuildAccelerationStructureFlagsKHR flags) {
 
 	VulkanBuffer instanceBuffer = m_memoryManager->CreateBuffer(
 		{
-			.createInfo = {
-				.size  = dataSize,
-				.usage =	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
-							vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
-			},
-			.memProperties = vk::MemoryPropertyFlagBits::eHostVisible,
+			.size  = dataSize,
+			.usage =	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
+						vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
 		},
+		vk::MemoryPropertyFlagBits::eHostVisible,
 		"Instance Buffer"
 	);
 
@@ -286,13 +273,11 @@ void VulkanBVHBuilder::BuildTLAS(vk::BuildAccelerationStructureFlagsKHR flags) {
 
 	m_tlasBuffer = m_memoryManager->CreateBuffer(
 		{
-			.createInfo = {
-				.size	= sizesInfo.accelerationStructureSize,
-				.usage	=	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
-							vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR,
-			},
-			//.memProperties = vk::MemoryPropertyFlagBits::eHostVisible,
+			.size	= sizesInfo.accelerationStructureSize,
+			.usage	=	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
+						vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR,
 		},
+		vk::MemoryPropertyFlagBits::eDeviceLocal,
 		"Instance Buffer"
 	);
 
@@ -306,14 +291,12 @@ void VulkanBVHBuilder::BuildTLAS(vk::BuildAccelerationStructureFlagsKHR flags) {
 
 	VulkanBuffer scratchBuffer = m_memoryManager->CreateBuffer(
 		{
-			.createInfo = {
 				.size	= sizesInfo.buildScratchSize,
-				.usage =	vk::BufferUsageFlagBits::eShaderDeviceAddress | 
-							vk::BufferUsageFlagBits::eShaderDeviceAddress | 
-							vk::BufferUsageFlagBits::eStorageBuffer,
-			},
-			.memProperties = vk::MemoryPropertyFlagBits::eHostVisible,
+				.usage	=	vk::BufferUsageFlagBits::eShaderDeviceAddress |
+							vk::BufferUsageFlagBits::eShaderDeviceAddress |
+							vk::BufferUsageFlagBits::eStorageBuffer
 		},
+		vk::MemoryPropertyFlagBits::eHostVisible,
 		"Instance Buffer"
 	);
 

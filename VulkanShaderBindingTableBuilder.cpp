@@ -97,15 +97,13 @@ ShaderBindingTable VulkanShaderBindingTableBuilder::Build(vk::Device device, Vul
 
 	table.tableBuffer = memManager.CreateBuffer(
 		{
-			.createInfo = {
-				.size = bufferSize,
-				.usage = vk::BufferUsageFlagBits::eShaderDeviceAddress		|
-							vk::BufferUsageFlagBits::eTransferSrc				|
-							vk::BufferUsageFlagBits::eShaderDeviceAddressKHR	|
-							vk::BufferUsageFlagBits::eShaderBindingTableKHR,
-			},
-			.memProperties = vk::MemoryPropertyFlagBits::eHostVisible,
+			.size = bufferSize,
+			.usage =	vk::BufferUsageFlagBits::eShaderDeviceAddress		|
+						vk::BufferUsageFlagBits::eTransferSrc				|
+						vk::BufferUsageFlagBits::eShaderDeviceAddressKHR	|
+						vk::BufferUsageFlagBits::eShaderBindingTableKHR,
 		},
+		vk::MemoryPropertyFlagBits::eHostVisible,
 		debugName + " SBT Buffer"
 	);
 
