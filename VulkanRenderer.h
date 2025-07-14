@@ -34,8 +34,6 @@ namespace NCL::Rendering::Vulkan {
 		vk::Queue			queues[CommandType::Type::MAX_COMMAND_TYPES];
 		uint32_t			queueFamilies[CommandType::Type::MAX_COMMAND_TYPES];
 
-		uint64_t			waitID = 0;
-
 		vk::Image			colourImage;
 		vk::ImageView		colourView;
 		vk::Format			colourFormat;
@@ -47,8 +45,9 @@ namespace NCL::Rendering::Vulkan {
 		vk::Viewport		viewport;
 		vk::Rect2D			screenRect;
 
-		uint32_t			frameID;
-		uint32_t			cycleID;
+		uint32_t			frameID = 0;
+		uint32_t			cycleID = 0;
+		uint64_t			waitID	= 0;
 	};
 
 	struct ChainState {
@@ -85,7 +84,7 @@ namespace NCL::Rendering::Vulkan {
 		uint32_t	majorVersion	= 1;
 		uint32_t	minorVersion	= 1;
 
-		uint32_t	framesInFlight	= 3;
+		uint32_t	framesInFlight	= 1;
 
 		bool				autoTransitionFrameBuffer	= true;
 		bool				autoBeginDynamicRendering	= true;
