@@ -34,7 +34,7 @@ namespace NCL::Rendering::Vulkan {
 		vk::Queue			queues[CommandType::Type::MAX_COMMAND_TYPES];
 		uint32_t			queueFamilies[CommandType::Type::MAX_COMMAND_TYPES];
 
-		vk::UniqueSemaphore	workSempaphore;
+		uint64_t			waitID = 0;
 
 		vk::Image			colourImage;
 		vk::ImageView		colourView;
@@ -224,12 +224,13 @@ namespace NCL::Rendering::Vulkan {
 
 		std::vector<FrameContext>	m_frameContexts;
 		std::vector<ChainState>		m_swapStates;
+		FrameContext*				m_currentContext	= nullptr;
+		ChainState*					m_currentSwapState	= nullptr;
 
-		uint32_t				m_currentFrameContext	= 0; //Frame context for this frame
-		uint32_t				m_currentSwap			= 0; //To index our swapchain 
+		uint32_t					m_currentFrameContext	= 0; //Frame context for this frame
+		uint32_t					m_currentSwap			= 0; //To index our swapchain 
+		uint64_t					m_globalFrameID			= 0;
 
-		uint32_t				m_chainStateID			= 0;
-
-		uint64_t				m_globalFrameID			= 0;
+		vk::UniqueSemaphore			m_flightSempaphore;
 	};
 }
