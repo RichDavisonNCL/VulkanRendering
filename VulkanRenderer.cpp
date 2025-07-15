@@ -205,11 +205,25 @@ bool VulkanRenderer::InitGPUDevice() {
 	createInfo.pNext = &deviceFeatures;
 
 	m_device = m_physicalDevice.createDevice(createInfo);
+	Vulkan::SetDebugName(m_device, vk::ObjectType::eDevice, Vulkan::GetVulkanHandle(m_device), "GPU Device");
+	Vulkan::SetDebugName(m_device, vk::ObjectType::ePhysicalDevice, Vulkan::GetVulkanHandle(m_physicalDevice), "Physical Device");
 
 	m_queues[CommandType::Graphics]		= m_device.getQueue(m_queueFamilies[CommandType::Type::Graphics], 0);
 	m_queues[CommandType::AsyncCompute]	= m_device.getQueue(m_queueFamilies[CommandType::Type::AsyncCompute], 0);
 	m_queues[CommandType::Copy]			= m_device.getQueue(m_queueFamilies[CommandType::Type::Copy], 0);
 	m_queues[CommandType::Present]		= m_device.getQueue(m_queueFamilies[CommandType::Type::Present], 0);
+
+	Vulkan::SetDebugName(m_device, vk::ObjectType::eQueue, Vulkan::GetVulkanHandle(m_queues[CommandType::Graphics]), "Graphics Queue");
+
+	if (m_queues[CommandType::AsyncCompute] != m_queues[CommandType::Graphics]) {
+		Vulkan::SetDebugName(m_device, vk::ObjectType::eQueue, Vulkan::GetVulkanHandle(m_queues[CommandType::AsyncCompute]), "Compute Queue");
+	}
+	if (m_queues[CommandType::Copy] != m_queues[CommandType::Graphics]) {
+		Vulkan::SetDebugName(m_device, vk::ObjectType::eQueue, Vulkan::GetVulkanHandle(m_queues[CommandType::Copy]), "Copy Queue");
+	}
+	if (m_queues[CommandType::Present] != m_queues[CommandType::Graphics]) {
+		Vulkan::SetDebugName(m_device, vk::ObjectType::eQueue, Vulkan::GetVulkanHandle(m_queues[CommandType::Present]), "Present Queue");
+	}
 
 	m_deviceMemoryProperties = m_physicalDevice.getMemoryProperties();
 	m_deviceProperties = m_physicalDevice.getProperties();
@@ -407,6 +421,10 @@ void	VulkanRenderer::InitCommandPools() {
 			}
 		);
 	}
+	Vulkan::SetDebugName(m_device, vk::ObjectType::eCommandPool, Vulkan::GetVulkanHandle(m_commandPools[CommandType::Graphics]), "Graphics Command Pool");
+	Vulkan::SetDebugName(m_device, vk::ObjectType::eCommandPool, Vulkan::GetVulkanHandle(m_commandPools[CommandType::AsyncCompute]), "Async Command Pool");
+	Vulkan::SetDebugName(m_device, vk::ObjectType::eCommandPool, Vulkan::GetVulkanHandle(m_commandPools[CommandType::Copy]), "Copy Command Pool");
+	Vulkan::SetDebugName(m_device, vk::ObjectType::eCommandPool, Vulkan::GetVulkanHandle(m_commandPools[CommandType::Present]), "Present Command Pool");
 }
 
 bool VulkanRenderer::InitDeviceQueueIndices() {

@@ -7,6 +7,8 @@ License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #include "VulkanShaderModule.h"
 #include "Assets.h"
+#include "VulkanUtils.h"
+
 extern "C" {
 #include "Spirv-reflect/Spirv_reflect.h"
 }
@@ -32,15 +34,13 @@ VulkanShaderModule::VulkanShaderModule(const std::string& filename, vk::ShaderSt
 		);
 		AddReflectionData(dataSize, data, stage);
 		BuildLayouts(device);
+
+		Vulkan::SetDebugName(device, vk::ObjectType::eShaderModule, Vulkan::GetVulkanHandle(*m_shaderModule), filename);
 	}
 	else {
 		std::cout << __FUNCTION__ << " Problem loading shader file " << filename << "!\n";
 	}
 	m_shaderStage = stage;
-}
-
-VulkanShaderModule::~VulkanShaderModule()	{
-
 }
 
 void VulkanShaderModule::CombineLayoutBindings(std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& inoutBindings) const {

@@ -13,7 +13,7 @@ namespace NCL::Rendering::Vulkan {
 	public:
 		VulkanShaderModule(const std::string& filename,  vk::ShaderStageFlagBits stage, vk::Device device);
 
-		~VulkanShaderModule();
+		~VulkanShaderModule() = default;
 		void CombineLayoutBindings(std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& inoutBindings)		const;
 		void CombinePushConstantRanges(std::vector< vk::PushConstantRange>& inoutRanges)						const;
 
