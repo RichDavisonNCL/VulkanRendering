@@ -39,6 +39,11 @@ namespace NCL::Rendering::Vulkan {
 			return (T&)*this;
 		}
 
+		T& WithDescriptorSetLayoutCreationFlags(uint32_t setIndex, vk::DescriptorSetLayoutCreateFlags flags) {
+			m_userLayoutCreationFlags[setIndex] = flags;
+			return (T&)*this;
+		}
+
 		T& WithDescriptorSetLayout(uint32_t setIndex, const vk::UniqueDescriptorSetLayout& m_layout) {
 			return WithDescriptorSetLayout(setIndex, *m_layout);
 		}
@@ -56,7 +61,7 @@ namespace NCL::Rendering::Vulkan {
 		PipelineBuilderBase(vk::Device device) {
 			m_sourceDevice = device;
 		}
-		~PipelineBuilderBase() {}
+		~PipelineBuilderBase() = default;
 
 		void FillShaderState(VulkanPipeline& output) {
 			for (int i = 0; i < m_usedModules.size(); ++i) {
@@ -91,6 +96,12 @@ namespace NCL::Rendering::Vulkan {
 					else {
 						vk::DescriptorSetLayoutCreateInfo createInfo;
 						createInfo.setBindings(output.m_allLayoutsBindings[i]);
+
+						auto userFlags = m_userLayoutCreationFlags.find(i);
+
+						if (userFlags != m_userLayoutCreationFlags.end()) {
+							createInfo.flags |= userFlags->second;
+						}
 						output.m_createdLayouts.push_back(m_sourceDevice.createDescriptorSetLayoutUnique(createInfo));
 						output.m_allLayouts[i] = output.m_createdLayouts.back().get();
 					}
@@ -110,6 +121,8 @@ namespace NCL::Rendering::Vulkan {
 		vk::Device			m_sourceDevice;
 
 		vk::PipelineLayout						m_externalLayout;
+
+		std::map<uint32_t, vk::DescriptorSetLayoutCreateFlags> m_userLayoutCreationFlags;
 
 		std::vector< vk::DescriptorSetLayout>	m_userLayouts;
 
