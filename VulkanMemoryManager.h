@@ -36,7 +36,7 @@ namespace NCL::Rendering::Vulkan {
 	protected:
 		VulkanBuffer	AllocateBuffer() {
 			VulkanBuffer b;
-			b.sourceManager = this;
+			b.m_sourceManager = this;
 			return b;
 		}
 	};

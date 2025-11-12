@@ -23,9 +23,9 @@ VulkanBuffer::VulkanBuffer(VulkanBuffer&& obj) : Buffer(std::move(obj)) {
 	buffer			= obj.buffer;
 	deviceAddress	= obj.deviceAddress;
 	size			= obj.size;
-	sourceManager	= obj.sourceManager;
+	m_sourceManager	= obj.m_sourceManager;
 	obj.buffer		= VK_NULL_HANDLE;
-	obj.sourceManager = nullptr;
+	obj.m_sourceManager = nullptr;
 	obj.size		= 0;
 }
 
@@ -34,30 +34,30 @@ VulkanBuffer& VulkanBuffer::operator=(VulkanBuffer&& obj) {
 		buffer			= obj.buffer;
 		deviceAddress	= obj.deviceAddress;
 		size			= obj.size;
-		sourceManager	= obj.sourceManager;
+		m_sourceManager	= obj.m_sourceManager;
 		assetID			= obj.assetID;
 
 		obj.buffer		= VK_NULL_HANDLE;
-		obj.sourceManager = nullptr;
+		obj.m_sourceManager = nullptr;
 		obj.size		= 0;
 	}
 	return *this;
 }
 
 VulkanBuffer::~VulkanBuffer() {
-	if (buffer && sourceManager) {
-		sourceManager->DiscardBuffer(*this);
+	if (buffer && m_sourceManager) {
+		m_sourceManager->DiscardBuffer(*this);
 	}
 }
 
 void VulkanBuffer::CopyData(void* data, size_t size) const {
-	sourceManager->CopyData(*this, data, size);
+	m_sourceManager->CopyData(*this, data, size);
 }
 
 void* VulkanBuffer::Map() const {
-	return sourceManager->MapBuffer(*this);
+	return m_sourceManager->MapBuffer(*this);
 }
 
 void	VulkanBuffer::Unmap() const {
-	sourceManager->UnmapBuffer(*this);
+	m_sourceManager->UnmapBuffer(*this);
 }

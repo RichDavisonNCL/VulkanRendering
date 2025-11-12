@@ -15,25 +15,23 @@ namespace NCL::Rendering::Vulkan {
 	*/
 	class DescriptorBufferWriter {
 	public:
-		DescriptorBufferWriter(vk::Device inDevice, vk::DescriptorSetLayout inLayout, VulkanBuffer& inBuffer)
-		 : m_destBuffer(inBuffer) {
+		DescriptorBufferWriter(vk::Device inDevice, vk::DescriptorSetLayout inLayout, VulkanBuffer& inBuffer, vk::PhysicalDeviceDescriptorBufferPropertiesEXT& inProps)
+		 : m_destBuffer(inBuffer)
+		 , m_props(inProps)	{
 			m_device = inDevice;
 			m_layout = inLayout;
 			m_descriptorBufferMemory = m_destBuffer.Map();
 		}
 
-		~DescriptorBufferWriter() {
+		~DescriptorBufferWriter() 
+		{
 			if (m_descriptorBufferMemory) {
 				Finish();
 			}
 		}
 
-		DescriptorBufferWriter& SetProperties(vk::PhysicalDeviceDescriptorBufferPropertiesEXT* inProps) {
-			m_props = inProps;
-			return *this;
-		}
-
-		DescriptorBufferWriter& WriteBuffer(uint32_t binding, vk::DescriptorType type, const VulkanBuffer& buffer, uint32_t arrayIndex = 0) {
+		DescriptorBufferWriter& WriteBuffer(uint32_t binding, vk::DescriptorType type, const VulkanBuffer& buffer, uint32_t arrayIndex = 0) 
+		{
 			vk::DescriptorAddressInfoEXT descriptorAddress = {
 				.address	= buffer.deviceAddress,
 				.range		= buffer.size
@@ -46,14 +44,15 @@ namespace NCL::Rendering::Vulkan {
 
 			vk::DeviceSize		offset = m_device.getDescriptorSetLayoutBindingOffsetEXT(m_layout, binding);
 
-			size_t descriptorSize = Vulkan::GetDescriptorSize(type, *m_props);
+			size_t descriptorSize = Vulkan::GetDescriptorSize(type, m_props);
 
 			m_device.getDescriptorEXT(&getInfo, descriptorSize, ((char*)m_descriptorBufferMemory) + offset);
 
 			return *this;
 		}
 
-		DescriptorBufferWriter& WriteCombinedImageSampler(uint32_t binding,vk::ImageView view, vk::Sampler sampler, vk::ImageLayout layout, uint32_t arrayIndex = 0) {
+		DescriptorBufferWriter& WriteCombinedImageSampler(uint32_t binding,vk::ImageView view, vk::Sampler sampler, vk::ImageLayout layout, uint32_t arrayIndex = 0) 
+		{
 			vk::DescriptorImageInfo imageInfo = {
 				.sampler		= sampler,
 				.imageView		= view,
@@ -69,15 +68,15 @@ namespace NCL::Rendering::Vulkan {
 
 			vk::DeviceSize		offset = m_device.getDescriptorSetLayoutBindingOffsetEXT(m_layout, binding);
 
-			size_t descriptorSize = Vulkan::GetDescriptorSize(type, *m_props);
+			size_t descriptorSize = Vulkan::GetDescriptorSize(type, m_props);
 
 			m_device.getDescriptorEXT(&getInfo, descriptorSize, ((char*)m_descriptorBufferMemory) + offset);
 
 			return *this;
 		}
 
-
-		void Finish() {
+		void Finish() 
+		{
 			m_destBuffer.Unmap();
 			m_descriptorBufferMemory = nullptr;
 		}
@@ -87,6 +86,6 @@ namespace NCL::Rendering::Vulkan {
 		VulkanBuffer&			m_destBuffer;
 		void*					m_descriptorBufferMemory;
 		vk::DescriptorSetLayout m_layout;
-		vk::PhysicalDeviceDescriptorBufferPropertiesEXT* m_props;
+		vk::PhysicalDeviceDescriptorBufferPropertiesEXT& m_props;
 	};
 };

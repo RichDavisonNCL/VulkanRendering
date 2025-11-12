@@ -28,8 +28,6 @@ namespace NCL::Rendering::Vulkan {
 		//validation errors
 		virtual void	CopyData(void* data, size_t size) const;
 
-		//virtual void*	Data()		const;
-
 		virtual void*	Map()		const;
 		virtual void	Unmap()		const;
 
@@ -45,7 +43,6 @@ namespace NCL::Rendering::Vulkan {
 		}
 
 	protected:
-
-		VulkanMemoryManager* sourceManager = nullptr;
+		VulkanMemoryManager* m_sourceManager = nullptr;
 	};
 };
