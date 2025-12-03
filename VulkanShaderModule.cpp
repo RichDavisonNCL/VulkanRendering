@@ -147,22 +147,27 @@ void VulkanShaderModule::AddReflectionData(uint32_t dataSize, const void* data, 
 	assert(result == SPV_REFLECT_RESULT_SUCCESS);
 
 	for (auto& constant : pushConstantLayouts) {
-		bool found = false;
-		for (int i = 0; i < m_pushConstants.size(); ++i) {
-			if (m_pushConstants[i].offset == constant->offset &&
-				m_pushConstants[i].size == constant->size) {
-				m_pushConstants[i].stageFlags |= stage;
-				found = true;
-				break;
+		for (int i = 0; i < constant->member_count; ++i) {
+			auto& member = constant->members[i];
+			//Check to see if this one was loaded 
+			bool found = false;
+			for (int i = 0; i < m_pushConstants.size(); ++i) {
+				if (m_pushConstants[i].offset == member.offset &&
+					m_pushConstants[i].size == member.size) {
+					m_pushConstants[i].stageFlags |= stage;
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				vk::PushConstantRange range;
+				range.offset = constant->offset;
+				range.size = constant->size;
+				range.stageFlags = stage;
+				m_pushConstants.push_back(range);
 			}
 		}
-		vk::PushConstantRange range;
-		range.offset = constant->offset;
-		range.size = constant->size;
-		range.stageFlags = stage;
-		m_pushConstants.push_back(range);
 	}
-
 	spvReflectDestroyShaderModule(&module);
 }
 
