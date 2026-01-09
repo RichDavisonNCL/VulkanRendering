@@ -78,7 +78,11 @@ UniqueVulkanTexture TextureBuilder::Build(const std::string& debugName) {
     UniqueVulkanTexture tex = GenerateTexture(m_cmdBuffer, m_requestedSize, false, debugName);
 
     TextureJob job;
-    job.image = tex->GetImage();
+    job.image       = tex->GetImage();
+    job.endLayout   = m_layout;
+    job.aspect      = vk::ImageAspectFlagBits::eColor;
+    job.dimensions  = m_requestedSize;
+
     FinaliseTexture(debugName, m_cmdBuffer, job, tex);
 
     return tex;

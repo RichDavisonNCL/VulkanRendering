@@ -54,7 +54,7 @@ namespace NCL::Rendering::Vulkan {
 			vk::Image		image;
 			vk::ImageLayout endLayout;
 			vk::ImageAspectFlags aspect;
-			size_t			faceByteCount;
+			size_t			faceByteCount = 0;
 
 			NCL::Maths::Vector3ui		dimensions;
 
