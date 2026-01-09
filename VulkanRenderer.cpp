@@ -735,7 +735,7 @@ void	VulkanRenderer::InitDefaultDescriptorPool() {
 		poolSizes.emplace_back(vk::DescriptorType::eSampler, m_vkInit.defaultDescriptorPoolSamplerCount);
 	}
 	if (m_vkInit.defaultDescriptorPoolAccelerationStructureCount > 0) {
-		poolSizes.emplace_back(vk::DescriptorType::eSampler, m_vkInit.defaultDescriptorPoolAccelerationStructureCount);
+		poolSizes.emplace_back(vk::DescriptorType::eAccelerationStructureKHR, m_vkInit.defaultDescriptorPoolAccelerationStructureCount);
 	}
 	
 	uint32_t maxSets = 0;
