@@ -91,6 +91,8 @@ namespace NCL::Rendering::Vulkan {
 		bool				useOpenGLCoordinates		= false;
 		bool				skipDynamicState			= false;
 
+		bool				useHDRSurface				= false;
+
 		std::vector<void*>			features;
 
 		std::vector<const char*>	instanceExtensions;

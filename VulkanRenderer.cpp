@@ -222,8 +222,8 @@ bool VulkanRenderer::InitGPUDevice() {
 		Vulkan::SetDebugName(m_device, m_queues[CommandType::Present], "Present Queue");
 	}
 
-	m_deviceMemoryProperties = m_physicalDevice.getMemoryProperties();
-	m_deviceProperties = m_physicalDevice.getProperties();
+	m_deviceMemoryProperties	= m_physicalDevice.getMemoryProperties();
+	m_deviceProperties			= m_physicalDevice.getProperties();
 
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(m_device);
 
@@ -244,17 +244,25 @@ bool VulkanRenderer::InitSurface() {
 #endif
 
 	auto formats = m_physicalDevice.getSurfaceFormatsKHR(m_surface);
-
-	if (formats.size() == 1 && formats[0].format == vk::Format::eUndefined) {
-		m_surfaceFormat	= vk::Format::eB8G8R8A8Unorm;
-		m_surfaceSpace	= formats[0].colorSpace;
+	if (formats.empty()) {
+		return false;
 	}
-	else {
-		m_surfaceFormat	= formats[0].format;
-		m_surfaceSpace	= formats[0].colorSpace;
-	}
+	m_surfaceFormat	= formats[0].format;
+	m_surfaceSpace	= formats[0].colorSpace;
 
-	return formats.size() > 0;
+	if (m_vkInit.useHDRSurface) {
+		for (auto& i : formats) {
+			if ((uint64_t)i.format >= VK_FORMAT_A2R10G10B10_UNORM_PACK32 &&
+				(uint64_t)i.format <= VK_FORMAT_A2B10G10R10_SINT_PACK32)
+			{
+				m_surfaceFormat = i.format;
+				m_surfaceSpace = i.colorSpace;
+				break;
+			}
+		}
+
+	}
+	return true;
 }
 
 void	VulkanRenderer::InitFrameStates(uint32_t m_framesInFlight) {
