@@ -140,7 +140,7 @@ namespace NCL::Rendering::Vulkan {
 		}
 
 		FrameContext const& GetFrameContext() const {
-			return m_frameContexts[m_currentFrameContext];
+			return m_frameContexts[m_currentFrameContextID];
 		}
 
 		bool SupportsAsyncCompute() const;
@@ -225,10 +225,10 @@ namespace NCL::Rendering::Vulkan {
 
 		std::vector<FrameContext>	m_frameContexts;
 		std::vector<ChainState>		m_swapStates;
-		FrameContext*				m_currentContext	= nullptr;
+		FrameContext*				m_currentFrameContext	= nullptr;
 		ChainState*					m_currentSwapState	= nullptr;
 
-		uint32_t					m_currentFrameContext	= 0; //Frame context for this frame
+		uint32_t					m_currentFrameContextID	= 0; //Frame context for this frame
 		uint32_t					m_currentSwap			= 0; //To index our swapchain 
 		uint64_t					m_globalFrameID			= 0;
 

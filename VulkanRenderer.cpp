@@ -355,15 +355,15 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 	m_swapChain = m_device.createSwapchainKHR(swapInfo);
 
 	if (!m_swapStates.empty()) {
-		for (unsigned int i = 0; i < m_swapStates.size(); ++i) {
-			m_device.destroyImageView(m_swapStates[i].colourView);
-			m_device.destroyFramebuffer(m_swapStates[i].frameBuffer);
+		for(auto& i : m_swapStates) {
+			m_device.destroyImageView(i.colourView);
+			m_device.destroyFramebuffer(i.frameBuffer);
 
-			m_device.destroySemaphore(m_swapStates[i].acquireSempaphore);
-			m_device.destroySemaphore(m_swapStates[i].presentSempaphore);
+			m_device.destroySemaphore(i.acquireSempaphore);
+			m_device.destroySemaphore(i.presentSempaphore);
 
-			m_device.destroyFence(m_swapStates[i].acquireFence);
-			m_device.destroyFence(m_swapStates[i].presentFence);
+			m_device.destroyFence(i.acquireFence);
+			m_device.destroyFence(i.presentFence);
 		}
 	}
 	if (oldChain) {
@@ -372,7 +372,7 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 
 	auto images = m_device.getSwapchainImagesKHR(m_swapChain);
 
-	m_swapStates.resize(images.size());
+	m_swapStates.resize(images.size() + 1);
 
 	for(int i = 0; i < m_swapStates.size(); ++i) {
 		ChainState& chain = m_swapStates[i];
@@ -412,8 +412,8 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 			chain.frameBuffer = m_device.createFramebuffer(createInfo);
 		}
 	}
-	m_currentSwap = 0; //??
-	m_currentSwapState = &m_swapStates[m_currentSwap];
+	m_currentSwap		= 0; //??
+	m_currentSwapState	= &m_swapStates.back();
 }
 
 void	VulkanRenderer::InitCommandPools() {	
@@ -504,16 +504,25 @@ bool VulkanRenderer::SupportsAsyncPresent() const {
 }
 
 void VulkanRenderer::OnWindowResize(int width, int height) {
-	//if (!hostWindow.IsMinimised() && width == windowSize.x && height == windowSize.y) {
-	//	return;
-	//}
+	if (width == windowSize.x && height == windowSize.y) {
+		m_device.waitIdle();
+		return;
+	}
 	if (width == 0 && height == 0) {
 		return;
 	}
 	windowSize = { width, height };
 
-	m_defaultScreenRect = vk::Rect2D({ 0,0 }, { (uint32_t)windowSize.x, (uint32_t)windowSize.y });
+	m_defaultScreenRect = {
+		.offset = {0,0},
+		.extent = { (uint32_t)windowSize.x, (uint32_t)windowSize.y }
+	};
 
+	m_defaultScissor = {
+		.offset = {0,0},
+		.extent = { (uint32_t)windowSize.x, (uint32_t)windowSize.y }
+	};
+		
 	if (m_vkInit.useOpenGLCoordinates) {
 		m_defaultViewport = vk::Viewport(0.0f, (float)windowSize.y, (float)windowSize.x, (float)windowSize.y, -1.0f, 1.0f);
 	}
@@ -521,14 +530,12 @@ void VulkanRenderer::OnWindowResize(int width, int height) {
 		m_defaultViewport = vk::Viewport(0.0f, (float)windowSize.y, (float)windowSize.x, -(float)windowSize.y, 0.0f, 1.0f);
 	}
 
-	m_defaultScissor	= vk::Rect2D(vk::Offset2D(0, 0), vk::Extent2D(windowSize.x, windowSize.y));
-
 	std::cout << __FUNCTION__ << " New dimensions: " << windowSize.x << " , " << windowSize.y << "\n";
 
 	m_device.waitIdle();
-
+	
 	CreateDepthBufer(hostWindow.GetScreenSize().x, hostWindow.GetScreenSize().y);
-
+	
 	InitDefaultRenderPass();
 
 	vk::UniqueCommandBuffer cmds = CmdBufferCreateBegin(m_device, m_commandPools[CommandType::Graphics], "Window resize cmds");
@@ -551,7 +558,7 @@ void VulkanRenderer::WaitForSwapImage() {
 	//if (!hostWindow.IsMinimised() && !hostWindow.IsDragged()) {
 		vk::Result waitResult = m_device.waitForFences(m_currentSwapState->acquireFence, true, ~0);
 	//}
-	TransitionUndefinedToColour(m_frameCmds, m_currentContext->colourImage);
+	TransitionUndefinedToColour(m_frameCmds, m_currentFrameContext->colourImage);
 }
 
 void	VulkanRenderer::BeginFrame() {
@@ -561,15 +568,15 @@ void	VulkanRenderer::BeginFrame() {
 	}
 
 	//First we need to prevent the m_renderer from going too far ahead of the frames in flight max
-	m_currentFrameContext = (m_currentFrameContext + 1) % m_frameContexts.size();
+	m_currentFrameContextID = (m_currentFrameContextID + 1) % m_frameContexts.size();
 
-	m_currentContext = &m_frameContexts[m_currentFrameContext];
+	m_currentFrameContext = &m_frameContexts[m_currentFrameContextID];
 
 	////block on the waiting frame's timeline semaphore
 	vk::SemaphoreWaitInfo waitInfo = {
 		.semaphoreCount = 1,
 		.pSemaphores	= &m_flightSempaphore,
-		.pValues		= &(m_currentContext->waitID),
+		.pValues		= &(m_currentFrameContext->waitID),
 	};
 	vk::Result waitResult = m_device.waitSemaphores(waitInfo, UINT64_MAX);
 	
@@ -581,18 +588,18 @@ void	VulkanRenderer::BeginFrame() {
 		m_currentSwapState->acquireFence).value;
 
 	//Now we know the swap image, we can fill out our current frame state...
-	m_currentContext->frameID			= m_globalFrameID;
-	m_currentContext->cycleID			= m_currentFrameContext;
+	m_currentFrameContext->frameID			= m_globalFrameID;
+	m_currentFrameContext->cycleID			= m_currentFrameContextID;
 
-	m_currentContext->viewport			= m_defaultViewport;
-	m_currentContext->screenRect		= m_defaultScreenRect;
+	m_currentFrameContext->viewport			= m_defaultViewport;
+	m_currentFrameContext->screenRect		= m_defaultScreenRect;
 
-	m_currentContext->colourImage		= m_swapStates[m_currentSwap].colourImage;
-	m_currentContext->colourView		= m_swapStates[m_currentSwap].colourView;
-	m_currentContext->colourFormat		= m_surfaceFormat;
+	m_currentFrameContext->colourImage		= m_swapStates[m_currentSwap].colourImage;
+	m_currentFrameContext->colourView		= m_swapStates[m_currentSwap].colourView;
+	m_currentFrameContext->colourFormat		= m_surfaceFormat;
 
-	m_currentContext->depthFormat		= m_vkInit.depthStencilFormat;
-	m_frameCmds = m_currentContext->cmdBuffer;
+	m_currentFrameContext->depthFormat		= m_vkInit.depthStencilFormat;
+	m_frameCmds = m_currentFrameContext->cmdBuffer;
 	m_frameCmds.reset({});
 
 	m_frameCmds.begin(vk::CommandBufferBeginInfo());
@@ -619,7 +626,7 @@ void	VulkanRenderer::EndFrame() {
 	if (m_vkInit.autoBeginDynamicRendering) {
 		m_frameCmds.endRendering();
 	}
-	TransitionColourToPresent(m_frameCmds, m_currentContext->colourImage);
+	TransitionColourToPresent(m_frameCmds, m_currentFrameContext->colourImage);
 	if (hostWindow.IsMinimised()) {
 		CmdBufferEndSubmitWait(m_frameCmds, m_device, m_queues[CommandType::Graphics]);
 	}
@@ -658,7 +665,7 @@ void	VulkanRenderer::EndFrame() {
 
 	m_queues[CommandType::Graphics].submit(queueSubmit);
 
-	m_currentContext->waitID = nextWaitID;
+	m_currentFrameContext->waitID = nextWaitID;
 
 	m_globalFrameID++;
 }
@@ -764,10 +771,9 @@ void	VulkanRenderer::BeginDefaultRenderPass(vk::CommandBuffer  cmds) {
 
 void	VulkanRenderer::BeginDefaultRendering(vk::CommandBuffer  cmds) {
 	vk::RenderingInfoKHR renderInfo;
-	renderInfo.layerCount = 1;
 
 	vk::RenderingAttachmentInfoKHR colourAttachment;
-	colourAttachment.setImageView(m_currentContext->colourView)
+	colourAttachment.setImageView(m_currentFrameContext->colourView)
 		.setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
 		.setLoadOp(vk::AttachmentLoadOp::eClear)
 		.setStoreOp(vk::AttachmentStoreOp::eStore)
@@ -781,10 +787,9 @@ void	VulkanRenderer::BeginDefaultRendering(vk::CommandBuffer  cmds) {
 		.clearValue.setDepthStencil({ 1.0f, ~0U });
 
 	renderInfo.setColorAttachments(colourAttachment)
-		.setPDepthAttachment(&depthAttachment);
-		//.setPStencilAttachment(&depthAttachment);
-
-	renderInfo.setRenderArea(m_defaultScreenRect);
+		.setPDepthAttachment(&depthAttachment)
+		.setLayerCount(1)
+		.setRenderArea(m_defaultScreenRect);
 
 	cmds.beginRendering(renderInfo);
 	cmds.setViewport(0, 1, &m_defaultViewport);
