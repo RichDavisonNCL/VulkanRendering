@@ -81,7 +81,7 @@ VulkanPipeline	ComputePipelineBuilder::Build(const std::string& debugName, vk::P
 	output.pipeline = m_sourceDevice.createComputePipelineUnique(cache, m_pipelineCreate).value;
 
 	if (!debugName.empty()) {
-		SetDebugName(m_sourceDevice, vk::ObjectType::ePipeline, GetVulkanHandle(*output.pipeline), debugName);
+		SetDebugName(m_sourceDevice, *output.pipeline, debugName);
 	}
 
 	return output;

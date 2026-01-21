@@ -20,15 +20,6 @@ vk::detail::DynamicLoader NCL::Rendering::Vulkan::dynamicLoader;
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
-void Vulkan::SetDebugName(vk::Device device, vk::ObjectType t, uint64_t handle, const std::string& debugName) {
-	device.setDebugUtilsObjectNameEXT(
-		vk::DebugUtilsObjectNameInfoEXT()
-		.setObjectType(t)
-		.setObjectHandle(handle)
-		.setPObjectName(debugName.c_str())
-	);
-};
-
 void Vulkan::BeginDebugArea(vk::CommandBuffer b, const std::string& name) {
 	vk::DebugUtilsLabelEXT labelInfo;
 	labelInfo.pLabelName = name.c_str();
@@ -180,7 +171,7 @@ vk::UniqueCommandBuffer	Vulkan::CmdBufferCreate(vk::Device device, vk::CommandPo
 	);
 
 	if (!debugName.empty()) {
-		Vulkan::SetDebugName(device, vk::ObjectType::eCommandBuffer, Vulkan::GetVulkanHandle(*buffers[0]), debugName);
+		Vulkan::SetDebugName(device, *buffers[0], debugName);
 	}
 	return std::move(buffers[0]);
 }

@@ -82,7 +82,7 @@ VulkanBuffer VulkanVMAMemoryManager::CreateBuffer(const vk::BufferCreateInfo& cr
 	}
 	
 	if (!debugName.empty()) {
-		SetDebugName(m_allocatorInfo.device, vk::ObjectType::eBuffer, GetVulkanHandle(newBuffer.buffer), debugName);
+		SetDebugName(m_allocatorInfo.device,newBuffer.buffer, debugName);
 	}
 
 	m_bufferAllocations[id] = allocation;

@@ -262,8 +262,8 @@ UniqueVulkanTexture	TextureBuilder::GenerateTexture(vk::CommandBuffer m_cmdBuffe
     t->m_format         = m_format;
     t->dimensions       = { dimensions.x, dimensions.y };
 
-	SetDebugName(m_sourceDevice, vk::ObjectType::eImage    , GetVulkanHandle(t->m_image)       , debugName);
-	SetDebugName(m_sourceDevice, vk::ObjectType::eImageView, GetVulkanHandle(*t->m_defaultView), debugName);
+	SetDebugName(m_sourceDevice, t->m_image       , debugName);
+	SetDebugName(m_sourceDevice, *t->m_defaultView, debugName);
 
 	ImageTransitionBarrier(m_cmdBuffer, t->m_image, vk::ImageLayout::eUndefined, m_layout, m_aspects, vk::PipelineStageFlagBits2::eTopOfPipe, m_pipeFlags);
 

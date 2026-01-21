@@ -103,8 +103,8 @@ VulkanPipeline VulkanRayTracingPipelineBuilder::Build(const std::string& debugNa
 	output.pipeline = m_sourceDevice.createRayTracingPipelineKHRUnique({}, cache, m_pipelineCreate).value;
 
 	if (!debugName.empty()) {
-		SetDebugName(m_sourceDevice, vk::ObjectType::ePipeline		, GetVulkanHandle(*output.pipeline)	, debugName);
-		SetDebugName(m_sourceDevice, vk::ObjectType::ePipelineLayout, GetVulkanHandle(*output.layout)	, debugName);
+		SetDebugName(m_sourceDevice, *output.pipeline	, debugName);
+		SetDebugName(m_sourceDevice, *output.layout		, debugName);
 	}
 
 	return output;

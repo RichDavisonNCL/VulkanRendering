@@ -63,7 +63,7 @@ vk::UniqueRenderPass RenderPassBuilder::Build(const std::string& debugName) {
 	vk::UniqueRenderPass pass = m_sourceDevice.createRenderPassUnique(renderPassInfo);
 
 	if (!debugName.empty()) {
-		SetDebugName(m_sourceDevice, vk::ObjectType::eRenderPass, GetVulkanHandle(*pass), debugName);
+		SetDebugName(m_sourceDevice, *pass, debugName);
 	}
 
 	return std::move(pass);

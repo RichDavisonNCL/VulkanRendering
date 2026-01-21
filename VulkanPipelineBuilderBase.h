@@ -27,6 +27,10 @@ namespace NCL::Rendering::Vulkan {
 			return (T&)*this;
 		}
 
+		T& WithDescriptorSetLayout(uint32_t setIndex, const vk::UniqueDescriptorSetLayout& m_layout) {
+			return WithDescriptorSetLayout(setIndex, *m_layout);
+		}
+
 		T& WithDescriptorSetLayout(uint32_t setIndex, vk::DescriptorSetLayout m_layout) {
 			assert(setIndex < 32);
 			if (setIndex >= m_userLayouts.size()) {
@@ -42,10 +46,6 @@ namespace NCL::Rendering::Vulkan {
 		T& WithDescriptorSetLayoutCreationFlags(uint32_t setIndex, vk::DescriptorSetLayoutCreateFlags flags) {
 			m_userLayoutCreationFlags[setIndex] = flags;
 			return (T&)*this;
-		}
-
-		T& WithDescriptorSetLayout(uint32_t setIndex, const vk::UniqueDescriptorSetLayout& m_layout) {
-			return WithDescriptorSetLayout(setIndex, *m_layout);
 		}
 
 		T& WithDescriptorBuffers() {

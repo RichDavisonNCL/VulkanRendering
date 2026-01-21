@@ -140,9 +140,6 @@ bool	VulkanRenderer::InitPhysicalDevice() {
 
 	std::cout << __FUNCTION__ << " Vulkan using physical device " << m_physicalDevice.getProperties().deviceName << "\n";
 
-	vk::PhysicalDeviceProperties2 props;
-	m_physicalDevice.getProperties2(&props);
-
 	return true;
 }
 
@@ -205,37 +202,30 @@ bool VulkanRenderer::InitGPUDevice() {
 	createInfo.pNext = &deviceFeatures;
 
 	m_device = m_physicalDevice.createDevice(createInfo);
-	Vulkan::SetDebugName(m_device, vk::ObjectType::eDevice, Vulkan::GetVulkanHandle(m_device), "GPU Device");
-	Vulkan::SetDebugName(m_device, vk::ObjectType::ePhysicalDevice, Vulkan::GetVulkanHandle(m_physicalDevice), "Physical Device");
+	Vulkan::SetDebugName(m_device, m_device, "GPU Device");
+	Vulkan::SetDebugName(m_device, m_physicalDevice, "Physical Device");
 
 	m_queues[CommandType::Graphics]		= m_device.getQueue(m_queueFamilies[CommandType::Type::Graphics], 0);
 	m_queues[CommandType::AsyncCompute]	= m_device.getQueue(m_queueFamilies[CommandType::Type::AsyncCompute], 0);
 	m_queues[CommandType::Copy]			= m_device.getQueue(m_queueFamilies[CommandType::Type::Copy], 0);
 	m_queues[CommandType::Present]		= m_device.getQueue(m_queueFamilies[CommandType::Type::Present], 0);
 
-	Vulkan::SetDebugName(m_device, vk::ObjectType::eQueue, Vulkan::GetVulkanHandle(m_queues[CommandType::Graphics]), "Graphics Queue");
+	Vulkan::SetDebugName(m_device, m_queues[CommandType::Graphics], "Graphics Queue");
 
 	if (m_queues[CommandType::AsyncCompute] != m_queues[CommandType::Graphics]) {
-		Vulkan::SetDebugName(m_device, vk::ObjectType::eQueue, Vulkan::GetVulkanHandle(m_queues[CommandType::AsyncCompute]), "Compute Queue");
+		Vulkan::SetDebugName(m_device, m_queues[CommandType::AsyncCompute], "Compute Queue");
 	}
 	if (m_queues[CommandType::Copy] != m_queues[CommandType::Graphics]) {
-		Vulkan::SetDebugName(m_device, vk::ObjectType::eQueue, Vulkan::GetVulkanHandle(m_queues[CommandType::Copy]), "Copy Queue");
+		Vulkan::SetDebugName(m_device, m_queues[CommandType::Copy], "Copy Queue");
 	}
 	if (m_queues[CommandType::Present] != m_queues[CommandType::Graphics]) {
-		Vulkan::SetDebugName(m_device, vk::ObjectType::eQueue, Vulkan::GetVulkanHandle(m_queues[CommandType::Present]), "Present Queue");
+		Vulkan::SetDebugName(m_device, m_queues[CommandType::Present], "Present Queue");
 	}
 
 	m_deviceMemoryProperties = m_physicalDevice.getMemoryProperties();
 	m_deviceProperties = m_physicalDevice.getProperties();
 
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(m_device);
-
-	//vk::DebugUtilsMessengerCreateInfoEXT debugInfo;
-	//debugInfo.pfnUserCallback = DebugCallbackFunction;
-	//debugInfo.messageSeverity = vk::FlagTraits<vk::DebugUtilsMessageSeverityFlagBitsEXT>::allFlags;
-	//debugInfo.messageType = vk::FlagTraits<vk::DebugUtilsMessageTypeFlagBitsEXT>::allFlags;
-
-	//debugMessenger = instance.createDebugUtilsMessengerEXT(debugInfo);
 
 	return true;
 }
@@ -285,7 +275,7 @@ void	VulkanRenderer::InitFrameStates(uint32_t m_framesInFlight) {
 
 		context.cmdBuffer			= buffers[index];
 
-		Vulkan::SetDebugName(m_device, vk::ObjectType::eCommandBuffer, Vulkan::GetVulkanHandle(context.cmdBuffer), "Context Cmds " + std::to_string(index));
+		Vulkan::SetDebugName(m_device, context.cmdBuffer, "Context Cmds " + std::to_string(index));
 
 		context.viewport			= m_defaultViewport;
 		context.screenRect			= m_defaultScreenRect;
@@ -360,6 +350,12 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 		for (unsigned int i = 0; i < m_swapStates.size(); ++i) {
 			m_device.destroyImageView(m_swapStates[i].colourView);
 			m_device.destroyFramebuffer(m_swapStates[i].frameBuffer);
+
+			m_device.destroySemaphore(m_swapStates[i].acquireSempaphore);
+			m_device.destroySemaphore(m_swapStates[i].presentSempaphore);
+
+			m_device.destroyFence(m_swapStates[i].acquireFence);
+			m_device.destroyFence(m_swapStates[i].presentFence);
 		}
 	}
 	if (oldChain) {
@@ -368,8 +364,7 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 
 	auto images = m_device.getSwapchainImagesKHR(m_swapChain);
 
-	m_swapStates.resize(images.size() + 1);
-	m_currentSwapState = &m_swapStates[images.size() - 1];
+	m_swapStates.resize(images.size());
 
 	for(int i = 0; i < m_swapStates.size(); ++i) {
 		ChainState& chain = m_swapStates[i];
@@ -410,6 +405,7 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 		}
 	}
 	m_currentSwap = 0; //??
+	m_currentSwapState = &m_swapStates[m_currentSwap];
 }
 
 void	VulkanRenderer::InitCommandPools() {	
@@ -421,10 +417,10 @@ void	VulkanRenderer::InitCommandPools() {
 			}
 		);
 	}
-	Vulkan::SetDebugName(m_device, vk::ObjectType::eCommandPool, Vulkan::GetVulkanHandle(m_commandPools[CommandType::Graphics]), "Graphics Command Pool");
-	Vulkan::SetDebugName(m_device, vk::ObjectType::eCommandPool, Vulkan::GetVulkanHandle(m_commandPools[CommandType::AsyncCompute]), "Async Command Pool");
-	Vulkan::SetDebugName(m_device, vk::ObjectType::eCommandPool, Vulkan::GetVulkanHandle(m_commandPools[CommandType::Copy]), "Copy Command Pool");
-	Vulkan::SetDebugName(m_device, vk::ObjectType::eCommandPool, Vulkan::GetVulkanHandle(m_commandPools[CommandType::Present]), "Present Command Pool");
+	Vulkan::SetDebugName(m_device, m_commandPools[CommandType::Graphics], "Graphics Command Pool");
+	Vulkan::SetDebugName(m_device, m_commandPools[CommandType::AsyncCompute], "Async Command Pool");
+	Vulkan::SetDebugName(m_device, m_commandPools[CommandType::Copy], "Copy Command Pool");
+	Vulkan::SetDebugName(m_device, m_commandPools[CommandType::Present], "Present Command Pool");
 }
 
 bool VulkanRenderer::InitDeviceQueueIndices() {
@@ -500,9 +496,9 @@ bool VulkanRenderer::SupportsAsyncPresent() const {
 }
 
 void VulkanRenderer::OnWindowResize(int width, int height) {
-	if (!hostWindow.IsMinimised() && width == windowSize.x && height == windowSize.y) {
-		return;
-	}
+	//if (!hostWindow.IsMinimised() && width == windowSize.x && height == windowSize.y) {
+	//	return;
+	//}
 	if (width == 0 && height == 0) {
 		return;
 	}
@@ -544,9 +540,9 @@ void VulkanRenderer::CompleteResize() {
 }
 
 void VulkanRenderer::WaitForSwapImage() {
-	if (!hostWindow.IsMinimised()) {
+	//if (!hostWindow.IsMinimised() && !hostWindow.IsDragged()) {
 		vk::Result waitResult = m_device.waitForFences(m_currentSwapState->acquireFence, true, ~0);
-	}
+	//}
 	TransitionUndefinedToColour(m_frameCmds, m_currentContext->colourImage);
 }
 
@@ -888,6 +884,6 @@ void	VulkanRenderer::CreateDepthBufer(uint32_t width, uint32_t height) {
 	
 	Vulkan::CmdBufferEndSubmitWait(*tempBuffer, m_device, m_queues[CommandType::Graphics]);
 
-	Vulkan::SetDebugName(m_device, vk::ObjectType::eImage	 , Vulkan::GetVulkanHandle(m_depthImage), "DepthBuffer");
-	Vulkan::SetDebugName(m_device, vk::ObjectType::eImageView, Vulkan::GetVulkanHandle(m_depthView)	, "DepthBuffer");
+	Vulkan::SetDebugName(m_device, m_depthImage , "DepthBuffer");
+	Vulkan::SetDebugName(m_device, m_depthView	, "DepthBuffer");
 }

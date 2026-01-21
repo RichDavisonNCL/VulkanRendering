@@ -15,14 +15,17 @@ namespace NCL::Rendering::Vulkan {
 	void SetNullDescriptor(vk::Device device, vk::DescriptorSetLayout layout);
 	vk::DescriptorSetLayout GetNullDescriptor(vk::Device device);
 
-	void SetDescriptorSizes(vk::Device, vk::PhysicalDeviceDescriptorBufferPropertiesEXT& props);
+	bool MessageAssert(bool condition, const char* msg);
 
 	template <typename T>
-	uint64_t GetVulkanHandle(T const& cppHandle) {
-		return uint64_t(static_cast<T::CType>(cppHandle));
+	void SetDebugName(vk::Device device, T handle, const std::string& debugName) {
+		device.setDebugUtilsObjectNameEXT(
+			vk::DebugUtilsObjectNameInfoEXT()
+			.setObjectType(T::objectType)
+			.setObjectHandle(uint64_t(static_cast<T::CType>(handle)))
+			.setPObjectName(debugName.c_str())
+		);
 	}
-	bool MessageAssert(bool condition, const char* msg);
-	void SetDebugName(vk::Device d, vk::ObjectType t, uint64_t handle, const std::string& debugName);
 
 	void BeginDebugArea(vk::CommandBuffer buffer, const std::string& name);
 	void EndDebugArea(vk::CommandBuffer buffer);

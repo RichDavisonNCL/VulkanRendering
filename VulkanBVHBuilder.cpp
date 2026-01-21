@@ -72,7 +72,7 @@ vk::UniqueAccelerationStructureKHR VulkanBVHBuilder::Build(vk::BuildAcceleration
 	BuildTLAS(inFlags);
 
 	if (!debugName.empty()) {
-		SetDebugName(m_device, vk::ObjectType::eAccelerationStructureKHR, GetVulkanHandle(*m_tlas), debugName);
+		SetDebugName(m_device, *m_tlas, debugName);
 	}
 
 	return std::move(m_tlas);

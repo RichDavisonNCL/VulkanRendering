@@ -100,7 +100,7 @@ vk::UniqueDescriptorSetLayout DescriptorSetLayoutBuilder::Build(const std::strin
 	m_createInfo.pNext = &bindingFlagsInfo;
 	vk::UniqueDescriptorSetLayout m_layout = std::move(m_sourceDevice.createDescriptorSetLayoutUnique(m_createInfo));
 	if (!debugName.empty()) {
-		SetDebugName(m_sourceDevice, vk::ObjectType::eDescriptorSetLayout, GetVulkanHandle(*m_layout), debugName);
+		SetDebugName(m_sourceDevice, *m_layout, debugName);
 	}
 	return m_layout;
 }
