@@ -69,14 +69,16 @@ VulkanRenderer::~VulkanRenderer() {
 
 	for(ChainState & c : m_swapStates) {
 		m_device.destroyFramebuffer(c.frameBuffer);
-		m_device.destroySemaphore(c.acquireSempaphore);
 		m_device.destroySemaphore(c.presentSempaphore);
-
-		m_device.destroyFence(c.acquireFence);
 		m_device.destroyFence(c.presentFence);
-
 		m_device.destroyImageView(c.colourView);
 	}
+
+	for (FrameContext c : m_frameContexts) {
+		m_device.destroySemaphore(c.acquireSempaphore);
+		m_device.destroyFence(c.acquireFence);
+	}
+
 	m_frameContexts.clear();
 	m_device.destroyDescriptorPool(m_defaultDescriptorPool);
 	m_device.destroySwapchainKHR(m_swapChain);
@@ -294,6 +296,9 @@ void	VulkanRenderer::InitFrameStates(uint32_t m_framesInFlight) {
 		context.depthView			= m_depthView;;
 		context.depthFormat			= m_vkInit.depthStencilFormat;
 
+		context.acquireSempaphore	= m_device.createSemaphore({});
+		context.acquireFence		= m_device.createFence({});
+
 		for (int i = 0; i < CommandType::Type::MAX_COMMAND_TYPES; ++i) {
 			context.commandPools[i]		= m_commandPools[i];
 			context.queues[i]			= m_queues[i];
@@ -358,11 +363,7 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 		for(auto& i : m_swapStates) {
 			m_device.destroyImageView(i.colourView);
 			m_device.destroyFramebuffer(i.frameBuffer);
-
-			m_device.destroySemaphore(i.acquireSempaphore);
 			m_device.destroySemaphore(i.presentSempaphore);
-
-			m_device.destroyFence(i.acquireFence);
 			m_device.destroyFence(i.presentFence);
 		}
 	}
@@ -376,18 +377,10 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 
 	for(int i = 0; i < m_swapStates.size(); ++i) {
 		ChainState& chain = m_swapStates[i];
-
-		chain.acquireSempaphore = m_device.createSemaphore({});
-		chain.acquireFence		= m_device.createFence({});
-
 		chain.presentSempaphore = m_device.createSemaphore({});
 		chain.presentFence		= m_device.createFence({});
-
-		chain.swapCmds = CmdBufferCreate(m_device, GetCommandPool(CommandType::Graphics), "Window swap cmds").release();
 		if (i < images.size()) {
 			chain.colourImage = images[i];
-
-			ImageTransitionBarrier(cmdBuffer, chain.colourImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageAspectFlagBits::eColor, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput);
 
 			chain.colourView = m_device.createImageView(
 				vk::ImageViewCreateInfo()
@@ -397,18 +390,19 @@ void VulkanRenderer::InitBufferChain(vk::CommandBuffer  cmdBuffer) {
 				.setViewType(vk::ImageViewType::e2D)
 			);
 
-			vk::ImageView attachments[2];
+			vk::ImageView attachments[2]{
+				chain.colourView ,
+				m_depthView
+			};
 
 			vk::FramebufferCreateInfo createInfo = vk::FramebufferCreateInfo()
 				.setWidth(hostWindow.GetScreenSize().x)
 				.setHeight(hostWindow.GetScreenSize().y)
 				.setLayers(1)
-				.setAttachmentCount(2)
+				.setAttachmentCount(std::size(attachments))
 				.setPAttachments(attachments)
 				.setRenderPass(m_defaultRenderPass);
 
-			attachments[0] = chain.colourView;
-			attachments[1] = m_depthView;
 			chain.frameBuffer = m_device.createFramebuffer(createInfo);
 		}
 	}
@@ -554,13 +548,6 @@ void VulkanRenderer::CompleteResize() {
 
 }
 
-void VulkanRenderer::WaitForSwapImage() {
-	//if (!hostWindow.IsMinimised() && !hostWindow.IsDragged()) {
-		vk::Result waitResult = m_device.waitForFences(m_currentSwapState->acquireFence, true, ~0);
-	//}
-	TransitionUndefinedToColour(m_frameCmds, m_currentFrameContext->colourImage);
-}
-
 void	VulkanRenderer::BeginFrame() {
 	//Clear out any commands from the constructor
 	if (m_globalFrameID == 0) {
@@ -582,10 +569,17 @@ void	VulkanRenderer::BeginFrame() {
 	
 
 	//Acquire our next swap image
-	m_device.resetFences(m_currentSwapState->acquireFence);
+	m_device.resetFences(m_currentFrameContext->acquireFence);
+	uint32_t oldSwapIndex = m_currentSwap;
 	m_currentSwap = m_device.acquireNextImageKHR(m_swapChain, UINT64_MAX,
-		m_currentSwapState->acquireSempaphore,
-		m_currentSwapState->acquireFence).value;
+		m_currentFrameContext->acquireSempaphore,
+		m_currentFrameContext->acquireFence).value;
+
+	if (m_currentSwap == oldSwapIndex) {
+		std::cout << "Reusing swap index?\n";
+	}
+
+	m_currentSwapState = &(m_swapStates[m_currentSwap]);
 
 	//Now we know the swap image, we can fill out our current frame state...
 	m_currentFrameContext->frameID			= m_globalFrameID;
@@ -594,8 +588,8 @@ void	VulkanRenderer::BeginFrame() {
 	m_currentFrameContext->viewport			= m_defaultViewport;
 	m_currentFrameContext->screenRect		= m_defaultScreenRect;
 
-	m_currentFrameContext->colourImage		= m_swapStates[m_currentSwap].colourImage;
-	m_currentFrameContext->colourView		= m_swapStates[m_currentSwap].colourView;
+	m_currentFrameContext->colourImage		= m_currentSwapState->colourImage;
+	m_currentFrameContext->colourView		= m_currentSwapState->colourView;
 	m_currentFrameContext->colourFormat		= m_surfaceFormat;
 
 	m_currentFrameContext->depthFormat		= m_vkInit.depthStencilFormat;
@@ -603,18 +597,11 @@ void	VulkanRenderer::BeginFrame() {
 	m_frameCmds.reset({});
 
 	m_frameCmds.begin(vk::CommandBufferBeginInfo());
-
-	if (!m_vkInit.skipDynamicState) {
-		m_frameCmds.setViewport(0, 1, &m_defaultViewport);
-		m_frameCmds.setScissor( 0, 1, &m_defaultScissor);
-	}
-
-	if (m_vkInit.autoTransitionFrameBuffer) {
-		WaitForSwapImage();
-	}
+	m_frameCmds.setViewport(0, 1, &m_defaultViewport);
+	m_frameCmds.setScissor(0, 1, &m_defaultScissor);
 
 	if (m_vkInit.autoBeginDynamicRendering) {
-		BeginDefaultRendering(m_frameCmds);
+		BeginRenderToScreen(m_frameCmds);
 	}
 }
 
@@ -656,7 +643,7 @@ void	VulkanRenderer::EndFrame() {
 		.pNext					= &tlSubmit,
 
 		.waitSemaphoreCount		= 1,
-		.pWaitSemaphores		= &m_currentSwapState->acquireSempaphore,
+		.pWaitSemaphores		= &m_currentFrameContext->acquireSempaphore,
 		.pWaitDstStageMask		= &waitStage,
 
 		.signalSemaphoreCount	= 2,
@@ -683,7 +670,6 @@ void VulkanRenderer::SwapBuffers() {
 			}
 		);	
 	}
-	m_currentSwapState = &(m_swapStates[m_currentSwap]);
 }
 
 void	VulkanRenderer::InitDefaultRenderPass() {
@@ -769,7 +755,13 @@ void	VulkanRenderer::BeginDefaultRenderPass(vk::CommandBuffer  cmds) {
 	cmds.beginRenderPass(m_defaultBeginInfo, vk::SubpassContents::eInline);
 }
 
-void	VulkanRenderer::BeginDefaultRendering(vk::CommandBuffer  cmds) {
+void	VulkanRenderer::BeginRenderToScreen(vk::CommandBuffer  cmds) {
+	vk::Result waitResult = m_device.waitForFences(m_currentFrameContext->acquireFence, true, ~0);
+	TransitionUndefinedToColour(cmds, m_currentFrameContext->colourImage);
+
+	cmds.setViewport(0, 1, &m_defaultViewport);
+	cmds.setScissor(0, 1, &m_defaultScissor);
+
 	vk::RenderingInfoKHR renderInfo;
 
 	vk::RenderingAttachmentInfoKHR colourAttachment;
@@ -794,10 +786,6 @@ void	VulkanRenderer::BeginDefaultRendering(vk::CommandBuffer  cmds) {
 	cmds.beginRendering(renderInfo);
 	cmds.setViewport(0, 1, &m_defaultViewport);
 	cmds.setScissor( 0, 1, &m_defaultScissor);
-}
-
-void VulkanRenderer::WaitForGPUIdle() {
-	m_device.waitIdle();
 }
 
 VkBool32 VulkanRenderer::DebugCallbackFunction(

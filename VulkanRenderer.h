@@ -48,6 +48,9 @@ namespace NCL::Rendering::Vulkan {
 		uint32_t			frameID = 0;
 		uint32_t			cycleID = 0;
 		uint64_t			waitID	= 0;
+
+		vk::Semaphore		acquireSempaphore;
+		vk::Fence			acquireFence;
 	};
 
 	struct ChainState {
@@ -56,13 +59,8 @@ namespace NCL::Rendering::Vulkan {
 		vk::ImageView		colourView;
 		vk::Format			colourFormat;
 
-		vk::Semaphore		acquireSempaphore;
-		vk::Fence			acquireFence;
-
 		vk::Semaphore		presentSempaphore;
 		vk::Fence			presentFence;
-
-		vk::CommandBuffer	swapCmds;
 	};
 
 	struct VulkanInitialisation {
@@ -86,10 +84,8 @@ namespace NCL::Rendering::Vulkan {
 
 		uint32_t	framesInFlight	= 1;
 
-		bool				autoTransitionFrameBuffer	= true;
 		bool				autoBeginDynamicRendering	= true;
 		bool				useOpenGLCoordinates		= false;
-		bool				skipDynamicState			= false;
 
 		bool				useHDRSurface				= false;
 
@@ -149,10 +145,8 @@ namespace NCL::Rendering::Vulkan {
 
 		bool MemoryTypeFromPhysicalDeviceProps(vk::MemoryPropertyFlags requirements, uint32_t type, uint32_t& index);
 
-		void WaitForGPUIdle();
-
 		void	BeginDefaultRenderPass(vk::CommandBuffer cmds);
-		void	BeginDefaultRendering(vk::CommandBuffer  cmds);
+		void	BeginRenderToScreen(vk::CommandBuffer  cmds);
 
 		void BeginFrame()		override;
 		void RenderFrame()		override;
@@ -165,8 +159,6 @@ namespace NCL::Rendering::Vulkan {
 		virtual void	CompleteResize();
 		virtual void	InitDefaultRenderPass();
 		virtual void	InitDefaultDescriptorPool();
-
-		virtual void WaitForSwapImage();
 
 	protected:	
 		vk::Viewport			m_defaultViewport;
