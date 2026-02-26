@@ -26,9 +26,6 @@ namespace NCL::Rendering::Vulkan {
 		ComputePipelineBuilder& WithShaderBinary(const std::string& filename, const std::string& entrypoint = "main");
 		ComputePipelineBuilder& WithShaderModule(const VulkanShaderModule& module, const std::string& entrypoint = "main");
 
-		ComputePipelineBuilder& WithShader(const UniqueVulkanCompute& shader);
-		ComputePipelineBuilder& WithShader(const VulkanCompute& shader);
-
 		VulkanPipeline	Build(const std::string& debugName = "", vk::PipelineCache cache = {});
 
 	protected:

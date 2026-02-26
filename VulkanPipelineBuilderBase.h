@@ -48,8 +48,8 @@ namespace NCL::Rendering::Vulkan {
 			return (T&)*this;
 		}
 
-		T& WithDescriptorBuffers() {
-			m_pipelineCreate.flags |= vk::PipelineCreateFlagBits::eDescriptorBufferEXT;
+		T& WithCreationFlags(vk::PipelineCreateFlagBits flags) {
+			m_pipelineCreate.flags |= flags;
 			return (T&)*this;
 		}
 
@@ -81,38 +81,38 @@ namespace NCL::Rendering::Vulkan {
 				m_pipelineCreate.setLayout(m_externalLayout);
 			}
 			else {
-				vk::PipelineLayoutCreateInfo pipeLayoutCreate = vk::PipelineLayoutCreateInfo();
-
 				for (auto& module : m_usedModules) {
 					module->CombineLayoutBindings(output.m_allLayoutsBindings);
 					module->CombinePushConstantRanges(output.m_pushConstants);
 				}
-				output.m_allLayouts.resize(output.m_allLayoutsBindings.size());
-
-				for (int i = 0; i < output.m_allLayoutsBindings.size(); ++i) {
-					if (i < m_userLayouts.size() && m_userLayouts[i]) {
-						output.m_allLayouts[i] = m_userLayouts[i];
-					}
-					else {
-						vk::DescriptorSetLayoutCreateInfo createInfo;
-						createInfo.setBindings(output.m_allLayoutsBindings[i]);
-
-						auto userFlags = m_userLayoutCreationFlags.find(i);
-
-						if (userFlags != m_userLayoutCreationFlags.end()) {
-							createInfo.flags |= userFlags->second;
-						}
-						output.m_createdLayouts.push_back(m_sourceDevice.createDescriptorSetLayoutUnique(createInfo));
-						output.m_allLayouts[i] = output.m_createdLayouts.back().get();
-					}
-				}
-
-				pipeLayoutCreate.setSetLayouts(output.m_allLayouts);
-				pipeLayoutCreate.setPushConstantRanges(output.m_pushConstants);
-
-				output.layout = m_sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
-				m_pipelineCreate.setLayout(*output.layout);
+				FinaliseLayout(output);
 			}
+		}
+
+		void FinaliseLayout(VulkanPipeline& output) {
+			output.m_allLayouts.resize(output.m_allLayoutsBindings.size());
+			for (int i = 0; i < output.m_allLayoutsBindings.size(); ++i) {
+				if (i < m_userLayouts.size() && m_userLayouts[i]) {
+					output.m_allLayouts[i] = m_userLayouts[i];
+				}
+				else {
+					vk::DescriptorSetLayoutCreateInfo createInfo;
+					createInfo.setBindings(output.m_allLayoutsBindings[i]);
+
+					auto userFlags = m_userLayoutCreationFlags.find(i);
+
+					if (userFlags != m_userLayoutCreationFlags.end()) {
+						createInfo.flags |= userFlags->second;
+					}
+					output.m_createdLayouts.push_back(m_sourceDevice.createDescriptorSetLayoutUnique(createInfo));
+					output.m_allLayouts[i] = output.m_createdLayouts.back().get();
+				}
+			}
+			vk::PipelineLayoutCreateInfo pipeLayoutCreate = vk::PipelineLayoutCreateInfo();
+			pipeLayoutCreate.setSetLayouts(output.m_allLayouts);
+			pipeLayoutCreate.setPushConstantRanges(output.m_pushConstants);
+			output.layout = m_sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
+			m_pipelineCreate.setLayout(*output.layout);
 		}
 
 	protected:

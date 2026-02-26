@@ -28,20 +28,6 @@ ComputePipelineBuilder& ComputePipelineBuilder::WithShaderModule(const VulkanSha
 	m_entryPoint	= entrypoint;
 	return *this;
 }
-//
-//ComputePipelineBuilder& ComputePipelineBuilder::WithShaderBinary(const UniqueVulkanCompute& compute) {
-//	//compute->FillShaderStageCreateInfo(m_pipelineCreate);
-//	//compute->FillDescriptorSetLayouts(m_reflectionLayouts);
-//	//compute->FillPushConstants(m_pushConstants);
-//	return *this;
-//}
-//
-//ComputePipelineBuilder& ComputePipelineBuilder::WithShaderModule(const VulkanCompute& compute) {
-//	//compute.FillShaderStageCreateInfo(m_pipelineCreate);
-//	//compute.FillDescriptorSetLayouts(m_reflectionLayouts);
-//	//compute.FillPushConstants(m_pushConstants);
-//	return *this;
-//}
 
 VulkanPipeline	ComputePipelineBuilder::Build(const std::string& debugName, vk::PipelineCache cache) {
 	VulkanPipeline output;
@@ -49,27 +35,9 @@ VulkanPipeline	ComputePipelineBuilder::Build(const std::string& debugName, vk::P
 
 	m_module->CombineLayoutBindings(output.m_allLayoutsBindings);
 	m_module->CombinePushConstantRanges(output.m_pushConstants);
+
+	FinaliseLayout(output);
 	
-	output.m_allLayouts.resize(output.m_allLayoutsBindings.size());
-
-	for (int i = 0; i < output.m_allLayoutsBindings.size(); ++i) {
-		if (i < m_userLayouts.size() && m_userLayouts[i]) {
-			output.m_allLayouts[i] = m_userLayouts[i];
-		}
-		else {
-			vk::DescriptorSetLayoutCreateInfo createInfo;
-			createInfo.setBindings(output.m_allLayoutsBindings[i]);
-			output.m_createdLayouts.push_back(m_sourceDevice.createDescriptorSetLayoutUnique(createInfo));
-			output.m_allLayouts[i] = output.m_createdLayouts.back().get();
-		}
-	}
-
-	vk::PipelineLayoutCreateInfo pipeLayoutCreate = vk::PipelineLayoutCreateInfo();
-	pipeLayoutCreate.setSetLayouts(output.m_allLayouts);
-	pipeLayoutCreate.setPushConstantRanges(output.m_pushConstants);
-
-	output.layout = m_sourceDevice.createPipelineLayoutUnique(pipeLayoutCreate);
-
 	vk::PipelineShaderStageCreateInfo	m_createInfo;
 	m_createInfo.stage	= vk::ShaderStageFlagBits::eCompute;
 	m_createInfo.module = *m_module->m_shaderModule;

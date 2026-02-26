@@ -50,8 +50,9 @@ VulkanRenderer::VulkanRenderer(Window& window, const VulkanInitialisation& vkIni
 
 	m_pipelineCache = m_device.createPipelineCache(vk::PipelineCacheCreateInfo());
 
-	m_frameCmds = m_frameContexts[m_currentSwap].cmdBuffer;
-	m_frameCmds.begin(vk::CommandBufferBeginInfo());
+	const FrameContext& context = GetFrameContext();
+
+	context.cmdBuffer.begin(vk::CommandBufferBeginInfo());
 
 
 	vk::SemaphoreTypeCreateInfo typeCreateInfo{
@@ -74,9 +75,9 @@ VulkanRenderer::~VulkanRenderer() {
 		m_device.destroyImageView(c.colourView);
 	}
 
-	for (FrameContext c : m_frameContexts) {
-		m_device.destroySemaphore(c.acquireSempaphore);
-		m_device.destroyFence(c.acquireFence);
+	for (AcquireState a : m_acquireStates) {
+		m_device.destroySemaphore(a.acquireSempaphore);
+		m_device.destroyFence(a.acquireFence);
 	}
 
 	m_frameContexts.clear();
@@ -269,7 +270,7 @@ bool VulkanRenderer::InitSurface() {
 
 void	VulkanRenderer::InitFrameStates(uint32_t m_framesInFlight) {
 	m_frameContexts.resize(m_framesInFlight);
-
+	m_acquireStates.resize(m_framesInFlight);
 	auto buffers = m_device.allocateCommandBuffers(
 		{
 			.commandPool = m_commandPools[CommandType::Graphics],
@@ -296,8 +297,7 @@ void	VulkanRenderer::InitFrameStates(uint32_t m_framesInFlight) {
 		context.depthView			= m_depthView;;
 		context.depthFormat			= m_vkInit.depthStencilFormat;
 
-		context.acquireSempaphore	= m_device.createSemaphore({});
-		context.acquireFence		= m_device.createFence({});
+
 
 		for (int i = 0; i < CommandType::Type::MAX_COMMAND_TYPES; ++i) {
 			context.commandPools[i]		= m_commandPools[i];
@@ -305,6 +305,10 @@ void	VulkanRenderer::InitFrameStates(uint32_t m_framesInFlight) {
 			context.queueFamilies[i]	= m_queueFamilies[i];
 		}
 		index++;
+	}
+	for(AcquireState& s : m_acquireStates) {
+		s.acquireSempaphore	= m_device.createSemaphore({});
+		s.acquireFence		= m_device.createFence({});
 	}
 }
 
@@ -549,15 +553,18 @@ void VulkanRenderer::CompleteResize() {
 }
 
 void	VulkanRenderer::BeginFrame() {
+	const FrameContext& context = GetFrameContext();
+
 	//Clear out any commands from the constructor
 	if (m_globalFrameID == 0) {
-		CmdBufferEndSubmitWait(m_frameCmds, m_device, m_queues[CommandType::Graphics]);
+		CmdBufferEndSubmitWait(context.cmdBuffer, m_device, m_queues[CommandType::Graphics]);
 	}
 
 	//First we need to prevent the m_renderer from going too far ahead of the frames in flight max
 	m_currentFrameContextID = (m_currentFrameContextID + 1) % m_frameContexts.size();
 
 	m_currentFrameContext = &m_frameContexts[m_currentFrameContextID];
+	m_currentAcquireState = &m_acquireStates[m_currentFrameContextID];
 
 	////block on the waiting frame's timeline semaphore
 	vk::SemaphoreWaitInfo waitInfo = {
@@ -569,15 +576,11 @@ void	VulkanRenderer::BeginFrame() {
 	
 
 	//Acquire our next swap image
-	m_device.resetFences(m_currentFrameContext->acquireFence);
+	m_device.resetFences(m_currentAcquireState->acquireFence);
 	uint32_t oldSwapIndex = m_currentSwap;
 	m_currentSwap = m_device.acquireNextImageKHR(m_swapChain, UINT64_MAX,
-		m_currentFrameContext->acquireSempaphore,
-		m_currentFrameContext->acquireFence).value;
-
-	if (m_currentSwap == oldSwapIndex) {
-		std::cout << "Reusing swap index?\n";
-	}
+		m_currentAcquireState->acquireSempaphore,
+		m_currentAcquireState->acquireFence).value;
 
 	m_currentSwapState = &(m_swapStates[m_currentSwap]);
 
@@ -591,17 +594,16 @@ void	VulkanRenderer::BeginFrame() {
 	m_currentFrameContext->colourImage		= m_currentSwapState->colourImage;
 	m_currentFrameContext->colourView		= m_currentSwapState->colourView;
 	m_currentFrameContext->colourFormat		= m_surfaceFormat;
-
 	m_currentFrameContext->depthFormat		= m_vkInit.depthStencilFormat;
-	m_frameCmds = m_currentFrameContext->cmdBuffer;
-	m_frameCmds.reset({});
 
-	m_frameCmds.begin(vk::CommandBufferBeginInfo());
-	m_frameCmds.setViewport(0, 1, &m_defaultViewport);
-	m_frameCmds.setScissor(0, 1, &m_defaultScissor);
+	context.cmdBuffer.reset({});
+
+	context.cmdBuffer.begin(vk::CommandBufferBeginInfo());
+	context.cmdBuffer.setViewport(0, 1, &m_defaultViewport);
+	context.cmdBuffer.setScissor(0, 1, &m_defaultScissor);
 
 	if (m_vkInit.autoBeginDynamicRendering) {
-		BeginRenderToScreen(m_frameCmds);
+		BeginRenderToScreen(context.cmdBuffer);
 	}
 }
 
@@ -610,15 +612,17 @@ void VulkanRenderer::RenderFrame() {
 }
 
 void	VulkanRenderer::EndFrame() {
+	const FrameContext& context = GetFrameContext();
+
 	if (m_vkInit.autoBeginDynamicRendering) {
-		m_frameCmds.endRendering();
+		context.cmdBuffer.endRendering();
 	}
-	TransitionColourToPresent(m_frameCmds, m_currentFrameContext->colourImage);
+	TransitionColourToPresent(context.cmdBuffer, m_currentFrameContext->colourImage);
 	if (hostWindow.IsMinimised()) {
-		CmdBufferEndSubmitWait(m_frameCmds, m_device, m_queues[CommandType::Graphics]);
+		CmdBufferEndSubmitWait(context.cmdBuffer, m_device, m_queues[CommandType::Graphics]);
 	}
 	else {
-		CmdBufferEndSubmit(m_frameCmds, m_queues[CommandType::Graphics]);
+		CmdBufferEndSubmit(context.cmdBuffer, m_queues[CommandType::Graphics]);
 	}
 
 	const uint64_t nextWaitID = m_globalFrameID + m_frameContexts.size();
@@ -628,14 +632,14 @@ void	VulkanRenderer::EndFrame() {
 		nextWaitID, //Dummy timeline semaphore
 	};
 
-	vk::TimelineSemaphoreSubmitInfo tlSubmit;
-	tlSubmit.signalSemaphoreValueCount	= 2;
-	tlSubmit.pSignalSemaphoreValues		= signalValue;
-
 	vk::Semaphore signalSempaphores[2] = {
 		m_flightSempaphore,
 		m_currentSwapState->presentSempaphore
 	};
+
+	vk::TimelineSemaphoreSubmitInfo tlSubmit;
+	tlSubmit.signalSemaphoreValueCount	= std::size(signalValue);
+	tlSubmit.pSignalSemaphoreValues		= signalValue;
 
 	vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
@@ -643,10 +647,10 @@ void	VulkanRenderer::EndFrame() {
 		.pNext					= &tlSubmit,
 
 		.waitSemaphoreCount		= 1,
-		.pWaitSemaphores		= &m_currentFrameContext->acquireSempaphore,
+		.pWaitSemaphores		= &m_currentAcquireState->acquireSempaphore,
 		.pWaitDstStageMask		= &waitStage,
 
-		.signalSemaphoreCount	= 2,
+		.signalSemaphoreCount	= std::size(signalSempaphores),
 		.pSignalSemaphores		= signalSempaphores,
 	};
 
@@ -756,7 +760,7 @@ void	VulkanRenderer::BeginDefaultRenderPass(vk::CommandBuffer  cmds) {
 }
 
 void	VulkanRenderer::BeginRenderToScreen(vk::CommandBuffer  cmds) {
-	vk::Result waitResult = m_device.waitForFences(m_currentFrameContext->acquireFence, true, ~0);
+	vk::Result waitResult = m_device.waitForFences(m_currentAcquireState->acquireFence, true, ~0);
 	TransitionUndefinedToColour(cmds, m_currentFrameContext->colourImage);
 
 	cmds.setViewport(0, 1, &m_defaultViewport);
