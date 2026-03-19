@@ -206,7 +206,15 @@ VulkanPipeline	PipelineBuilder::Build(const std::string& debugName, vk::Pipeline
 		m_renderingCreate.colorAttachmentCount		= (uint32_t)m_allColourRenderingFormats.size();
 		m_renderingCreate.pColorAttachmentFormats	= m_allColourRenderingFormats.data();
 
-		m_pipelineCreate.pNext = &m_renderingCreate;
+		m_renderingCreate.pNext = m_pipelineCreate.pNext;
+		m_pipelineCreate.pNext	= &m_renderingCreate;
+	}
+
+	vk::PipelineCreateFlags2CreateInfo pipeFlags;
+	if (m_pipelineCreateBits) {
+		pipeFlags.flags			= m_pipelineCreateBits;
+		pipeFlags.pNext			= m_pipelineCreate.pNext;
+		m_pipelineCreate.pNext	= &pipeFlags;
 	}
 
 	output.pipeline			= m_sourceDevice.createGraphicsPipelineUnique(cache, m_pipelineCreate).value;

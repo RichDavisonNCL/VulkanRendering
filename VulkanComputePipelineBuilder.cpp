@@ -46,6 +46,12 @@ VulkanPipeline	ComputePipelineBuilder::Build(const std::string& debugName, vk::P
 	m_pipelineCreate.setLayout(*output.layout);
 	m_pipelineCreate.setStage(m_createInfo);
 
+	vk::PipelineCreateFlags2CreateInfo pipeFlags;
+	if (m_pipelineCreateBits) {
+		pipeFlags.flags = m_pipelineCreateBits;
+		m_pipelineCreate.pNext = &pipeFlags;
+	}
+
 	output.pipeline = m_sourceDevice.createComputePipelineUnique(cache, m_pipelineCreate).value;
 
 	if (!debugName.empty()) {

@@ -53,8 +53,18 @@ namespace NCL::Rendering::Vulkan {
 			return (T&)*this;
 		}
 
+		T& WithCreationFlags(vk::PipelineCreateFlagBits2 flags) {
+			m_pipelineCreateBits |= flags;
+			return (T&)*this;
+		}
+
 		P& GetCreateInfo() {
 			return m_pipelineCreate;
+		}
+
+		T& WithDescriptorSetAndBindingMappingInfo(const vk::ShaderDescriptorSetAndBindingMappingInfoEXT& info) {
+			m_heapBindingInfo = info;
+			return (T&)*this;
 		}
 
 	protected:
@@ -90,6 +100,10 @@ namespace NCL::Rendering::Vulkan {
 		}
 
 		void FinaliseLayout(VulkanPipeline& output) {
+			if (m_pipelineCreateBits & vk::PipelineCreateFlagBits2::eDescriptorHeapEXT) {
+				return;
+			}
+
 			output.m_allLayouts.resize(output.m_allLayoutsBindings.size());
 			for (int i = 0; i < output.m_allLayoutsBindings.size(); ++i) {
 				if (i < m_userLayouts.size() && m_userLayouts[i]) {
@@ -119,6 +133,10 @@ namespace NCL::Rendering::Vulkan {
 		P m_pipelineCreate;
 		vk::PipelineLayout	m_layout;
 		vk::Device			m_sourceDevice;
+
+		vk::PipelineCreateFlags2				m_pipelineCreateBits;
+
+		vk::ShaderDescriptorSetAndBindingMappingInfoEXT m_heapBindingInfo;
 
 		vk::PipelineLayout						m_externalLayout;
 

@@ -83,7 +83,7 @@ namespace NCL::Rendering::Vulkan {
 	void	CmdBufferResetBegin(vk::CommandBuffer  buffer);
 	void	CmdBufferResetBegin(const vk::UniqueCommandBuffer&  buffer);
 
-	void	CmdBufferEndSubmit(vk::CommandBuffer  buffer, vk::Queue m_queue, vk::Fence fence = {}, vk::Semaphore waitSemaphore = {}, vk::Semaphore signalSempahore = {});
+	void	CmdBufferEndSubmit(vk::CommandBuffer  buffer, vk::Queue m_queue, vk::Fence fence = {}, vk::Semaphore waitSemaphore = {}, vk::Semaphore signalSemaphore = {});
 	void	CmdBufferEndSubmitWait(vk::CommandBuffer  buffer, vk::Device device, vk::Queue m_queue);
 	void	CmdBufferEndSubmitWait(vk::CommandBuffer  buffer, vk::Device device, vk::Queue m_queue, vk::Fence fence);
 
