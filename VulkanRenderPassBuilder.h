@@ -12,7 +12,7 @@ namespace NCL::Rendering::Vulkan {
 	class RenderPassBuilder	{
 	public:
 		RenderPassBuilder(vk::Device m_sourceDevice);
-		~RenderPassBuilder() {}
+		~RenderPassBuilder() = default;
 
 		RenderPassBuilder& WithColourAttachment(
 			VulkanTexture* texture, 
