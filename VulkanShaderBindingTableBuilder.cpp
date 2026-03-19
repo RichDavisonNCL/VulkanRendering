@@ -6,7 +6,6 @@ Contact:richgdavison@gmail.com
 License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #include "VulkanShaderBindingTableBuilder.h"
-#include "VulkanBufferBuilder.h"
 #include "VulkanBuffer.h"
 
 using namespace NCL;

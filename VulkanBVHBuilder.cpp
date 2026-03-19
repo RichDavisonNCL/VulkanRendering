@@ -6,8 +6,6 @@ Contact:richgdavison@gmail.com
 License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #include "VulkanBVHBuilder.h"
-
-#include "VulkanBufferBuilder.h"
 #include "VulkanMesh.h"
 #include "VulkanUtils.h"
 
