@@ -89,6 +89,8 @@ UniqueVulkanTexture TextureBuilder::Build(const std::string& debugName) {
 }
 
 UniqueVulkanTexture TextureBuilder::BuildFromData(void* dataSrc, size_t byteCount, const std::string& debugName) {
+    m_usages |= vk::ImageUsageFlagBits::eTransferDst; 
+    
     UniqueVulkanTexture tex = GenerateTexture(m_cmdBuffer, m_requestedSize, false, debugName);
 
     TextureJob job;
