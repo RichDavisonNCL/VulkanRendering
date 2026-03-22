@@ -16,7 +16,7 @@ namespace NCL::Rendering::Vulkan {
 	class TextureBuilder	{
 	public:
 		TextureBuilder(vk::Device device, VulkanMemoryManager& memManager);
-		~TextureBuilder() {}
+		~TextureBuilder() = default;
 
 		TextureBuilder& WithFormat(vk::Format format);
 		TextureBuilder& WithLayout(vk::ImageLayout layout);

@@ -21,7 +21,7 @@ namespace NCL::Rendering::Vulkan {
 	class DynamicRenderBuilder	{
 	public:
 		DynamicRenderBuilder();
-		~DynamicRenderBuilder() {}
+		~DynamicRenderBuilder() = default;
 
 		DynamicRenderBuilder& WithColourAttachment(
 			vk::ImageView	texture,

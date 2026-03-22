@@ -28,7 +28,7 @@ namespace NCL::Rendering::Vulkan {
 	class PipelineBuilder	: public PipelineBuilderBase<PipelineBuilder, vk::GraphicsPipelineCreateInfo> {
 	public:
 		PipelineBuilder(vk::Device m_device);
-		~PipelineBuilder() {}
+		~PipelineBuilder() = default;
 
 		PipelineBuilder& WithRasterState(vk::CullModeFlagBits cullMode, vk::PolygonMode polyMode = vk::PolygonMode::eFill);
 		PipelineBuilder& WithRasterState(const vk::PipelineRasterizationStateCreateInfo& info);

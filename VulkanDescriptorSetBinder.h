@@ -28,8 +28,7 @@ namespace NCL::Rendering::Vulkan {
 			m_layout = VK_NULL_HANDLE;
 			m_bindPoint = vk::PipelineBindPoint::eGraphics;
 		}
-		~DescriptorSetBinder() {
-		}
+		~DescriptorSetBinder() = default;
 
 		DescriptorSetBinder& Bind(vk::DescriptorSet set, uint32_t slot){
 			assert(set);
@@ -62,8 +61,7 @@ namespace NCL::Rendering::Vulkan {
 			m_lastSlot		= 0;
 			m_slotCount		= 0;
 		}
-		~DescriptorSetMultiBinder() {
-		}
+		~DescriptorSetMultiBinder() = default;
 
 		DescriptorSetMultiBinder& Bind(vk::DescriptorSet set, uint32_t slot) {
 			assert(set);

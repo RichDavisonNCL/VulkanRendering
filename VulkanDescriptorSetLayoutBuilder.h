@@ -20,7 +20,7 @@ namespace NCL::Rendering::Vulkan {
 		DescriptorSetLayoutBuilder(vk::Device m_device) {
 			m_sourceDevice = m_device;
 		};
-		~DescriptorSetLayoutBuilder() {};
+		~DescriptorSetLayoutBuilder() = default;
 
 		DescriptorSetLayoutBuilder& WithDescriptor(vk::DescriptorSetLayoutBinding binding, vk::DescriptorBindingFlags = (vk::DescriptorBindingFlags)0);
 		DescriptorSetLayoutBuilder& WithDescriptors(const std::vector<vk::DescriptorSetLayoutBinding>& bindings, vk::DescriptorBindingFlags = (vk::DescriptorBindingFlags)0);

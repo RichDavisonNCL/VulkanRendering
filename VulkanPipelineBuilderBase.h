@@ -34,9 +34,8 @@ namespace NCL::Rendering::Vulkan {
 		T& WithDescriptorSetLayout(uint32_t setIndex, vk::DescriptorSetLayout m_layout) {
 			assert(setIndex < 32);
 			if (setIndex >= m_userLayouts.size()) {
-				vk::DescriptorSetLayout nullLayout = Vulkan::GetNullDescriptor(m_sourceDevice);
 				while (m_userLayouts.size() <= setIndex) {
-					m_userLayouts.push_back(nullLayout);
+					m_userLayouts.push_back(VK_NULL_HANDLE);
 				}
 			}
 			m_userLayouts[setIndex] = m_layout;
