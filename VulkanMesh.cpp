@@ -167,9 +167,6 @@ void VulkanMesh::BindToCommandBuffer(vk::CommandBuffer  buffer) const {
 
 void VulkanMesh::DrawLayer(unsigned int layer, vk::CommandBuffer  to, int instanceCount) {
 	const SubMesh* sm = GetSubMesh(layer);
-
-	BindToCommandBuffer(to);
-
 	if (GetIndexCount() > 0) {
 		to.drawIndexed(sm->count, instanceCount, sm->start, sm->base, 0);
 	}
@@ -179,8 +176,6 @@ void VulkanMesh::DrawLayer(unsigned int layer, vk::CommandBuffer  to, int instan
 }
 
 void VulkanMesh::Draw(vk::CommandBuffer  to, int instanceCount) {
-	BindToCommandBuffer(to);
-
 	if (GetIndexCount() > 0) {
 		to.drawIndexed(GetIndexCount(), instanceCount, 0, 0, 0);
 	}
@@ -190,7 +185,6 @@ void VulkanMesh::Draw(vk::CommandBuffer  to, int instanceCount) {
 }
 
 void VulkanMesh::DrawAllLayers(vk::CommandBuffer  to, int instanceCount) {
-	BindToCommandBuffer(to);
 	if (GetIndexCount() > 0) {
 		for (int i = 0; i < subMeshes.size(); ++i) {
 			const SubMesh* sm = GetSubMesh(i);
@@ -203,7 +197,6 @@ void VulkanMesh::DrawAllLayers(vk::CommandBuffer  to, int instanceCount) {
 			to.draw(sm->count, instanceCount, sm->start, 0);
 		}
 	}
-
 }
 
 
