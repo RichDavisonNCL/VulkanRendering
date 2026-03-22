@@ -12,9 +12,6 @@ namespace NCL::Rendering::Vulkan {
 
 	extern vk::detail::DynamicLoader dynamicLoader;
 
-	void SetNullDescriptor(vk::Device device, vk::DescriptorSetLayout layout);
-	vk::DescriptorSetLayout GetNullDescriptor(vk::Device device);
-
 	bool MessageAssert(bool condition, const char* msg);
 
 	template <typename T>

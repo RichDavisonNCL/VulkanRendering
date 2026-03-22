@@ -30,14 +30,6 @@ void Vulkan::EndDebugArea(vk::CommandBuffer b) {
 	b.endDebugUtilsLabelEXT();
 }
 
-void Vulkan::SetNullDescriptor(vk::Device device, vk::DescriptorSetLayout layout) {
-	nullDescriptors.insert({ device, layout });
-}
-
-vk::DescriptorSetLayout Vulkan::GetNullDescriptor(vk::Device device) {
-	return nullDescriptors[device];
-}
-
 vk::AccessFlags Vulkan::DefaultAccessFlags(vk::ImageLayout forLayout) {
 	if (forLayout == vk::ImageLayout::eTransferDstOptimal) {
 		return vk::AccessFlagBits::eTransferWrite;
