@@ -22,16 +22,20 @@ vk::Format attributeFormats[] = {
 	vk::Format::eR32G32B32A32Sfloat,//Tangents are 4D!
 	vk::Format::eR32G32B32A32Sfloat,//Skel Weights
 	vk::Format::eR32G32B32A32Sint,	//Skel indices
+	vk::Format::eR32G32B32A32Sfloat, //Generic Vec4s
+	vk::Format::eR32Sint,			//Generic ints
 };
 //Attribute sizes for each of the above
 size_t attributeSizes[] = {
-	sizeof(Vector3),
-	sizeof(Vector4),
-	sizeof(Vector2),
-	sizeof(Vector3),
-	sizeof(Vector4),
-	sizeof(Vector4),
-	sizeof(Vector4),
+	sizeof(Vector3),	//Positions 
+	sizeof(Vector4),	//Colours
+	sizeof(Vector2),	//TexCoords
+	sizeof(Vector3),	//Normals
+	sizeof(Vector4),	//Tangents are 4D!
+	sizeof(Vector4),	//Skel Weights
+	sizeof(Vector4),	//Skel indices
+	sizeof(Vector4),	//Generic Vec4s
+	sizeof(int),		//Generic ints
 };
 
 VulkanMesh::VulkanMesh()	{
@@ -73,7 +77,10 @@ void VulkanMesh::UploadToGPU(vk::CommandBuffer cmdBuffer, VulkanMemoryManager* m
 	atrributeFunc(VertexAttribute::Tangents, GetTangentData().size(), (const char*)GetTangentData().data());
 	atrributeFunc(VertexAttribute::JointWeights, GetSkinWeightData().size(), (const char*)GetSkinWeightData().data());
 	atrributeFunc(VertexAttribute::JointIndices, GetSkinIndexData().size(), (const char*)GetSkinIndexData().data());
-	
+
+	atrributeFunc(VertexAttribute::General_Vec4, GetGeneralVec4Data().size(), (const char*)GetGeneralVec4Data().data());
+	atrributeFunc(VertexAttribute::General_Integer, GetGeneralIntegerData().size(), (const char*)GetGeneralIntegerData().data());
+
 	for (uint32_t i = 0; i < m_usedAttributes.size(); ++i) {
 		//Which vertex attribute slot should Vulkan buffer index i map to?
 		int attributeType = m_usedAttributes[i];
@@ -233,6 +240,8 @@ size_t VulkanMesh::CalculateGPUAllocationSize() const {
 	atrributeSizeFunc(VertexAttribute::Tangents, GetTangentData().size());
 	atrributeSizeFunc(VertexAttribute::JointWeights, GetSkinWeightData().size());
 	atrributeSizeFunc(VertexAttribute::JointIndices, GetSkinIndexData().size());
+	atrributeSizeFunc(VertexAttribute::General_Vec4, GetGeneralVec4Data().size());
+	atrributeSizeFunc(VertexAttribute::General_Integer, GetGeneralIntegerData().size());
 
 	size_t vertexDataSize = vSize * GetVertexCount();
 	size_t indexDataSize = 0;
