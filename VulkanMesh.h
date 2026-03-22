@@ -27,6 +27,7 @@ namespace NCL::Rendering::Vulkan {
 
 		void Draw(vk::CommandBuffer  to, int instanceCount = 1);
 		void DrawLayer(unsigned int layer, vk::CommandBuffer  to, int instanceCount = 1);
+		void DrawAllLayers(vk::CommandBuffer  to, int instanceCount = 1);
 
 		void UploadToGPU(RendererBase* renderer) override;
 
