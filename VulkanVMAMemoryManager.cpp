@@ -42,7 +42,7 @@ VulkanVMAMemoryManager::~VulkanVMAMemoryManager() {
 
 	vmaDestroyAllocator(m_memoryAllocator);
 }
-//VulkanBuffer VulkanVMAMemoryManager::CreateBuffer(const BufferCreationInfo& createInfo, const std::string& debugName) {
+
 VulkanBuffer VulkanVMAMemoryManager::CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memProperties, const std::string& debugName) {
 	VulkanBuffer newBuffer = AllocateBuffer();
 
@@ -91,14 +91,6 @@ VulkanBuffer VulkanVMAMemoryManager::CreateBuffer(const vk::BufferCreateInfo& cr
 }
 
 VulkanBuffer VulkanVMAMemoryManager::CreateStagingBuffer(size_t size, const std::string& debugName) {
-	//BufferCreationInfo createInfo = {
-	//	.createInfo = {
-	//		.size	= size,
-	//		.usage	= vk::BufferUsageFlagBits::eTransferSrc
-	//	},
-	//	.memProperties	= vk::MemoryPropertyFlagBits::eHostVisible,
-	//};
-
 	return CreateBuffer(
 		{
 			.size = size,
@@ -115,7 +107,6 @@ void VulkanVMAMemoryManager::DiscardBuffer(VulkanBuffer& buffer, DiscardMode dis
 		DeleteBuffer(buffer);
 	}
 }
-
 
 vk::Image VulkanVMAMemoryManager::CreateImage(vk::ImageCreateInfo& createInfo, const std::string& debugName) {
 	vk::Image	image;
