@@ -43,9 +43,13 @@ VulkanShaderModule::VulkanShaderModule(const std::string& filename, vk::ShaderSt
 	m_shaderStage = stage;
 }
 
-void VulkanShaderModule::CombineLayoutBindings(std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& inoutBindings) const {
+void VulkanShaderModule::CombineLayoutBindings(std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& inoutBindings, vk::ShaderStageFlags layoutStage) const {
 	const int numSets = std::max(inoutBindings.size(), m_allLayoutsBindings.size());
 	inoutBindings.resize(numSets);
+
+	if (!layoutStage) {
+		layoutStage = m_shaderStage;
+	}
 
 	for (int i = 0; i < m_allLayoutsBindings.size(); ++i) {
 		std::vector<vk::DescriptorSetLayoutBinding>& outSet		= inoutBindings[i];
@@ -67,7 +71,7 @@ void VulkanShaderModule::CombineLayoutBindings(std::vector<std::vector<vk::Descr
 				outSet[j].descriptorCount	= baseSet[j].descriptorCount;
 				outSet[j].descriptorType	= baseSet[j].descriptorType;			
 				
-				outSet[j].stageFlags |= m_shaderStage; //Combine sets across shader stages
+				outSet[j].stageFlags		|= layoutStage; //Combine sets across shader stages
 			}
 		}
 	}
@@ -119,8 +123,6 @@ void VulkanShaderModule::AddReflectionData(uint32_t dataSize, const void* data, 
 				setLayout.resize(index + 1);
 			}
 
-			vk::ShaderStageFlags stages;
-
 			if (setLayout[index].stageFlags != vk::ShaderStageFlags()) {
 				//Check that something hasn't gone wrong with the binding combo!
 				if (setLayout[index].descriptorType != (vk::DescriptorType)binding->descriptor_type) {
@@ -130,9 +132,9 @@ void VulkanShaderModule::AddReflectionData(uint32_t dataSize, const void* data, 
 
 				}
 			}
-			setLayout[index].binding = index;
-			setLayout[index].descriptorCount = binding->count;
-			setLayout[index].descriptorType = (vk::DescriptorType)binding->descriptor_type;
+			setLayout[index].binding			= index;
+			setLayout[index].descriptorCount	= binding->count;
+			setLayout[index].descriptorType		= (vk::DescriptorType)binding->descriptor_type;
 
 			setLayout[index].stageFlags |= stage; //Combine sets across shader stages
 		}

@@ -11,10 +11,10 @@ License: MIT (see LICENSE file at the top of the source tree)
 namespace NCL::Rendering::Vulkan {
 	class VulkanShaderModule  {
 	public:
-		VulkanShaderModule(const std::string& filename,  vk::ShaderStageFlagBits stage, vk::Device device);
+		VulkanShaderModule(const std::string& filename,  vk::ShaderStageFlagBits moduleStage, vk::Device device);
 
 		~VulkanShaderModule() = default;
-		void CombineLayoutBindings(std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& inoutBindings)		const;
+		void CombineLayoutBindings(std::vector<std::vector<vk::DescriptorSetLayoutBinding>>& inoutBindings, vk::ShaderStageFlags layoutStage = {})		const;
 		void CombinePushConstantRanges(std::vector< vk::PushConstantRange>& inoutRanges)						const;
 
 	//protected:		

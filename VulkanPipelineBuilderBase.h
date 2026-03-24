@@ -66,6 +66,11 @@ namespace NCL::Rendering::Vulkan {
 			return (T&)*this;
 		}
 
+		T& WithMinimisedSetLayoutStages() {
+			minimiseLayoutStages = true;
+			return (T&)*this;
+		}
+
 	protected:
 		PipelineBuilderBase(vk::Device device) {
 			m_sourceDevice = device;
@@ -91,7 +96,8 @@ namespace NCL::Rendering::Vulkan {
 			}
 			else {
 				for (auto& module : m_usedModules) {
-					module->CombineLayoutBindings(output.m_allLayoutsBindings);
+					vk::ShaderStageFlags stageFlags = minimiseLayoutStages ? module->m_shaderStage : vk::ShaderStageFlagBits::eAll;
+					module->CombineLayoutBindings(output.m_allLayoutsBindings, stageFlags);
 					module->CombinePushConstantRanges(output.m_pushConstants);
 				}
 				FinaliseLayout(output);
@@ -132,6 +138,8 @@ namespace NCL::Rendering::Vulkan {
 		P m_pipelineCreate;
 		vk::PipelineLayout	m_layout;
 		vk::Device			m_sourceDevice;
+
+		bool minimiseLayoutStages = false;
 
 		vk::PipelineCreateFlags2				m_pipelineCreateBits;
 
