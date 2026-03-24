@@ -301,9 +301,8 @@ void	Vulkan::WriteSamplerDescriptor(vk::Device device, vk::DescriptorSet set, ui
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
 }
 
-void	Vulkan::WriteStorageImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout layout) {
+void	Vulkan::WriteStorageImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, vk::ImageView view, vk::ImageLayout layout) {
 	vk::DescriptorImageInfo imageInfo = {
-		.sampler		= sampler,
 		.imageView		= view,
 		.imageLayout	= layout
 	};

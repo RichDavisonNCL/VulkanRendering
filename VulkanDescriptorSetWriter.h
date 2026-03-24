@@ -25,8 +25,8 @@ namespace NCL::Rendering::Vulkan {
 			return *this;
 		}
 
-		DescriptorSetWriter& WriteStorageImage(uint32_t binding, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal) {
-			Vulkan::WriteStorageImageDescriptor(m_device, m_set, binding, view, sampler, m_layout);
+		DescriptorSetWriter& WriteStorageImage(uint32_t binding, vk::ImageView view, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal) {
+			Vulkan::WriteStorageImageDescriptor(m_device, m_set, binding, view, m_layout);
 			return *this;
 		}
 
