@@ -601,10 +601,6 @@ void	VulkanRenderer::BeginFrame() {
 	context.cmdBuffer.begin(vk::CommandBufferBeginInfo());
 	context.cmdBuffer.setViewport(0, 1, &m_defaultViewport);
 	context.cmdBuffer.setScissor(0, 1, &m_defaultScissor);
-
-	if (m_vkInit.autoBeginDynamicRendering) {
-		BeginRenderToScreen(context.cmdBuffer);
-	}
 }
 
 void VulkanRenderer::RenderFrame() {
@@ -614,9 +610,6 @@ void VulkanRenderer::RenderFrame() {
 void	VulkanRenderer::EndFrame() {
 	const FrameContext& context = GetFrameContext();
 
-	if (m_vkInit.autoBeginDynamicRendering) {
-		context.cmdBuffer.endRendering();
-	}
 	TransitionColourToPresent(context.cmdBuffer, m_currentFrameContext->colourImage);
 	if (hostWindow.IsMinimised()) {
 		CmdBufferEndSubmitWait(context.cmdBuffer, m_device, m_queues[CommandType::Graphics]);

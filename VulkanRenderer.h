@@ -86,7 +86,7 @@ namespace NCL::Rendering::Vulkan {
 
 		uint32_t	framesInFlight	= 3;
 
-		bool		autoBeginDynamicRendering	= true;
+		//bool		autoBeginDynamicRendering	= true;
 		bool		useOpenGLCoordinates		= false;
 
 		bool		useHDRSurface				= false;
