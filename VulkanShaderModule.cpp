@@ -38,7 +38,8 @@ VulkanShaderModule::VulkanShaderModule(const std::string& filename, vk::ShaderSt
 		Vulkan::SetDebugName(device, *m_shaderModule, filename);
 	}
 	else {
-		std::cout << __FUNCTION__ << " Problem loading shader file " << filename << "!\n";
+		std::cout << __FUNCTION__ << ": Problem loading shader file " << filename << "!\n";
+		assert(dataSize);
 	}
 	m_shaderStage = stage;
 }
