@@ -73,6 +73,9 @@ namespace NCL::Rendering::Vulkan {
 	void	WriteCombinedImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, uint32_t subIndex, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
 	void	WriteStorageImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::ImageView view, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
 	
+	void	WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::ImageView view, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
+	void	WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, uint32_t subIndex, vk::ImageView view, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
+
 	void	WriteSamplerDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::Sampler sampler);
 	
 	void	WriteTLASDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::AccelerationStructureKHR tlas);
