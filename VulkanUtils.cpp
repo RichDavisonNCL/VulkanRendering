@@ -287,17 +287,17 @@ void	Vulkan::WriteCombinedImageDescriptor(vk::Device device, vk::DescriptorSet s
 
 void	Vulkan::WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, vk::ImageView view, vk::ImageLayout layout) {
 	vk::DescriptorImageInfo imageInfo = {
-		.imageView = view,
-		.imageLayout = layout
+		.imageView		= view,
+		.imageLayout	= layout
 	};
 
 	vk::WriteDescriptorSet descriptorWrite = {
-		.dstSet = set,
-		.dstBinding = bindingNum,
-		.dstArrayElement = 0,
-		.descriptorCount = 1,
-		.descriptorType = vk::DescriptorType::eCombinedImageSampler,
-		.pImageInfo = &imageInfo
+		.dstSet				= set,
+		.dstBinding			= bindingNum,
+		.dstArrayElement	= 0,
+		.descriptorCount	= 1,
+		.descriptorType		= vk::DescriptorType::eSampledImage,
+		.pImageInfo			= &imageInfo
 	};
 
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
@@ -305,17 +305,17 @@ void	Vulkan::WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint
 
 void	Vulkan::WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, uint32_t subIndex, vk::ImageView view, vk::ImageLayout layout) {
 	vk::DescriptorImageInfo imageInfo = {
-		.imageView = view,
-		.imageLayout = layout
+		.imageView		= view,
+		.imageLayout	= layout
 	};
 
 	vk::WriteDescriptorSet descriptorWrite = {
-		.dstSet = set,
-		.dstBinding = bindingNum,
-		.dstArrayElement = subIndex,
-		.descriptorCount = 1,
-		.descriptorType = vk::DescriptorType::eCombinedImageSampler,
-		.pImageInfo = &imageInfo
+		.dstSet				= set,
+		.dstBinding			= bindingNum,
+		.dstArrayElement	= subIndex,
+		.descriptorCount	= 1,
+		.descriptorType		= vk::DescriptorType::eSampledImage,
+		.pImageInfo			= &imageInfo
 	};
 
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
@@ -361,7 +361,7 @@ void	Vulkan::WriteBufferDescriptor(vk::Device device, vk::DescriptorSet set, uin
 	vk::DescriptorBufferInfo descriptorInfo = {
 		.buffer = buff,
 		.offset = offset,
-		.range	= (range > 0 ? range : VK_WHOLE_SIZE)
+		.range	= range
 	};
 
 	vk::WriteDescriptorSet descriptorWrite = {
