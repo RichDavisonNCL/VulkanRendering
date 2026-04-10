@@ -43,6 +43,9 @@ namespace NCL::Rendering::Vulkan {
 	void ImageTransitionBarrier(vk::CommandBuffer  buffer, vk::Image i, vk::ImageMemoryBarrier2 barrier);
 	void ImageTransitionBarrier(vk::CommandBuffer  buffer, vk::Image i, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, vk::ImageAspectFlags aspect, vk::PipelineStageFlags2 srcStage, vk::PipelineStageFlags2 dstStage, uint32_t firstMip = 0, uint32_t mipCount = VK_REMAINING_MIP_LEVELS, uint32_t firstLayer = 0, uint32_t m_layerCount = VK_REMAINING_ARRAY_LAYERS);
 
+
+	//void TransitionUndefinedToColourSpanTest(vk::CommandBuffer  buffer, const std::span< vk::Image >& t);
+
 	void TransitionUndefinedToColour(vk::CommandBuffer  buffer, vk::Image t);
 	void TransitionColourToPresent(vk::CommandBuffer  buffer, vk::Image t);
 
@@ -55,7 +58,8 @@ namespace NCL::Rendering::Vulkan {
 	vk::AccessFlags	 DefaultAccessFlags(vk::ImageLayout forLayout);
 	vk::AccessFlags2 DefaultAccessFlags2(vk::ImageLayout forLayout);
 
-	vk::UniqueDescriptorSet CreateDescriptorSet(vk::Device device, vk::DescriptorPool m_pool, vk::DescriptorSetLayout  m_layout, uint32_t variableDescriptorCount = 0);
+	vk::UniqueDescriptorSet CreateDescriptorSet(vk::Device device, vk::DescriptorPool m_pool, vk::DescriptorSetLayout  m_layout);
+	vk::UniqueDescriptorSet CreateDescriptorSet(vk::Device device, vk::DescriptorPool m_pool, vk::DescriptorSetLayout  m_layout, uint32_t variableDescriptorCount);
 
 	vk::UniqueSemaphore		CreateTimelineSemaphore(vk::Device device, uint64_t initialValue = 0);
 	vk::Result				TimelineSemaphoreHostWait(vk::Device device, vk::Semaphore semaphore, uint64_t waitVal, uint64_t waitTime);

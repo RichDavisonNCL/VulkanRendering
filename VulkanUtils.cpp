@@ -82,7 +82,7 @@ void	Vulkan::ImageTransitionBarrier(vk::CommandBuffer  cmdBuffer, vk::Image imag
 	vk::PipelineStageFlags2 srcStage, vk::PipelineStageFlags2 dstStage, 
 	uint32_t mipLevel, uint32_t mipCount, uint32_t layer, uint32_t layerCount) {
 
-	vk::ImageMemoryBarrier2 memoryBarrier2 = {
+	vk::ImageMemoryBarrier2 memoryBarrier2{
 		.srcStageMask	= srcStage,	
 		.dstStageMask	= dstStage,
 		.dstAccessMask	= DefaultAccessFlags2(newLayout),
@@ -91,7 +91,7 @@ void	Vulkan::ImageTransitionBarrier(vk::CommandBuffer  cmdBuffer, vk::Image imag
 		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 		.image			= image,
-		.subresourceRange = {
+		.subresourceRange{
 			.aspectMask		= aspect,
 			.baseMipLevel	= mipLevel,
 			.levelCount		= mipCount,
@@ -104,6 +104,15 @@ void	Vulkan::ImageTransitionBarrier(vk::CommandBuffer  cmdBuffer, vk::Image imag
 		.pImageMemoryBarriers		= &memoryBarrier2
 	});
 }
+
+//void Vulkan::TransitionUndefinedToColourSpanTest(vk::CommandBuffer  buffer, const std::span< vk::Image >& t) {
+//	for (vk::Image i : t) {
+//		ImageTransitionBarrier(buffer, i,
+//			vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal,
+//			vk::ImageAspectFlagBits::eColor, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+//			vk::PipelineStageFlagBits2::eColorAttachmentOutput);
+//	}
+//}
 
 void Vulkan::TransitionUndefinedToColour(vk::CommandBuffer  buffer, vk::Image t) {
 	ImageTransitionBarrier(buffer, t,
@@ -247,13 +256,13 @@ void	Vulkan::WriteDescriptor(vk::Device device, vk::WriteDescriptorSet setInfo, 
 }
 
 void	Vulkan::WriteCombinedImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout layout) {
-	vk::DescriptorImageInfo imageInfo = {
+	vk::DescriptorImageInfo imageInfo{
 		.sampler		= sampler,
 		.imageView		= view,
 		.imageLayout	= layout
 	};
 
-	vk::WriteDescriptorSet descriptorWrite = {
+	vk::WriteDescriptorSet descriptorWrite{
 		.dstSet				= set,
 		.dstBinding			= bindingNum,
 		.dstArrayElement	= 0,
@@ -266,13 +275,13 @@ void	Vulkan::WriteCombinedImageDescriptor(vk::Device device, vk::DescriptorSet s
 }
 
 void	Vulkan::WriteCombinedImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, uint32_t subIndex, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout layout) {
-	vk::DescriptorImageInfo imageInfo = {
+	vk::DescriptorImageInfo imageInfo{
 		.sampler		= sampler,
 		.imageView		= view,
 		.imageLayout	= layout
 	};
 
-	vk::WriteDescriptorSet descriptorWrite = {
+	vk::WriteDescriptorSet descriptorWrite{
 		.dstSet				= set,
 		.dstBinding			= bindingNum,
 		.dstArrayElement	= subIndex,
@@ -286,12 +295,12 @@ void	Vulkan::WriteCombinedImageDescriptor(vk::Device device, vk::DescriptorSet s
 
 
 void	Vulkan::WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, vk::ImageView view, vk::ImageLayout layout) {
-	vk::DescriptorImageInfo imageInfo = {
+	vk::DescriptorImageInfo imageInfo{
 		.imageView		= view,
 		.imageLayout	= layout
 	};
 
-	vk::WriteDescriptorSet descriptorWrite = {
+	vk::WriteDescriptorSet descriptorWrite{
 		.dstSet				= set,
 		.dstBinding			= bindingNum,
 		.dstArrayElement	= 0,
@@ -304,12 +313,12 @@ void	Vulkan::WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint
 }
 
 void	Vulkan::WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, uint32_t subIndex, vk::ImageView view, vk::ImageLayout layout) {
-	vk::DescriptorImageInfo imageInfo = {
+	vk::DescriptorImageInfo imageInfo{
 		.imageView		= view,
 		.imageLayout	= layout
 	};
 
-	vk::WriteDescriptorSet descriptorWrite = {
+	vk::WriteDescriptorSet descriptorWrite{
 		.dstSet				= set,
 		.dstBinding			= bindingNum,
 		.dstArrayElement	= subIndex,
@@ -323,11 +332,11 @@ void	Vulkan::WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint
 
 
 void	Vulkan::WriteSamplerDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, vk::Sampler sampler) {
-	vk::DescriptorImageInfo imageInfo = {
+	vk::DescriptorImageInfo imageInfo{
 		.sampler		= sampler,
 	};
 
-	vk::WriteDescriptorSet descriptorWrite = {
+	vk::WriteDescriptorSet descriptorWrite{
 		.dstSet				= set,
 		.dstBinding			= bindingNum,
 		.dstArrayElement	= 0,
@@ -340,12 +349,12 @@ void	Vulkan::WriteSamplerDescriptor(vk::Device device, vk::DescriptorSet set, ui
 }
 
 void	Vulkan::WriteStorageImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, vk::ImageView view, vk::ImageLayout layout) {
-	vk::DescriptorImageInfo imageInfo = {
+	vk::DescriptorImageInfo imageInfo{
 		.imageView		= view,
 		.imageLayout	= layout
 	};
 
-	vk::WriteDescriptorSet descriptorWrite = {
+	vk::WriteDescriptorSet descriptorWrite{
 		.dstSet				= set,
 		.dstBinding			= bindingNum,
 		.dstArrayElement	= 0,
@@ -358,13 +367,13 @@ void	Vulkan::WriteStorageImageDescriptor(vk::Device device, vk::DescriptorSet se
 }
 
 void	Vulkan::WriteBufferDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::DescriptorType bufferType, vk::Buffer buff, size_t offset, size_t range) {
-	vk::DescriptorBufferInfo descriptorInfo = {
+	vk::DescriptorBufferInfo descriptorInfo{
 		.buffer = buff,
 		.offset = offset,
 		.range	= range
 	};
 
-	vk::WriteDescriptorSet descriptorWrite = {
+	vk::WriteDescriptorSet descriptorWrite{
 		.dstSet				= set,
 		.dstBinding			= bindingSlot,
 		.descriptorCount	= 1,
@@ -376,12 +385,12 @@ void	Vulkan::WriteBufferDescriptor(vk::Device device, vk::DescriptorSet set, uin
 }
 
 void	Vulkan::WriteTLASDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::AccelerationStructureKHR tlas) {
-	vk::WriteDescriptorSetAccelerationStructureKHR descriptorInfo = {
+	vk::WriteDescriptorSetAccelerationStructureKHR descriptorInfo{
 		.accelerationStructureCount = 1,
 		.pAccelerationStructures	= &tlas
 	};
 
-	vk::WriteDescriptorSet descriptorWrite = {
+	vk::WriteDescriptorSet descriptorWrite{
 		.pNext				= &descriptorInfo,
 		.dstSet				= set,
 		.dstBinding			= bindingSlot,
@@ -392,19 +401,26 @@ void	Vulkan::WriteTLASDescriptor(vk::Device device, vk::DescriptorSet set, uint3
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
 }
 
-vk::UniqueDescriptorSet Vulkan::CreateDescriptorSet(vk::Device device, vk::DescriptorPool pool, vk::DescriptorSetLayout  layout, uint32_t variableDescriptorCount) {
-	vk::DescriptorSetAllocateInfo allocateInfo = {
+vk::UniqueDescriptorSet Vulkan::CreateDescriptorSet(vk::Device device, vk::DescriptorPool pool, vk::DescriptorSetLayout  layout) {
+	vk::DescriptorSetAllocateInfo allocateInfo{
 		.descriptorPool		= pool,
 		.descriptorSetCount = 1,
 		.pSetLayouts		= &layout
 	};
-		
-	vk::DescriptorSetVariableDescriptorCountAllocateInfoEXT variableDescriptorInfo;
+	return std::move(device.allocateDescriptorSetsUnique(allocateInfo)[0]);
+}
 
-	if (variableDescriptorCount > 0) {
-		variableDescriptorInfo.setDescriptorSetCount(1).setPDescriptorCounts(&variableDescriptorCount);
-		allocateInfo.setPNext((const void*)&variableDescriptorInfo);
-	}
+vk::UniqueDescriptorSet Vulkan::CreateDescriptorSet(vk::Device device, vk::DescriptorPool pool, vk::DescriptorSetLayout  layout, uint32_t variableDescriptorCount) {
+	vk::DescriptorSetVariableDescriptorCountAllocateInfoEXT variableDescriptorInfo{
+		.descriptorSetCount = 1,
+		.pDescriptorCounts = &variableDescriptorCount
+	};
+	vk::DescriptorSetAllocateInfo allocateInfo{
+		.pNext				= (const void*)&variableDescriptorInfo,
+		.descriptorPool		= pool,
+		.descriptorSetCount = 1,
+		.pSetLayouts		= &layout,	
+	};
 	return std::move(device.allocateDescriptorSetsUnique(allocateInfo)[0]);
 }
 
