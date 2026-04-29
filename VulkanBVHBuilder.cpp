@@ -199,7 +199,14 @@ void VulkanBVHBuilder::BuildBLAS(vk::BuildAccelerationStructureFlagsKHR inFlags)
 			{} //imageMemoryBarriers
 		);
 	}
-	CmdBufferEndSubmitWait(*buffer, m_device, m_queue);
+	Vulkan::CmdBufferSubmit(
+		{
+			.buffer = *buffer,
+			.queue = m_queue,
+			.device = m_device,
+			.wait = true
+		}
+	);
 }
 
 void VulkanBVHBuilder::BuildTLAS(vk::BuildAccelerationStructureFlagsKHR flags) {
@@ -309,7 +316,14 @@ void VulkanBVHBuilder::BuildTLAS(vk::BuildAccelerationStructureFlagsKHR flags) {
 
 	vk::AccelerationStructureBuildRangeInfoKHR* rangeInfoPtr = &rangeInfo;
 
-	vk::UniqueCommandBuffer m_cmdBuffer = CmdBufferCreateBegin(m_device, m_pool, "Making TLAS");
-	m_cmdBuffer->buildAccelerationStructuresKHR(1, &geomInfo, &rangeInfoPtr);
-	CmdBufferEndSubmitWait(*m_cmdBuffer, m_device, m_queue);
+	vk::UniqueCommandBuffer cmdBuffer = CmdBufferCreateBegin(m_device, m_pool, "Making TLAS");
+	cmdBuffer->buildAccelerationStructuresKHR(1, &geomInfo, &rangeInfoPtr);
+	Vulkan::CmdBufferSubmit(
+		{
+			.buffer = *cmdBuffer,
+			.queue = m_queue,
+			.device = m_device,
+			.wait = true
+		}
+	);
 }

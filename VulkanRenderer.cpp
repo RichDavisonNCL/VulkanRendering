@@ -543,7 +543,14 @@ void VulkanRenderer::OnWindowResize(int width, int height) {
 
 	CompleteResize();
 
-	CmdBufferEndSubmitWait(*cmds, m_device, m_queues[CommandType::Graphics]);
+	Vulkan::CmdBufferSubmit(
+		{
+			.buffer = *cmds,
+			.queue = m_queues[CommandType::Graphics],
+			.device = m_device,
+			.wait = true
+		}
+	);
 
 	m_device.waitIdle();
 }
@@ -557,7 +564,14 @@ void	VulkanRenderer::BeginFrame() {
 
 	//Clear out any commands from the constructor
 	if (m_globalFrameID == 0) {
-		CmdBufferEndSubmitWait(context.cmdBuffer, m_device, m_queues[CommandType::Graphics]);
+		Vulkan::CmdBufferSubmit(
+			{
+				.buffer = context.cmdBuffer,
+				.queue = m_queues[CommandType::Graphics],
+				.device = m_device,
+				.wait = true
+			}
+		);
 	}
 
 	//First we need to prevent the m_renderer from going too far ahead of the frames in flight max
@@ -612,10 +626,22 @@ void	VulkanRenderer::EndFrame() {
 
 	TransitionColourToPresent(context.cmdBuffer, m_currentFrameContext->colourImage);
 	if (hostWindow.IsMinimised()) {
-		CmdBufferEndSubmitWait(context.cmdBuffer, m_device, m_queues[CommandType::Graphics]);
+		Vulkan::CmdBufferSubmit(
+			{
+				.buffer = context.cmdBuffer,
+				.queue	= m_queues[CommandType::Graphics],
+				.device = m_device,
+				.wait	= true
+			}
+		);
 	}
 	else {
-		CmdBufferEndSubmit(context.cmdBuffer, m_queues[CommandType::Graphics]);
+		Vulkan::CmdBufferSubmit(
+			{
+				.buffer = context.cmdBuffer,
+				.queue = context.queues[CommandType::Graphics],
+			}
+		);
 	}
 
 	const uint64_t nextWaitID = m_globalFrameID + m_frameContexts.size();
@@ -880,7 +906,14 @@ void	VulkanRenderer::CreateDepthBufer(uint32_t width, uint32_t height) {
 
 	Vulkan::ImageTransitionBarrier(*tempBuffer, m_depthImage, memBarier);
 	
-	Vulkan::CmdBufferEndSubmitWait(*tempBuffer, m_device, m_queues[CommandType::Graphics]);
+	Vulkan::CmdBufferSubmit(
+		{
+			.buffer = *tempBuffer,
+			.queue = m_queues[CommandType::Graphics],
+			.device = m_device,
+			.wait = true
+		}
+	);
 
 	Vulkan::SetDebugName(m_device, m_depthImage , "DepthBuffer");
 	Vulkan::SetDebugName(m_device, m_depthView	, "DepthBuffer");

@@ -65,10 +65,6 @@ namespace NCL::Rendering::Vulkan {
 	vk::Result				TimelineSemaphoreHostWait(vk::Device device, vk::Semaphore semaphore, uint64_t waitVal, uint64_t waitTime);
 	void					TimelineSemaphoreHostSignal(vk::Device device, vk::Semaphore semaphore, uint64_t signalVal);
 	
-	void					TimelineSemaphoreQueueWait(vk::Queue queue, vk::Semaphore semaphore, uint64_t waitVal, vk::PipelineStageFlags waitStage);
-	void					TimelineSemaphoreQueueSignal(vk::Queue queue, vk::Semaphore semaphore, uint64_t signalVal);
-	
-	
 	void	WriteDescriptor(vk::Device device, vk::WriteDescriptorSet setInfo, vk::DescriptorBufferInfo bufferInfo);
 	void	WriteDescriptor(vk::Device device, vk::WriteDescriptorSet setInfo, vk::DescriptorImageInfo imageInfo);
 
@@ -88,9 +84,6 @@ namespace NCL::Rendering::Vulkan {
 	vk::UniqueCommandBuffer	CmdBufferCreateBegin(vk::Device device, vk::CommandPool fromPool, const std::string& debugName = "");
 
 	void	CmdBufferResetBegin(vk::CommandBuffer  buffer);
-	void	CmdBufferResetBegin(const vk::UniqueCommandBuffer&  buffer);
-
-	void	CmdBufferEndSubmit(vk::CommandBuffer  buffer, vk::Queue queue, vk::Fence fence = {}, vk::Semaphore waitSemaphore = {}, vk::Semaphore signalSemaphore = {});
 
 	struct CmdSubmission {
 		vk::CommandBuffer		buffer;
@@ -105,10 +98,7 @@ namespace NCL::Rendering::Vulkan {
 		bool					wait	= false;
 	};
 
-	void	CmdBufferSubmission(const CmdSubmission& submission);
-
-	void	CmdBufferEndSubmitWait(vk::CommandBuffer  buffer, vk::Device device, vk::Queue queue);
-	void	CmdBufferEndSubmitWait(vk::CommandBuffer  buffer, vk::Device device, vk::Queue queue, vk::Fence fence);
+	void	CmdBufferSubmit(const CmdSubmission& submission);
 
 	void WriteBufferDescriptor(vk::Device device,
 		const vk::PhysicalDeviceDescriptorBufferPropertiesEXT& props,
