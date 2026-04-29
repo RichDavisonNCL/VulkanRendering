@@ -91,6 +91,17 @@ namespace NCL::Rendering::Vulkan {
 	void	CmdBufferResetBegin(const vk::UniqueCommandBuffer&  buffer);
 
 	void	CmdBufferEndSubmit(vk::CommandBuffer  buffer, vk::Queue m_queue, vk::Fence fence = {}, vk::Semaphore waitSemaphore = {}, vk::Semaphore signalSemaphore = {});
+
+	struct TimelineSubmission {
+		vk::Semaphore waitSemaphore = {};
+		uint64_t waitValue = 0;
+		vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eTopOfPipe;
+		vk::Semaphore signalSemaphore = {};
+		uint64_t signalValue = 0;
+	};
+
+	void	CmdBufferEndSubmitTimeline(vk::CommandBuffer  buffer, vk::Queue m_queue, TimelineSubmission timeline, vk::Fence fence = {});
+
 	void	CmdBufferEndSubmitWait(vk::CommandBuffer  buffer, vk::Device device, vk::Queue m_queue);
 	void	CmdBufferEndSubmitWait(vk::CommandBuffer  buffer, vk::Device device, vk::Queue m_queue, vk::Fence fence);
 
