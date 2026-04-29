@@ -185,44 +185,12 @@ void	Vulkan::CmdBufferResetBegin(vk::CommandBuffer  buffer) {
 	buffer.begin(vk::CommandBufferBeginInfo());
 }
 
-//void	Vulkan::CmdBufferResetBegin(const vk::UniqueCommandBuffer& buffer) {
-//	buffer->reset();
-//	buffer->begin(vk::CommandBufferBeginInfo());
-//}
-
 vk::UniqueCommandBuffer	Vulkan::CmdBufferCreateBegin(vk::Device device, vk::CommandPool fromPool, const std::string& debugName) {
 	vk::UniqueCommandBuffer buffer = CmdBufferCreate(device, fromPool, debugName);
 	vk::CommandBufferBeginInfo beginInfo = vk::CommandBufferBeginInfo();
 	buffer->begin(beginInfo);
 	return std::move(buffer);
 }
-
-//void	Vulkan::CmdBufferEndSubmit(vk::CommandBuffer  buffer, vk::Queue queue, vk::Fence fence, vk::Semaphore waitSemaphore, vk::Semaphore signalSempahore) {
-//	if (!buffer) {
-//		std::cout << __FUNCTION__ << " Submitting invalid buffer?\n";
-//		return;
-//	}
-//	buffer.end();
-//
-//	vk::SubmitInfo submitInfo = {
-//		.commandBufferCount = 1,
-//		.pCommandBuffers = &buffer
-//	};
-//		
-//	vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eTopOfPipe;
-//
-//	if (waitSemaphore) {
-//		submitInfo.waitSemaphoreCount	= 1;
-//		submitInfo.pWaitSemaphores		= &waitSemaphore;
-//		submitInfo.pWaitDstStageMask	= &waitStage;
-//	}
-//	if (signalSempahore) {
-//		submitInfo.signalSemaphoreCount = 1;
-//		submitInfo.pSignalSemaphores	= &signalSempahore;
-//	}
-//
-//	queue.submit(submitInfo, fence);
-//}
 
 void	Vulkan::CmdBufferSubmit(const CmdSubmission& submission) {
 	if (!submission.buffer) {
