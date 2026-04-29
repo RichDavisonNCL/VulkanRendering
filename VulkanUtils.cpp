@@ -165,8 +165,8 @@ bool Vulkan::MessageAssert(bool condition, const char* msg) {
 vk::UniqueCommandBuffer	Vulkan::CmdBufferCreate(vk::Device device, vk::CommandPool fromPool, const std::string& debugName) {
 	std::vector<vk::UniqueCommandBuffer> buffers = device.allocateCommandBuffersUnique(
 		{
-			.commandPool = fromPool,
-			.level = vk::CommandBufferLevel::ePrimary,
+			.commandPool		= fromPool,
+			.level				= vk::CommandBufferLevel::ePrimary,
 			.commandBufferCount = 1
 		}
 	);
@@ -217,6 +217,40 @@ void	Vulkan::CmdBufferEndSubmit(vk::CommandBuffer  buffer, vk::Queue queue, vk::
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores	= &signalSempahore;
 	}
+
+	queue.submit(submitInfo, fence);
+}
+
+void	Vulkan::CmdBufferEndSubmitTimeline(vk::CommandBuffer  buffer, vk::Queue queue,  TimelineSubmission timelineState, vk::Fence fence) {
+	if (!buffer) {
+		std::cout << __FUNCTION__ << " Submitting invalid buffer?\n";
+		return;
+	}
+	buffer.end();
+
+	uint32_t signalCount	= 0;
+	uint32_t waitCount		= 0;
+
+	vk::TimelineSemaphoreSubmitInfo tlSubmit{
+		.waitSemaphoreValueCount	= waitCount,
+		.pWaitSemaphoreValues		= &(timelineState.waitValue),
+		.signalSemaphoreValueCount	= signalCount,
+		.pSignalSemaphoreValues		= &(timelineState.signalValue),
+	};
+
+	vk::SubmitInfo submitInfo = {
+		.pNext = &tlSubmit,
+
+		.waitSemaphoreCount = waitCount,
+		.pWaitSemaphores	= &timelineState.waitSemaphore,
+		.pWaitDstStageMask	= &timelineState.waitStage,
+
+		.commandBufferCount = 1,
+		.pCommandBuffers	= &buffer,
+
+		.signalSemaphoreCount	= signalCount,
+		.pSignalSemaphores		= &timelineState.signalSemaphore
+	};
 
 	queue.submit(submitInfo, fence);
 }
