@@ -46,6 +46,9 @@ vk::AccessFlags Vulkan::DefaultAccessFlags(vk::ImageLayout forLayout) {
 	else if (forLayout == vk::ImageLayout::eShaderReadOnlyOptimal) {
 		return vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eInputAttachmentRead; //added last bit?!?
 	}
+	else if (forLayout == vk::ImageLayout::eGeneral) {
+		return vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eInputAttachmentRead;
+	}
 	return vk::AccessFlagBits::eNone;
 }
 
