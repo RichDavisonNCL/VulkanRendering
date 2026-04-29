@@ -22,7 +22,7 @@ namespace NCL::Rendering::Vulkan {
 		VulkanVMAMemoryManager(vk::Device device, vk::PhysicalDevice physicalDevice, vk::Instance instance, const VulkanInitialisation& vkInit);
 		virtual ~VulkanVMAMemoryManager();
 
-		VulkanBuffer	CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags flags, const std::string& debugName = "")	override;
+		VulkanBuffer	CreateBuffer(vk::BufferCreateInfo createInfo, vk::MemoryPropertyFlags flags, const std::string& debugName = "")	override;
 		VulkanBuffer	CreateStagingBuffer(size_t size, const std::string& debugName = "")						override;
 		void			DiscardBuffer(VulkanBuffer& buffer, DiscardMode discard)								override;
 
@@ -30,7 +30,7 @@ namespace NCL::Rendering::Vulkan {
 		void			UnmapBuffer(const VulkanBuffer& buffer)		override;
 		void			CopyData(const VulkanBuffer& buffer, void* data, size_t size, size_t offset = 0) override;
 
-		vk::Image		CreateImage(vk::ImageCreateInfo& createInfo, const std::string& debugName = "")		override;
+		vk::Image		CreateImage(vk::ImageCreateInfo createInfo, const std::string& debugName = "")		override;
 		void			DiscardImage(vk::Image& tex, DiscardMode discard)									override;
 
 		void			Update() override;

@@ -19,7 +19,7 @@ namespace NCL::Rendering::Vulkan {
 	public:
 		virtual ~VulkanMemoryManager() {};
 
-		virtual VulkanBuffer	CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties, const std::string& debugName = "") = 0;
+		virtual VulkanBuffer	CreateBuffer(vk::BufferCreateInfo createInfo, vk::MemoryPropertyFlags memoryProperties, const std::string& debugName = "") = 0;
 
 		virtual VulkanBuffer	CreateStagingBuffer(size_t size, const std::string& debugName = "")						= 0;
 		virtual void			DiscardBuffer(VulkanBuffer& buffer, DiscardMode discard = DiscardMode::Deferred)		= 0;
@@ -30,8 +30,16 @@ namespace NCL::Rendering::Vulkan {
 
 		virtual void			Update() = 0;
 
-		virtual vk::Image		CreateImage(vk::ImageCreateInfo& createInfo, const std::string& debugName = "")		= 0;
+		virtual vk::Image		CreateImage(vk::ImageCreateInfo createInfo, const std::string& debugName = "")		= 0;
 		virtual void			DiscardImage(vk::Image& img, DiscardMode discard = DiscardMode::Deferred)			= 0;
+
+		void SetDefaultSharedBufferFamilies(const std::vector<uint32_t>& families) {
+			defaultBufferFamilies = families;
+		}
+
+		void SetDefaultSharedImageFamilies(const std::vector<uint32_t>& families) {
+			defaultImageFamilies = families;
+		}
 	
 	protected:
 		VulkanBuffer	AllocateBuffer() {
@@ -39,5 +47,8 @@ namespace NCL::Rendering::Vulkan {
 			b.m_sourceManager = this;
 			return b;
 		}
+
+		std::vector<uint32_t> defaultBufferFamilies;
+		std::vector<uint32_t> defaultImageFamilies;
 	};
 }

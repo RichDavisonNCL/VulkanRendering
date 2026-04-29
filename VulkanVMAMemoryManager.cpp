@@ -43,7 +43,7 @@ VulkanVMAMemoryManager::~VulkanVMAMemoryManager() {
 	vmaDestroyAllocator(m_memoryAllocator);
 }
 
-VulkanBuffer VulkanVMAMemoryManager::CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memProperties, const std::string& debugName) {
+VulkanBuffer VulkanVMAMemoryManager::CreateBuffer(vk::BufferCreateInfo createInfo, vk::MemoryPropertyFlags memProperties, const std::string& debugName) {
 	VulkanBuffer newBuffer = AllocateBuffer();
 
 	uint32_t id = GetSpareBufferID();
@@ -53,22 +53,29 @@ VulkanBuffer VulkanVMAMemoryManager::CreateBuffer(const vk::BufferCreateInfo& cr
 	
 	newBuffer.size = allocSize;
 		
-	VmaAllocationCreateInfo alloCreateInfo = {};
-	alloCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+	VmaAllocationCreateInfo allocCreateInfo = {};
+	allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
 	
-	alloCreateInfo.requiredFlags = (VkMemoryPropertyFlags)memProperties;
+	allocCreateInfo.requiredFlags = (VkMemoryPropertyFlags)memProperties;
 	
 	if (memProperties & vk::MemoryPropertyFlagBits::eHostVisible) {
-		alloCreateInfo.flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+		allocCreateInfo.flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
 	}
 	
 	if (memProperties & vk::MemoryPropertyFlagBits::eHostCoherent) {
-		alloCreateInfo.flags |= (VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT);
+		allocCreateInfo.flags |= (VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT);
+	}
+
+	if (createInfo.sharingMode == vk::SharingMode::eConcurrent &&
+		createInfo.queueFamilyIndexCount == 0) {
+
+		createInfo.queueFamilyIndexCount	= defaultBufferFamilies.size();
+		createInfo.pQueueFamilyIndices		= defaultBufferFamilies.data();
 	}
 
 	Allocation allocation;
 	
-	vmaCreateBuffer(m_memoryAllocator, (VkBufferCreateInfo*)&createInfo, &alloCreateInfo, (VkBuffer*)&(newBuffer.buffer), &allocation.m_allocationHandle, &allocation.m_allocationInfo);
+	vmaCreateBuffer(m_memoryAllocator, (VkBufferCreateInfo*)&createInfo, &allocCreateInfo, (VkBuffer*)&(newBuffer.buffer), &allocation.m_allocationHandle, &allocation.m_allocationInfo);
 	
 	if (createInfo.usage & vk::BufferUsageFlagBits::eShaderDeviceAddress) {
 
@@ -108,9 +115,16 @@ void VulkanVMAMemoryManager::DiscardBuffer(VulkanBuffer& buffer, DiscardMode dis
 	}
 }
 
-vk::Image VulkanVMAMemoryManager::CreateImage(vk::ImageCreateInfo& createInfo, const std::string& debugName) {
+vk::Image VulkanVMAMemoryManager::CreateImage(vk::ImageCreateInfo createInfo, const std::string& debugName) {
 	vk::Image	image;
 	Allocation	imageAlloc;
+
+	if (createInfo.sharingMode == vk::SharingMode::eConcurrent &&
+		createInfo.queueFamilyIndexCount == 0) {
+
+		createInfo.queueFamilyIndexCount	= defaultImageFamilies.size();
+		createInfo.pQueueFamilyIndices		= defaultImageFamilies.data();
+	}
 
 	VmaAllocationCreateInfo vmaallocInfo = {};
 	vmaallocInfo.usage = VMA_MEMORY_USAGE_AUTO;
