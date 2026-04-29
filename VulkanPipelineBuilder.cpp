@@ -196,7 +196,8 @@ VulkanPipeline	PipelineBuilder::Build(const std::string& debugName, vk::Pipeline
 		.setPRasterizationState(&m_rasterCreate)
 		.setPVertexInputState(&m_vertexCreate);
 
-	FillShaderState(output);
+	FillShaderModules(output);
+	FillShaderLayouts(output);
 
 	//We must be using dynamic rendering, better set it up!
 	if (!m_allColourRenderingFormats.empty() || m_depthRenderingFormat != vk::Format::eUndefined) {

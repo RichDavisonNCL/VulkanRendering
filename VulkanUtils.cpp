@@ -224,38 +224,51 @@ void	Vulkan::CmdBufferEndSubmit(vk::CommandBuffer  buffer, vk::Queue queue, vk::
 	queue.submit(submitInfo, fence);
 }
 
-void	Vulkan::CmdBufferEndSubmitTimeline(vk::CommandBuffer  buffer, vk::Queue queue,  TimelineSubmission timelineState, vk::Fence fence) {
-	if (!buffer) {
+void	Vulkan::CmdBufferSubmission(const CmdSubmission& submission) {
+	if (!submission.buffer) {
 		std::cout << __FUNCTION__ << " Submitting invalid buffer?\n";
 		return;
 	}
-	buffer.end();
+	submission.buffer.end();
 
-	uint32_t signalCount	= 0;
-	uint32_t waitCount		= 0;
+	uint32_t signalCount	= submission.signalSemaphore	? 1 : 0;
+	uint32_t waitCount		= submission.waitSemaphore		? 1 : 0;
 
 	vk::TimelineSemaphoreSubmitInfo tlSubmit{
 		.waitSemaphoreValueCount	= waitCount,
-		.pWaitSemaphoreValues		= &(timelineState.waitValue),
+		.pWaitSemaphoreValues		= &(submission.waitValue),
 		.signalSemaphoreValueCount	= signalCount,
-		.pSignalSemaphoreValues		= &(timelineState.signalValue),
+		.pSignalSemaphoreValues		= &(submission.signalValue),
 	};
 
 	vk::SubmitInfo submitInfo = {
 		.pNext = &tlSubmit,
 
 		.waitSemaphoreCount = waitCount,
-		.pWaitSemaphores	= &timelineState.waitSemaphore,
-		.pWaitDstStageMask	= &timelineState.waitStage,
+		.pWaitSemaphores	= &submission.waitSemaphore,
+		.pWaitDstStageMask	= &submission.waitStage,
 
 		.commandBufferCount = 1,
-		.pCommandBuffers	= &buffer,
+		.pCommandBuffers	= &submission.buffer,
 
 		.signalSemaphoreCount	= signalCount,
-		.pSignalSemaphores		= &timelineState.signalSemaphore
+		.pSignalSemaphores		= &submission.signalSemaphore
 	};
 
-	queue.submit(submitInfo, fence);
+	if (submission.wait) {
+		vk::Fence fence = submission.device.createFence({});
+
+		CmdBufferEndSubmit(submission.buffer, submission.queue, fence);
+
+		if (submission.device.waitForFences(1, &fence, true, UINT64_MAX) != vk::Result::eSuccess) {
+			std::cout << __FUNCTION__ << " Device queue submission taking too long?\n";
+		};
+
+		submission.device.destroyFence(fence);
+	}
+	else {
+		submission.queue.submit(submitInfo, submission.fence);
+	}	
 }
 
 void		Vulkan::CmdBufferEndSubmitWait(vk::CommandBuffer  buffer, vk::Device device, vk::Queue queue) {

@@ -88,7 +88,8 @@ VulkanRayTracingPipelineBuilder& VulkanRayTracingPipelineBuilder::WithShaderModu
 VulkanPipeline VulkanRayTracingPipelineBuilder::Build(const std::string& debugName, vk::PipelineCache cache) {
 	VulkanPipeline output;	
 	
-	FillShaderState(output);
+	FillShaderModules(output);
+	FillShaderLayouts(output);
 	
 	m_allGroups.clear();
 	m_allGroups.insert(m_allGroups.end(), m_genGroups.begin() , m_genGroups.end());

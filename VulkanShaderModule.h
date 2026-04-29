@@ -19,9 +19,7 @@ namespace NCL::Rendering::Vulkan {
 
 	//protected:		
 		void AddReflectionData(uint32_t dataSize, const void* data, vk::ShaderStageFlags stage);	
-		void BuildLayouts(vk::Device device);
 
-		std::vector< vk::UniqueDescriptorSetLayout>	m_reflectionLayouts;
 		std::vector<std::vector<vk::DescriptorSetLayoutBinding>>	m_allLayoutsBindings;
 
 		std::vector< vk::PushConstantRange>		m_pushConstants;

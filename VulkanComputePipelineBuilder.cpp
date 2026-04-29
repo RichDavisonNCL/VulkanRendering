@@ -13,34 +13,30 @@ using namespace Rendering;
 using namespace Vulkan;
 
 ComputePipelineBuilder::ComputePipelineBuilder(vk::Device device) : PipelineBuilderBase(device){
-	m_module = nullptr;
 }
 
 ComputePipelineBuilder& ComputePipelineBuilder::WithShaderBinary(const std::string& filename, const std::string& entrypoint) {
 	m_loadedShaderModules.push_back(std::make_unique<VulkanShaderModule>(filename, vk::ShaderStageFlagBits::eCompute, m_sourceDevice));
-	m_module		= m_loadedShaderModules.back().get();
+	m_usedModules.push_back(m_loadedShaderModules.back().get());
 	m_entryPoint	= entrypoint;
 	return *this;
 }
 
 ComputePipelineBuilder& ComputePipelineBuilder::WithShaderModule(const VulkanShaderModule& module, const std::string& entrypoint) {
-	m_module		= &module;
+	m_usedModules.push_back(&module);
 	m_entryPoint	= entrypoint;
 	return *this;
 }
 
 VulkanPipeline	ComputePipelineBuilder::Build(const std::string& debugName, vk::PipelineCache cache) {
 	VulkanPipeline output;
-	assert(m_module);
+	assert(!m_usedModules.empty());
 
-	m_module->CombineLayoutBindings(output.m_allLayoutsBindings);
-	m_module->CombinePushConstantRanges(output.m_pushConstants);
+	FillShaderLayouts(output);
 
-	FinaliseLayout(output);
-	
 	vk::PipelineShaderStageCreateInfo	m_createInfo;
 	m_createInfo.stage	= vk::ShaderStageFlagBits::eCompute;
-	m_createInfo.module = *m_module->m_shaderModule;
+	m_createInfo.module = *m_usedModules[0]->m_shaderModule;
 	m_createInfo.pName	= m_entryPoint.c_str();
 
 	m_pipelineCreate.setLayout(*output.layout);

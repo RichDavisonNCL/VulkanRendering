@@ -33,7 +33,6 @@ VulkanShaderModule::VulkanShaderModule(const std::string& filename, vk::ShaderSt
 			}
 		);
 		AddReflectionData(dataSize, data, stage);
-		BuildLayouts(device);
 
 		Vulkan::SetDebugName(device, *m_shaderModule, filename);
 	}
@@ -172,12 +171,4 @@ void VulkanShaderModule::AddReflectionData(uint32_t dataSize, const void* data, 
 		}
 	}
 	spvReflectDestroyShaderModule(&module);
-}
-
-void VulkanShaderModule::BuildLayouts(vk::Device device) {
-	for (const auto& i : m_allLayoutsBindings) {
-		vk::DescriptorSetLayoutCreateInfo createInfo;
-		createInfo.setBindings(i);
-		m_reflectionLayouts.push_back(device.createDescriptorSetLayoutUnique(createInfo));
-	}
 }

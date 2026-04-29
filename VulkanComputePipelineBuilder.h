@@ -29,7 +29,6 @@ namespace NCL::Rendering::Vulkan {
 		VulkanPipeline	Build(const std::string& debugName = "", vk::PipelineCache cache = {});
 
 	protected:
-		const VulkanShaderModule*	m_module;
 		std::string			m_entryPoint;
 	};
 };

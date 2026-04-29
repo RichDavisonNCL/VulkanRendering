@@ -77,7 +77,7 @@ namespace NCL::Rendering::Vulkan {
 		}
 		~PipelineBuilderBase() = default;
 
-		void FillShaderState(VulkanPipeline& output) {
+		void FillShaderModules(VulkanPipeline& output) {
 			for (int i = 0; i < m_usedModules.size(); ++i) {
 				vk::PipelineShaderStageCreateInfo stageInfo;
 
@@ -87,10 +87,11 @@ namespace NCL::Rendering::Vulkan {
 
 				m_shaderStages.push_back(stageInfo);
 			}
-
 			m_pipelineCreate.setStageCount(m_shaderStages.size());
 			m_pipelineCreate.setPStages(m_shaderStages.data());
+		}
 
+		void FillShaderLayouts(VulkanPipeline& output) {
 			if (m_externalLayout) {
 				m_pipelineCreate.setLayout(m_externalLayout);
 			}
