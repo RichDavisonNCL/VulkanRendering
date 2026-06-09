@@ -309,12 +309,12 @@ void	Vulkan::WriteSamplerDescriptor(vk::Device device, vk::DescriptorSet set, ui
 	};
 
 	vk::WriteDescriptorSet descriptorWrite{
-		.dstSet = set,
-		.dstBinding = bindingNum,
-		.dstArrayElement = 0,
-		.descriptorCount = 1,
-		.descriptorType = vk::DescriptorType::eSampler,
-		.pImageInfo = &imageInfo
+		.dstSet				= set,
+		.dstBinding			= bindingNum,
+		.dstArrayElement	= 0,
+		.descriptorCount	= 1,
+		.descriptorType		= vk::DescriptorType::eSampler,
+		.pImageInfo			= &imageInfo
 	};
 
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
@@ -326,17 +326,17 @@ void	Vulkan::WriteStorageImageDescriptor(vk::Device device, vk::DescriptorSet se
 
 void	Vulkan::WriteStorageImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, uint32_t subIndex, vk::ImageView view, vk::ImageLayout layout) {
 	vk::DescriptorImageInfo imageInfo{
-		.imageView = view,
-		.imageLayout = layout
+		.imageView		= view,
+		.imageLayout	= layout
 	};
 
 	vk::WriteDescriptorSet descriptorWrite{
-		.dstSet = set,
-		.dstBinding = bindingNum,
-		.dstArrayElement = 0,
-		.descriptorCount = 1,
-		.descriptorType = vk::DescriptorType::eStorageImage,
-		.pImageInfo = &imageInfo
+		.dstSet				= set,
+		.dstBinding			= bindingNum,
+		.dstArrayElement	= 0,
+		.descriptorCount	= 1,
+		.descriptorType		= vk::DescriptorType::eStorageImage,
+		.pImageInfo			= &imageInfo
 	};
 
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
@@ -367,17 +367,17 @@ void	Vulkan::WriteBufferDescriptor(vk::Device device, vk::DescriptorSet set, uin
 
 void	Vulkan::WriteInlineUniformDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, void* data, std::size_t byteCount) {
 	vk::WriteDescriptorSetInlineUniformBlock inlineWrite = {
-		.dataSize = (uint32_t)byteCount,
-		.pData = &data
+		.dataSize	= (uint32_t)byteCount,
+		.pData		= &data
 	};
 
 	vk::WriteDescriptorSet descriptorWrite = {
-		.pNext = &inlineWrite,
-		.dstSet = set,
-		.dstBinding = bindingSlot,
-		.dstArrayElement = 0,
-		.descriptorCount = (uint32_t)byteCount,
-		.descriptorType = vk::DescriptorType::eInlineUniformBlock,
+		.pNext				= &inlineWrite,
+		.dstSet				= set,
+		.dstBinding			= bindingSlot,
+		.dstArrayElement	= 0,
+		.descriptorCount	= (uint32_t)byteCount,
+		.descriptorType		= vk::DescriptorType::eInlineUniformBlock,
 	};
 
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
