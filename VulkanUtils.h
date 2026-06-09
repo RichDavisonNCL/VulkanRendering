@@ -68,7 +68,14 @@ namespace NCL::Rendering::Vulkan {
 	void	WriteDescriptor(vk::Device device, vk::WriteDescriptorSet setInfo, vk::DescriptorBufferInfo bufferInfo);
 	void	WriteDescriptor(vk::Device device, vk::WriteDescriptorSet setInfo, vk::DescriptorImageInfo imageInfo);
 
-	void	WriteBufferDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::DescriptorType bufferType, vk::Buffer buff, size_t offset = 0, size_t range = VK_WHOLE_SIZE);
+	template<typename T>
+	void	WriteInlineUniformDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, const T& object) {
+		WriteInlineUniformDescriptor(device, set, bindingSlot, &object, sizeof(object));
+	}
+
+	void	WriteInlineUniformDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, void* data, std::size_t byteCount);
+
+	void	WriteBufferDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::DescriptorType bufferType, vk::Buffer buff, std::size_t offset = 0, std::size_t range = VK_WHOLE_SIZE);
 	void	WriteCombinedImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
 	void	WriteCombinedImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, uint32_t subIndex, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
 	void	WriteStorageImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::ImageView view, vk::ImageLayout m_layout = vk::ImageLayout::eShaderReadOnlyOptimal);
