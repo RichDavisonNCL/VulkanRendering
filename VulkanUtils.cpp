@@ -255,22 +255,7 @@ void	Vulkan::WriteDescriptor(vk::Device device, vk::WriteDescriptorSet setInfo, 
 }
 
 void	Vulkan::WriteCombinedImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout layout) {
-	vk::DescriptorImageInfo imageInfo{
-		.sampler		= sampler,
-		.imageView		= view,
-		.imageLayout	= layout
-	};
-
-	vk::WriteDescriptorSet descriptorWrite{
-		.dstSet				= set,
-		.dstBinding			= bindingNum,
-		.dstArrayElement	= 0,
-		.descriptorCount	= 1,	
-		.descriptorType		= vk::DescriptorType::eCombinedImageSampler,
-		.pImageInfo			= &imageInfo
-	};
-
-	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
+	WriteCombinedImageDescriptor(device, set, bindingNum, 0, view, sampler, layout);
 }
 
 void	Vulkan::WriteCombinedImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, uint32_t subIndex, vk::ImageView view, vk::Sampler sampler, vk::ImageLayout layout) {
@@ -293,21 +278,7 @@ void	Vulkan::WriteCombinedImageDescriptor(vk::Device device, vk::DescriptorSet s
 }
 
 void	Vulkan::WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, vk::ImageView view, vk::ImageLayout layout) {
-	vk::DescriptorImageInfo imageInfo{
-		.imageView		= view,
-		.imageLayout	= layout
-	};
-
-	vk::WriteDescriptorSet descriptorWrite{
-		.dstSet				= set,
-		.dstBinding			= bindingNum,
-		.dstArrayElement	= 0,
-		.descriptorCount	= 1,
-		.descriptorType		= vk::DescriptorType::eSampledImage,
-		.pImageInfo			= &imageInfo
-	};
-
-	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
+	Vulkan::WriteImageDescriptor(device, set, bindingNum, 0, view, layout);
 }
 
 void	Vulkan::WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, uint32_t subIndex, vk::ImageView view, vk::ImageLayout layout) {
@@ -328,10 +299,13 @@ void	Vulkan::WriteImageDescriptor(vk::Device device, vk::DescriptorSet set, uint
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
 }
 
-
 void	Vulkan::WriteSamplerDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, vk::Sampler sampler) {
+	WriteSamplerDescriptor(device, set, bindingNum, 0, sampler);
+}
+
+void	Vulkan::WriteSamplerDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, uint32_t subIndex, vk::Sampler sampler) {
 	vk::DescriptorImageInfo imageInfo{
-		.sampler		= sampler,
+		.sampler = sampler,
 	};
 
 	vk::WriteDescriptorSet descriptorWrite{
@@ -347,6 +321,10 @@ void	Vulkan::WriteSamplerDescriptor(vk::Device device, vk::DescriptorSet set, ui
 }
 
 void	Vulkan::WriteStorageImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, vk::ImageView view, vk::ImageLayout layout) {
+	WriteStorageImageDescriptor(device, set, bindingNum, 0, view, layout);
+}
+
+void	Vulkan::WriteStorageImageDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingNum, uint32_t subIndex, vk::ImageView view, vk::ImageLayout layout) {
 	vk::DescriptorImageInfo imageInfo{
 		.imageView		= view,
 		.imageLayout	= layout
@@ -364,7 +342,7 @@ void	Vulkan::WriteStorageImageDescriptor(vk::Device device, vk::DescriptorSet se
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
 }
 
-void	Vulkan::WriteBufferDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::DescriptorType bufferType, vk::Buffer buff, std::size_t offset, std::size_t range) {
+void	Vulkan::WriteBufferDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, uint32_t subIndex, vk::DescriptorType bufferType, vk::Buffer buff, std::size_t offset, std::size_t range) {
 	vk::DescriptorBufferInfo descriptorInfo{
 		.buffer = buff,
 		.offset = offset,
@@ -374,6 +352,7 @@ void	Vulkan::WriteBufferDescriptor(vk::Device device, vk::DescriptorSet set, uin
 	vk::WriteDescriptorSet descriptorWrite{
 		.dstSet				= set,
 		.dstBinding			= bindingSlot,
+		.dstArrayElement	= subIndex,
 		.descriptorCount	= 1,
 		.descriptorType		= bufferType,
 		.pBufferInfo		= &descriptorInfo
@@ -382,19 +361,23 @@ void	Vulkan::WriteBufferDescriptor(vk::Device device, vk::DescriptorSet set, uin
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
 }
 
+void	Vulkan::WriteBufferDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, vk::DescriptorType bufferType, vk::Buffer buff, std::size_t offset, std::size_t range) {
+	WriteBufferDescriptor(device, set, bindingSlot, 0, bufferType, buff, offset, range);
+}
+
 void	Vulkan::WriteInlineUniformDescriptor(vk::Device device, vk::DescriptorSet set, uint32_t bindingSlot, void* data, std::size_t byteCount) {
 	vk::WriteDescriptorSetInlineUniformBlock inlineWrite = {
-		.dataSize = (uint32_t)byteCount,
-		.pData = &data
+		.dataSize	= (uint32_t)byteCount,
+		.pData		= &data
 	};
 
 	vk::WriteDescriptorSet descriptorWrite = {
-		.pNext = &inlineWrite,
-		.dstSet = set,
-		.dstBinding = bindingSlot,
-		.dstArrayElement = 0,
-		.descriptorCount = (uint32_t)byteCount,
-		.descriptorType = vk::DescriptorType::eInlineUniformBlock,
+		.pNext				= &inlineWrite,
+		.dstSet				= set,
+		.dstBinding			= bindingSlot,
+		.dstArrayElement	= 0,
+		.descriptorCount	= (uint32_t)byteCount,
+		.descriptorType		= vk::DescriptorType::eInlineUniformBlock,
 	};
 
 	device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
