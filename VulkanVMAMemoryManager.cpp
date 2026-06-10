@@ -25,7 +25,13 @@ VulkanVMAMemoryManager::VulkanVMAMemoryManager(vk::Device device, vk::PhysicalDe
 	m_allocatorInfo.instance			= instance;
 	m_allocatorInfo.vulkanApiVersion	= VK_MAKE_API_VERSION(0, vkInit.majorVersion, vkInit.minorVersion, 0);
 
-	m_allocatorInfo.flags |= vkInit.vmaFlags;
+	for (const auto& feature : vkInit.features) {
+		VkStructureType* sType = (VkStructureType*)feature;
+		if (*sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES) {
+			m_allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+			break;
+		}
+	}
 
 	m_framesInFlight = vkInit.framesInFlight;
 

@@ -50,27 +50,11 @@ namespace NCL::Rendering::Vulkan {
 		uint64_t			waitID	= 0;
 	};
 
-	struct AcquireState {
-		vk::Semaphore		acquireSempaphore;
-		vk::Fence			acquireFence;
-	};
-
-	struct ChainState {
-		vk::Framebuffer		frameBuffer;
-		vk::Image			colourImage;
-		vk::ImageView		colourView;
-		vk::Format			colourFormat;
-
-		vk::Semaphore		presentSempaphore;
-		vk::Fence			presentFence;
-	};
-
 	struct VulkanInitialisation {
 		vk::Format			depthStencilFormat	= vk::Format::eD32SfloatS8Uint;
 		vk::PresentModeKHR  idealPresentMode	= vk::PresentModeKHR::eFifo;
 
 		vk::PhysicalDeviceType idealGPU			= vk::PhysicalDeviceType::eDiscreteGpu;
-
 
 		vk::DescriptorPoolCreateFlags	defaultDescriptorPoolFlags = {};
 
@@ -79,14 +63,11 @@ namespace NCL::Rendering::Vulkan {
 		uint32_t	defaultDescriptorPoolSamplerCount	= 32;
 		uint32_t	defaultDescriptorPoolAccelerationStructureCount	= 0;
 
-		VmaAllocatorCreateFlags		vmaFlags = {};
-
 		uint32_t	majorVersion	= 1;
 		uint32_t	minorVersion	= 1;
 
 		uint32_t	framesInFlight	= 3;
 
-		//bool		autoBeginDynamicRendering	= true;
 		bool		useOpenGLCoordinates		= false;
 
 		bool		useHDRSurface				= false;
@@ -164,7 +145,23 @@ namespace NCL::Rendering::Vulkan {
 			void*												pUserData);
 
 		bool	InitDeviceQueueIndices();
+
 	private:
+		struct AcquireState {
+			vk::Semaphore		acquireSempaphore;
+			vk::Fence			acquireFence;
+		};
+
+		struct ChainState {
+			vk::Framebuffer		frameBuffer;
+			vk::Image			colourImage;
+			vk::ImageView		colourView;
+			vk::Format			colourFormat;
+
+			vk::Semaphore		presentSempaphore;
+			vk::Fence			presentFence;
+		};
+
 		VulkanInitialisation		m_vkInit;
 
 		vk::Instance				m_instance;			//API Instance
