@@ -11,8 +11,8 @@ License: MIT (see LICENSE file at the top of the source tree)
 
 namespace NCL::Rendering::Vulkan {
 	class VulkanRenderer;
-	class VulkanShader;
-	using UniqueVulkanShader = std::unique_ptr<VulkanShader>;
+	//class VulkanShader;
+	//using UniqueVulkanShader = std::unique_ptr<VulkanShader>;
 
 	struct VulkanVertexSpecification;
 	/*

@@ -6,7 +6,8 @@ Contact:richgdavison@gmail.com
 License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #pragma once
-#include "Buffer.h"
+#include "../NCLCoreClasses/Buffer.h"
+
 namespace NCL::Rendering::Vulkan {
 	class VulkanMemoryManager;
 	//A buffer, backed by memory we have allocated elsewhere

@@ -13,7 +13,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 
 namespace NCL::Rendering::Vulkan {
 	class VulkanRenderer;
-	class VulkanShader;
+	//class VulkanShader;
 
 	struct VulkanVertexSpecification;
 
