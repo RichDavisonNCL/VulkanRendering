@@ -4,49 +4,14 @@ set(PROJECT_NAME VulkanRendering)
 # Source groups
 ################################################################################
 set(Header_Files
-    "VulkanUtils.h"
-    "VulkanBuffer.h"
-    "VulkanComputePipelineBuilder.h"
-    "VulkanDescriptorSetLayoutBuilder.h"
-    "VulkanDynamicRenderBuilder.h"
-	"VulkanTextureBuilder.h"
     "VulkanMesh.h"
-    "VulkanPipeline.h"
-	"VulkanPipelineBuilderBase.h"
-    "VulkanPipelineBuilder.h"
-    "VulkanRenderer.h"
-    "VulkanRenderPassBuilder.h"
-    "VulkanShaderModule.h"
-    "VulkanTexture.h"
-	"SmartTypes.h"
-    "VulkanDescriptorSetWriter.h"
-    "VulkanDescriptorSetBinder.h"
-	"VulkanDescriptorBufferWriter.h"
-	"VulkanBVHBuilder.h"
-	"VulkanRayTracingPipelineBuilder.h"	
-	"VulkanShaderBindingTableBuilder.h"
-    "VulkanMemoryManager.h"
-    "VulkanVMAMemoryManager.h"
+	"VulkanTutorial.h"
 )
 source_group("Header Files" FILES ${Header_Files})
 
 set(Source_Files
-	"VulkanUtils.cpp"
-    "VulkanBuffer.cpp"
-    "VulkanComputePipelineBuilder.cpp"
-    "VulkanDescriptorSetLayoutBuilder.cpp"
-    "VulkanDynamicRenderBuilder.cpp"
-	"VulkanTextureBuilder.cpp"
     "VulkanMesh.cpp"
-    "VulkanPipelineBuilder.cpp"
-    "VulkanRenderer.cpp"
-    "VulkanRenderPassBuilder.cpp"
-    "VulkanShaderModule.cpp"
-    "VulkanTexture.cpp"
-	"VulkanBVHBuilder.cpp"
-	"VulkanRayTracingPipelineBuilder.cpp"
-	"VulkanShaderBindingTableBuilder.cpp"	
-    "VulkanVMAMemoryManager.cpp"
+	"VulkanTutorial.cpp"
 )
 source_group("Source Files" FILES ${Source_Files})
 

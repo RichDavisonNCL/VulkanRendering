@@ -7,8 +7,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #pragma once
 #include "../NCLCoreClasses/Mesh.h"
-#include "SmartTypes.h"
-#include "VulkanBuffer.h"
+#include "../VKQuick/Buffer.h"
 
 namespace NCL::Rendering::Vulkan {
 	class VulkanMemoryManager;
@@ -31,7 +30,7 @@ namespace NCL::Rendering::Vulkan {
 
 		void UploadToGPU(RendererBase* renderer) override;
 
-		void UploadToGPU(vk::CommandBuffer cmdBuffer, VulkanMemoryManager* memManager, vk::BufferUsageFlags extraUses = {});
+		void UploadToGPU(vk::CommandBuffer cmdBuffer, VKQuick::MemoryManager* memManager, vk::BufferUsageFlags extraUses = {});
 
 		uint32_t	GetAttributeMask() const;
 		size_t		CalculateGPUAllocationSize() const;
@@ -48,7 +47,7 @@ namespace NCL::Rendering::Vulkan {
 		vk::PipelineVertexInputStateCreateInfo				m_vertexInputState;
 
 		vk::IndexType	m_indexType	= vk::IndexType::eNoneKHR;
-		VulkanBuffer	m_gpuBuffer;
+		VKQuick::Buffer	m_gpuBuffer;
 
 		size_t		m_vertexDataOffset	= 0;
 		size_t		m_indexDataOffset	= 0;
@@ -63,4 +62,7 @@ namespace NCL::Rendering::Vulkan {
 		std::vector<vk::VertexInputAttributeDescription>	m_attributeDescriptions;
 		std::vector<vk::VertexInputBindingDescription>		m_attributeBindings;	
 	};
+
+	using UniqueVulkanMesh = std::unique_ptr<VulkanMesh>;
+	using SharedVulkanMesh = std::shared_ptr<VulkanMesh>;
 }
