@@ -6,8 +6,7 @@ Contact:richgdavison@gmail.com
 License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #include "VulkanMesh.h"
-#include "Vulkanrenderer.h"
-#include "VulkanUtils.h"
+#include "../VKQuick/MemoryManager.h"
 
 using namespace NCL;
 using namespace Rendering;
@@ -46,7 +45,7 @@ VulkanMesh::~VulkanMesh()	{
 
 }
 
-void VulkanMesh::UploadToGPU(vk::CommandBuffer cmdBuffer, VulkanMemoryManager* memManager, vk::BufferUsageFlags extraUses) {
+void VulkanMesh::UploadToGPU(vk::CommandBuffer cmdBuffer, VKQuick::MemoryManager* memManager, vk::BufferUsageFlags extraUses) {
 	assert(ValidateMeshData());
 	
 	size_t allocationSize = CalculateGPUAllocationSize();
@@ -106,7 +105,7 @@ void VulkanMesh::UploadToGPU(vk::CommandBuffer cmdBuffer, VulkanMemoryManager* m
 	size_t indexDataSize		= sizeof(int) * GetIndexCount();
 	size_t totalAllocationSize	= vertexDataSize + indexDataSize;
 
-	VulkanBuffer stagingBuffer = memManager->CreateStagingBuffer(totalAllocationSize);
+	VKQuick::Buffer stagingBuffer = memManager->CreateStagingBuffer(totalAllocationSize);
 
 	m_gpuBuffer = memManager->CreateBuffer(
 		{
