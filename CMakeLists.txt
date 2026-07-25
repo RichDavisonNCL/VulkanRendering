@@ -5,12 +5,14 @@ set(PROJECT_NAME VulkanRendering)
 ################################################################################
 set(Header_Files
     "VulkanMesh.h"
+	"VulkanTexture.h"
 	"VulkanTutorial.h"
 )
 source_group("Header Files" FILES ${Header_Files})
 
 set(Source_Files
     "VulkanMesh.cpp"
+	"VulkanTexture.cpp"
 	"VulkanTutorial.cpp"
 )
 source_group("Source Files" FILES ${Source_Files})
@@ -69,6 +71,7 @@ target_include_directories (${PROJECT_NAME}
     PUBLIC ${Vulkan_INCLUDE_DIR}
     PUBLIC ${CMAKE_SOURCE_DIR}/NCLCoreClasses
     PUBLIC ${Vulkan_INCLUDE_DIR}../../Source/
+    PUBLIC ${ASSET_ROOT}
 )	
 
 ################################################################################

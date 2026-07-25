@@ -11,6 +11,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 #include "../NCLCoreClasses/TextureLoader.h"
 #include "../NCLCoreClasses/Window.h"
 #include "../VulkanRendering/VulkanMesh.h"
+#include "../VulkanRendering/VulkanTexture.h"
 #include "../VKQuick/Instance.h"
 
 namespace NCL::Rendering::Vulkan {
@@ -36,6 +37,11 @@ namespace NCL::Rendering::Vulkan {
 		}
 	};
 
+	struct CameraState {
+		vk::UniqueDescriptorSet descriptor;
+		VKQuick::Buffer			buffer;
+	};
+
 	class VulkanTutorial	{
 	public:
 		VulkanTutorial(VKQuick::VKQuickInitialisation& vkInit);
@@ -58,6 +64,8 @@ namespace NCL::Rendering::Vulkan {
 		static VulkanTutorial*		CreateTutorial(int& chainID, VKQuick::VKQuickInitialisation& vkInit);
 		static VulkanTutorial*		CreateTutorial(const std::string& name, VKQuick::VKQuickInitialisation& vkInit);
 		static VKQuick::VKQuickInitialisation DefaultInitialisation();
+
+		const CameraState& GetCameraState(const VKQuick::FrameContext& context);
 
 	protected:
 		virtual void RenderFrame(float dt) = 0;
@@ -93,7 +101,8 @@ namespace NCL::Rendering::Vulkan {
 
 		KeyboardMouseController m_controller;
 		PerspectiveCamera		m_camera;
-		VKQuick::Buffer			m_cameraBuffer;
+
+		std::vector<CameraState>		m_cameraStates;
 
 		vk::UniqueDescriptorSet			m_cameraDescriptor;
 		vk::UniqueDescriptorSetLayout	m_cameraLayout;
