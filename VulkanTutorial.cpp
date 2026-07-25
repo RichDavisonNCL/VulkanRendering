@@ -10,7 +10,13 @@ License: MIT (see LICENSE file at the top of the source tree)
 #include "../VKQuick/VMAMemoryManager.h"
 #include "../VKQuick/TextureBuilder.h"
 #include "../VKQuick/DescriptorSetLayoutBuilder.h"
+
+#include "../VKQuick/Texture.h"
 #include "MshLoader.h"
+#include "../GLTFLoader/GLTFLoader.h"
+
+#include "Shaders/VK/glslInterop.h"
+#include "Shaders/VK/Camera.glslh"
 
 #ifdef _WIN32
 #include "../NCLCoreClasses/Win32Window.h"
@@ -25,12 +31,38 @@ VulkanTutorialEntry* VulkanTutorialEntry::s_listStartPtr = nullptr;
 VulkanTutorial::VulkanTutorial(VKQuick::VKQuickInitialisation& vkInit) : m_controller(*Window::GetWindow()->GetKeyboard(), *Window::GetWindow()->GetMouse()) {
 	m_runTime	= 0.0f;
 	m_vkInit	= vkInit;
+
+	VKQuick::TextureLoadFunction tlf = [](const std::string& filename) -> VKQuick::LoadedTexture {
+		VKQuick::LoadedTexture lt;
+		uint32_t flags = 0;
+		TextureLoader::LoadTexture(filename, lt.texData, lt.dimensions.width, lt.dimensions.height, lt.channels, flags);
+		return lt;
+	};
+
+	VKQuick::TextureLoadReleaseFunction trf = [](VKQuick::LoadedTexture& texture) -> void {
+		TextureLoader::DeleteTextureData(texture.texData);
+	};
+
+	VKQuick::TextureBuilder::SetFileHandlingFunctions(tlf, trf);
+
+	GLTFLoader::SetTextureConstructionFunction(
+		[&](std::string& input) ->  SharedTexture {
+			VulkanTexture* texture = new VulkanTexture(*(LoadTexture(input).release()));
+			return std::shared_ptr<Texture>(texture);
+		}
+	);
+
+	GLTFLoader::SetMeshConstructionFunction(
+		[&]()-> std::shared_ptr<Mesh> {return std::shared_ptr<Mesh>(new VulkanMesh()); }
+	);
 }
 
 VulkanTutorial::~VulkanTutorial() {
 	m_vkQuick->GetDevice().waitIdle();
-	m_memoryManager->DiscardBuffer(m_cameraBuffer, VKQuick::DiscardMode::Immediate);
-	m_cameraDescriptor.reset();
+	for (auto& state : m_cameraStates) {
+		state.descriptor.reset();
+		m_memoryManager->DiscardBuffer(state.buffer, VKQuick::DiscardMode::Immediate);
+	}
 	m_cameraLayout.reset();
 	m_defaultSampler.reset();
 
@@ -55,6 +87,9 @@ void VulkanTutorial::Initialise() {
 	m_vkInit.win32Instance = hostWindow->GetInstance();
 #endif
 
+	m_vkInit.initialWidth	= hostWindow->GetScreenSize().x;
+	m_vkInit.initialHeight	= hostWindow->GetScreenSize().y;
+
 	m_vkQuick		= new VKQuick::Instance(m_vkInit);
 	m_memoryManager = new VKQuick::VMAMemoryManager(m_vkQuick->GetDevice(), m_vkQuick->GetPhysicalDevice(), m_vkQuick->GetVulkanInstance(), m_vkInit);
 	BuildCamera();
@@ -74,11 +109,25 @@ void VulkanTutorial::Initialise() {
 	);
 
 	m_cameraLayout = VKQuick::DescriptorSetLayoutBuilder(device)
-		.WithUniformBuffers(0, 1, vk::ShaderStageFlagBits::eVertex)
+		.WithUniformBuffers(0, 1, vk::ShaderStageFlagBits::eAll)
 		.Build("CameraMatrices"); //Get our m_camera matrices...
-	m_cameraDescriptor = VKQuick::CreateDescriptorSet(device, context.descriptorPool, *m_cameraLayout);
 
-	WriteBufferDescriptor(device, *m_cameraDescriptor, 0, vk::DescriptorType::eUniformBuffer, m_cameraBuffer);
+	m_cameraStates.resize(m_vkInit.framesInFlight);
+
+	for (auto& state : m_cameraStates) {
+		state.descriptor = VKQuick::CreateDescriptorSet(device, context.descriptorPool, *m_cameraLayout);
+		state.buffer = m_memoryManager->CreateBuffer(
+			{
+				.size = sizeof(Matrix4) * 2,
+				.usage = vk::BufferUsageFlagBits::eUniformBuffer,
+			},
+			vk::MemoryPropertyFlagBits::eHostVisible |
+			vk::MemoryPropertyFlagBits::eHostCoherent,
+			"Camera Buffer"
+		);
+
+		WriteBufferDescriptor(device, *state.descriptor, 0, vk::DescriptorType::eUniformBuffer, state.buffer);
+	}
 
 	m_triangleMesh	= GenerateTriangle();
 	m_quadMesh		= GenerateQuad();
@@ -92,15 +141,15 @@ void VulkanTutorial::BuildCamera() {
 		.SetNearPlane(0.1f)
 		.SetFarPlane(1000.0f);
 	
-	m_cameraBuffer = m_memoryManager->CreateBuffer(
-		{
-			.size	= sizeof(Matrix4) * 2,
-			.usage	= vk::BufferUsageFlagBits::eUniformBuffer,
-		},
-		vk::MemoryPropertyFlagBits::eHostVisible | 
-		vk::MemoryPropertyFlagBits::eHostCoherent,
-		"Camera Buffer"
-	);
+	//m_cameraBuffer = m_memoryManager->CreateBuffer(
+	//	{
+	//		.size	= sizeof(Matrix4) * 2,
+	//		.usage	= vk::BufferUsageFlagBits::eUniformBuffer,
+	//	},
+	//	vk::MemoryPropertyFlagBits::eHostVisible | 
+	//	vk::MemoryPropertyFlagBits::eHostCoherent,
+	//	"Camera Buffer"
+	//);
 
 	m_camera.SetController(m_controller);
 
@@ -110,6 +159,24 @@ void VulkanTutorial::BuildCamera() {
 
 	m_controller.MapAxis(3, "XLook");
 	m_controller.MapAxis(4, "YLook");
+}
+
+const CameraState& VulkanTutorial::GetCameraState(const VKQuick::FrameContext& context) {
+	return m_cameraStates[context.cycleID];
+}
+
+void VulkanTutorial::UploadCameraUniform() {
+	VKQuick::FrameContext const& context = m_vkQuick->GetFrameContext();
+
+	CameraState& s = m_cameraStates[context.cycleID];
+
+	ShaderCamera* shaderCam = s.buffer.Map<ShaderCamera>();
+
+	shaderCam->viewMatrix = m_camera.BuildViewMatrix();
+	shaderCam->projMatrix = m_camera.BuildProjectionMatrix(Window::GetWindow()->GetScreenAspect());
+	shaderCam->position = m_camera.GetPosition();
+
+	s.buffer.Unmap();
 }
 
 void VulkanTutorial::UpdateCamera(float dt) {
@@ -141,13 +208,6 @@ void VulkanTutorial::WindowEventHandler(WindowEvent e, uint32_t w, uint32_t h) {
 		m_vkQuick->OnWindowResize(w, h);
 		OnWindowResize(w, h);
 	}
-}
-
-void VulkanTutorial::UploadCameraUniform() {
-	Matrix4* cameraMatrices = m_cameraBuffer.Map<Matrix4>();
-	cameraMatrices[0] = m_camera.BuildViewMatrix();
-	cameraMatrices[1] = m_camera.BuildProjectionMatrix(Window::GetWindow()->GetScreenAspect());
-	m_cameraBuffer.Unmap();
 }
 
 UniqueVulkanMesh VulkanTutorial::GenerateTriangle() {
@@ -269,6 +329,8 @@ void VulkanTutorial::RenderSingleObject(RenderObject& o, vk::CommandBuffer  toBu
 	toBuffer.pushConstants(*toPipeline.layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(Matrix4), (void*)&o.transform);
 	toBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *toPipeline.layout, descriptorSet, 1, &*o.descriptorSet, 0, nullptr);
 	
+	o.mesh->BindToCommandBuffer(toBuffer);
+	
 	if (o.mesh->GetSubMeshCount() == 0) {
 		o.mesh->Draw(toBuffer);
 	}
@@ -335,6 +397,8 @@ VKQuick::VKQuickInitialisation VulkanTutorial::DefaultInitialisation() {
 	m_vkInit.features.push_back((void*)&scalarFeatures);
 
 	m_vkInit.framesInFlight = 1;
+
+	m_vkInit.shaderRoot = Assets::SHADERDIR + "VK/";
 
 	return m_vkInit;
 }
