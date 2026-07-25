@@ -104,7 +104,6 @@ namespace NCL::Rendering::Vulkan {
 
 		std::vector<CameraState>		m_cameraStates;
 
-		vk::UniqueDescriptorSet			m_cameraDescriptor;
 		vk::UniqueDescriptorSetLayout	m_cameraLayout;
 
 		vk::UniqueSampler				m_defaultSampler;
