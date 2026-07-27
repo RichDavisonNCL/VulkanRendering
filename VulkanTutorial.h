@@ -80,10 +80,10 @@ namespace NCL::Rendering::Vulkan {
 
 		void RenderSingleObject(RenderObject& o, vk::CommandBuffer  toBuffer, VKQuick::Pipeline& toPipeline, int descriptorSet = 0);
 
-		UniqueVulkanMesh	LoadMesh(const string& filename, vk::BufferUsageFlags bufferUsage = {});
+		UniqueVulkanMesh	LoadMesh(const std::string& filename, vk::BufferUsageFlags bufferUsage = {});
 
 		void UploadMeshWait(VulkanMesh& m, vk::BufferUsageFlags bufferUsage = {});
-		VKQuick::UniqueTexture LoadTexture(const string& filename);
+		VKQuick::UniqueTexture LoadTexture(const std::string& filename);
 
 		VKQuick::UniqueTexture LoadCubemap(
 			const std::string& negativeXFile, const std::string& positiveXFile,

@@ -115,11 +115,11 @@ void VulkanTutorial::Initialise() {
 	m_cameraStates.resize(m_vkInit.framesInFlight);
 
 	for (auto& state : m_cameraStates) {
-		state.descriptor = VKQuick::CreateDescriptorSet(device, context.descriptorPool, *m_cameraLayout);
-		state.buffer = m_memoryManager->CreateBuffer(
+		state.descriptor	= VKQuick::CreateDescriptorSet(device, context.descriptorPool, *m_cameraLayout);
+		state.buffer		= m_memoryManager->CreateBuffer(
 			{
-				.size = sizeof(Matrix4) * 2,
-				.usage = vk::BufferUsageFlagBits::eUniformBuffer,
+				.size	= sizeof(ShaderCamera),
+				.usage	= vk::BufferUsageFlagBits::eUniformBuffer,
 			},
 			vk::MemoryPropertyFlagBits::eHostVisible |
 			vk::MemoryPropertyFlagBits::eHostCoherent,
@@ -141,16 +141,6 @@ void VulkanTutorial::BuildCamera() {
 		.SetNearPlane(0.1f)
 		.SetFarPlane(1000.0f);
 	
-	//m_cameraBuffer = m_memoryManager->CreateBuffer(
-	//	{
-	//		.size	= sizeof(Matrix4) * 2,
-	//		.usage	= vk::BufferUsageFlagBits::eUniformBuffer,
-	//	},
-	//	vk::MemoryPropertyFlagBits::eHostVisible | 
-	//	vk::MemoryPropertyFlagBits::eHostCoherent,
-	//	"Camera Buffer"
-	//);
-
 	m_camera.SetController(m_controller);
 
 	m_controller.MapAxis(0, "Sidestep");
@@ -172,9 +162,9 @@ void VulkanTutorial::UploadCameraUniform() {
 
 	ShaderCamera* shaderCam = s.buffer.Map<ShaderCamera>();
 
-	shaderCam->viewMatrix = m_camera.BuildViewMatrix();
-	shaderCam->projMatrix = m_camera.BuildProjectionMatrix(Window::GetWindow()->GetScreenAspect());
-	shaderCam->position = m_camera.GetPosition();
+	shaderCam->viewMatrix	= m_camera.BuildViewMatrix();
+	shaderCam->projMatrix	= m_camera.BuildProjectionMatrix(Window::GetWindow()->GetScreenAspect());
+	shaderCam->position		= m_camera.GetPosition();
 
 	s.buffer.Unmap();
 }
@@ -251,7 +241,7 @@ UniqueVulkanMesh VulkanTutorial::GenerateGrid() {
 	return UniqueVulkanMesh(gridMesh);
 }
 
-UniqueVulkanMesh VulkanTutorial::LoadMesh(const string& filename, vk::BufferUsageFlags flags) {
+UniqueVulkanMesh VulkanTutorial::LoadMesh(const std::string& filename, vk::BufferUsageFlags flags) {
 	VulkanMesh* newMesh = new VulkanMesh();
 
 	MshLoader::LoadMesh(filename, *newMesh);
@@ -276,7 +266,7 @@ void VulkanTutorial::UploadMeshWait(VulkanMesh& m, vk::BufferUsageFlags flags) {
 	);
 }
 
-VKQuick::UniqueTexture VulkanTutorial::LoadTexture(const string& filename) {
+VKQuick::UniqueTexture VulkanTutorial::LoadTexture(const std::string& filename) {
 	VKQuick::FrameContext const& context = m_vkQuick->GetFrameContext();
 	vk::UniqueCommandBuffer cmdBuffer = VKQuick::CmdBufferCreateBegin(context.device, context.commandPools[VKQuick::CommandType::Graphics], "VulkanTexture upload");
 	
