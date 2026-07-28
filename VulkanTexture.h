@@ -10,12 +10,8 @@ License: MIT (see LICENSE file at the top of the source tree)
 #include "../VKQuick/Texture.h"
 
 namespace NCL::Rendering::Vulkan {
-	class VulkanMemoryManager;
-
 	class VulkanTexture : public Texture {
 	public:
-		friend class VulkanRenderer;
-
 		VulkanTexture(VKQuick::Texture& t);
 		~VulkanTexture();
 

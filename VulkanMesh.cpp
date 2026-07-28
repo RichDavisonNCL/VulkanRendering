@@ -54,19 +54,17 @@ void	VulkanMesh::UploadAttributes(vk::CommandBuffer  to) {
 		if (count == 0) {
 			return;
 		}
-		uint32_t offset = 0;
-		size_t	size = 0;
-		vk::Format format;
-		size_t stride = 0;
+		uint32_t	offset	= 0;
+		size_t		size	= 0;
+		vk::Format  format;
+		size_t		stride	= 0;
 		if (!m_mesh->GeAttributeData((int)attribute, offset, size, format, stride)) {
 			return;
 		}
 		char* gpuData = (char*)allData + offset;
 
 		//TODO: check that returned size equals full attribute size!
-		memcpy(gpuData, data, size);
-
-		m_attributeMask |= (1 << attribute);
+		memcpy(gpuData, data, size);		
 		};
 
 	atrributeFunc(VertexAttribute::Positions, GetPositionData().size(), (const char*)GetPositionData().data());
@@ -102,8 +100,11 @@ void	VulkanMesh::InitialiseGPUState(vk::Device device, VKQuick::MemoryManager& m
 		.WithBufferUsageFlags(extraFlags)
 		.WithHostVisibleBuffers();
 
+	m_attributeMask = 0;
+
 	auto atrributeFunc = [&](VertexAttribute::Type attribute, size_t count, const char* data) {
 		if (count > 0) {
+			m_attributeMask |= (1 << attribute);
 			builder.WithVertexAttribute((int)attribute, attributeFormats[attribute], attributeSizes[attribute]);
 		}
 	};
@@ -126,41 +127,7 @@ void	VulkanMesh::InitialiseGPUState(vk::Device device, VKQuick::MemoryManager& m
 	m_mesh = builder.Build();
 }
 
-//void VulkanMesh::DrawLayer(unsigned int layer, vk::CommandBuffer  to, int instanceCount) {
-//	const SubMesh* sm = GetSubMesh(layer);
-//	if (GetIndexCount() > 0) {
-//		to.drawIndexed(sm->count, instanceCount, sm->start, sm->base, 0);
-//	}
-//	else {
-//		to.draw(sm->count, instanceCount, sm->start, 0);
-//	}
-//}
-//
-//void VulkanMesh::Draw(vk::CommandBuffer  to, int instanceCount) {
-//	if (GetIndexCount() > 0) {
-//		to.drawIndexed(GetIndexCount(), instanceCount, 0, 0, 0);
-//	}
-//	else {
-//		to.draw(GetVertexCount(), instanceCount, 0, 0);
-//	}
-//}
-//
-//void VulkanMesh::DrawAllLayers(vk::CommandBuffer  to, int instanceCount) {
-//	if (GetIndexCount() > 0) {
-//		for (int i = 0; i < subMeshes.size(); ++i) {
-//			const SubMesh* sm = GetSubMesh(i);
-//			to.drawIndexed(sm->count, instanceCount, sm->start, sm->base, 0);
-//		}
-//	}
-//	else {
-//		for (int i = 0; i < subMeshes.size(); ++i) {
-//			const SubMesh* sm = GetSubMesh(i);
-//			to.draw(sm->count, instanceCount, sm->start, 0);
-//		}
-//	}
-//}
-
-vk::PrimitiveTopology VulkanMesh::GetVulkanTopology() const {
+vk::PrimitiveTopology VulkanMesh::GetPrimitiveTopology() const {
 	assert((uint32_t)primType < GeometryPrimitive::MAX_PRIM);
 
 	const vk::PrimitiveTopology table[] = {
