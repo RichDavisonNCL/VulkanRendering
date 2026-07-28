@@ -39,11 +39,11 @@ size_t attributeSizes[] = {
 	sizeof(int),		//Generic ints
 };
 
-VulkanMesh::VulkanMesh()	{
+VulkanMesh::VulkanMesh() {
 
 }
 
-VulkanMesh::~VulkanMesh()	{
+VulkanMesh::~VulkanMesh() {
 
 }
 
@@ -55,8 +55,10 @@ void	VulkanMesh::UploadAttributes(vk::CommandBuffer  to) {
 			return;
 		}
 		uint32_t offset = 0;
-		size_t	size	= 0;
-		if (!m_mesh->GetOffsetForAttribute((int)attribute,offset, size)) {
+		size_t	size = 0;
+		vk::Format format;
+		size_t stride = 0;
+		if (!m_mesh->GeAttributeData((int)attribute, offset, size, format, stride)) {
 			return;
 		}
 		char* gpuData = (char*)allData + offset;
@@ -65,8 +67,8 @@ void	VulkanMesh::UploadAttributes(vk::CommandBuffer  to) {
 		memcpy(gpuData, data, size);
 
 		m_attributeMask |= (1 << attribute);
-	};
-	
+		};
+
 	atrributeFunc(VertexAttribute::Positions, GetPositionData().size(), (const char*)GetPositionData().data());
 	atrributeFunc(VertexAttribute::Colours, GetColourData().size(), (const char*)GetColourData().data());
 	atrributeFunc(VertexAttribute::TextureCoords, GetTextureCoordData().size(), (const char*)GetTextureCoordData().data());
@@ -78,11 +80,11 @@ void	VulkanMesh::UploadAttributes(vk::CommandBuffer  to) {
 	atrributeFunc(VertexAttribute::General_Vec4, GetGeneralVec4Data().size(), (const char*)GetGeneralVec4Data().data());
 	atrributeFunc(VertexAttribute::General_Integer, GetGeneralIntegerData().size(), (const char*)GetGeneralIntegerData().data());
 
-
 	if (GetIndexCount() > 0) {
-		uint32_t	offset	= 0;
-		size_t		size	= 0;
-		if (!m_mesh->GetOffsetForIndices(offset, size)) {
+		uint32_t	offset = 0;
+		size_t		size = 0;
+		vk::IndexType type;
+		if (!m_mesh->GetIndexData(offset, size, type)) {
 			return;
 		}
 		char* gpuData = (char*)allData + offset;
@@ -90,16 +92,15 @@ void	VulkanMesh::UploadAttributes(vk::CommandBuffer  to) {
 		memcpy(gpuData, GetIndexData().data(), size);
 	}
 
-
 	m_mesh->UnmapData(to);
 }
 
-void	VulkanMesh::InitialiseGPUState(vk::Device device, VKQuick::MemoryManager& memManager) {
+void	VulkanMesh::InitialiseGPUState(vk::Device device, VKQuick::MemoryManager& memManager, vk::BufferUsageFlags extraFlags) {
 	VKQuick::MeshBuilder builder = VKQuick::MeshBuilder(device, memManager)
 		.WithVertexCount(GetVertexCount())
 		.WithIndexCount(GetIndexCount(), vk::IndexType::eUint32)
+		.WithBufferUsageFlags(extraFlags)
 		.WithHostVisibleBuffers();
-		;
 
 	auto atrributeFunc = [&](VertexAttribute::Type attribute, size_t count, const char* data) {
 		if (count > 0) {
@@ -118,42 +119,46 @@ void	VulkanMesh::InitialiseGPUState(vk::Device device, VKQuick::MemoryManager& m
 	atrributeFunc(VertexAttribute::General_Vec4, GetGeneralVec4Data().size(), (const char*)GetGeneralVec4Data().data());
 	atrributeFunc(VertexAttribute::General_Integer, GetGeneralIntegerData().size(), (const char*)GetGeneralIntegerData().data());
 
+	for(const SubMesh& sm : subMeshes) {
+		builder.WithMeshRange(sm.start, sm.count, sm.base);
+	}
+
 	m_mesh = builder.Build();
 }
 
-void VulkanMesh::DrawLayer(unsigned int layer, vk::CommandBuffer  to, int instanceCount) {
-	const SubMesh* sm = GetSubMesh(layer);
-	if (GetIndexCount() > 0) {
-		to.drawIndexed(sm->count, instanceCount, sm->start, sm->base, 0);
-	}
-	else {
-		to.draw(sm->count, instanceCount, sm->start, 0);
-	}
-}
-
-void VulkanMesh::Draw(vk::CommandBuffer  to, int instanceCount) {
-	if (GetIndexCount() > 0) {
-		to.drawIndexed(GetIndexCount(), instanceCount, 0, 0, 0);
-	}
-	else {
-		to.draw(GetVertexCount(), instanceCount, 0, 0);
-	}
-}
-
-void VulkanMesh::DrawAllLayers(vk::CommandBuffer  to, int instanceCount) {
-	if (GetIndexCount() > 0) {
-		for (int i = 0; i < subMeshes.size(); ++i) {
-			const SubMesh* sm = GetSubMesh(i);
-			to.drawIndexed(sm->count, instanceCount, sm->start, sm->base, 0);
-		}
-	}
-	else {
-		for (int i = 0; i < subMeshes.size(); ++i) {
-			const SubMesh* sm = GetSubMesh(i);
-			to.draw(sm->count, instanceCount, sm->start, 0);
-		}
-	}
-}
+//void VulkanMesh::DrawLayer(unsigned int layer, vk::CommandBuffer  to, int instanceCount) {
+//	const SubMesh* sm = GetSubMesh(layer);
+//	if (GetIndexCount() > 0) {
+//		to.drawIndexed(sm->count, instanceCount, sm->start, sm->base, 0);
+//	}
+//	else {
+//		to.draw(sm->count, instanceCount, sm->start, 0);
+//	}
+//}
+//
+//void VulkanMesh::Draw(vk::CommandBuffer  to, int instanceCount) {
+//	if (GetIndexCount() > 0) {
+//		to.drawIndexed(GetIndexCount(), instanceCount, 0, 0, 0);
+//	}
+//	else {
+//		to.draw(GetVertexCount(), instanceCount, 0, 0);
+//	}
+//}
+//
+//void VulkanMesh::DrawAllLayers(vk::CommandBuffer  to, int instanceCount) {
+//	if (GetIndexCount() > 0) {
+//		for (int i = 0; i < subMeshes.size(); ++i) {
+//			const SubMesh* sm = GetSubMesh(i);
+//			to.drawIndexed(sm->count, instanceCount, sm->start, sm->base, 0);
+//		}
+//	}
+//	else {
+//		for (int i = 0; i < subMeshes.size(); ++i) {
+//			const SubMesh* sm = GetSubMesh(i);
+//			to.draw(sm->count, instanceCount, sm->start, 0);
+//		}
+//	}
+//}
 
 vk::PrimitiveTopology VulkanMesh::GetVulkanTopology() const {
 	assert((uint32_t)primType < GeometryPrimitive::MAX_PRIM);

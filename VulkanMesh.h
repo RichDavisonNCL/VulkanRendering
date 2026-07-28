@@ -19,14 +19,14 @@ namespace NCL::Rendering::Vulkan {
 		VulkanMesh();
 		~VulkanMesh();
 
-		void Draw(vk::CommandBuffer  to, int instanceCount = 1);
+	/*	void Draw(vk::CommandBuffer  to, int instanceCount = 1);
 		void DrawLayer(unsigned int layer, vk::CommandBuffer  to, int instanceCount = 1);
-		void DrawAllLayers(vk::CommandBuffer  to, int instanceCount = 1);
+		void DrawAllLayers(vk::CommandBuffer  to, int instanceCount = 1);*/
 
 		void UploadToGPU(RendererBase* renderer) override {}
 
 		void	UploadAttributes(vk::CommandBuffer  to);
-		void	InitialiseGPUState(vk::Device device, VKQuick::MemoryManager& memManager);
+		void	InitialiseGPUState(vk::Device device, VKQuick::MemoryManager& memManager, vk::BufferUsageFlags extraFlags = {});
 
 		uint32_t	GetAttributeMask() const;
 		vk::PrimitiveTopology GetVulkanTopology() const;

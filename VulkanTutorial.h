@@ -26,6 +26,8 @@ namespace NCL::Rendering::Vulkan {
 		VKQuick::Buffer			buffer;
 	};
 
+	vk::TransformMatrixKHR ToVulkanMatrix(const NCL::Maths::Matrix4& mat4);
+
 	class VulkanTutorial	{
 	public:
 		VulkanTutorial(VKQuick::VKQuickInitialisation& vkInit);
@@ -98,6 +100,8 @@ namespace NCL::Rendering::Vulkan {
 
 		float m_runTime;
 	};
+
+
 
 #define TUTORIAL_ENTRY(object) static VulkanTutorialEntry entry = VulkanTutorialEntry(#object, [](VKQuick::VKQuickInitialisation& vk) {return new object(vk); });
 

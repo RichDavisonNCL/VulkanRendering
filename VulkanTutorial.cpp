@@ -255,7 +255,7 @@ void VulkanTutorial::UploadMeshWait(VulkanMesh& m, vk::BufferUsageFlags flags) {
 
 	vk::UniqueCommandBuffer cmdBuffer = VKQuick::CmdBufferCreateBegin(context.device, context.commandPools[VKQuick::CommandType::Graphics], "VulkanMesh upload");
 
-	m.InitialiseGPUState(context.device, *m_memoryManager);
+	m.InitialiseGPUState(context.device, *m_memoryManager, flags);
 
 	m.UploadAttributes(*cmdBuffer);
 
@@ -322,16 +322,10 @@ void VulkanTutorial::RenderSingleObject(RenderObject& o, vk::CommandBuffer  toBu
 	toBuffer.pushConstants(*toPipeline.layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(Matrix4), (void*)&o.transform);
 	toBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *toPipeline.layout, descriptorSet, 1, &*o.descriptorSet, 0, nullptr);
 	
-	o.mesh->GetMesh()->BindToCommandBuffer(toBuffer);
-	
-	if (o.mesh->GetSubMeshCount() == 0) {
-		o.mesh->Draw(toBuffer);
-	}
-	else {
-		for (unsigned int i = 0; i < o.mesh->GetSubMeshCount(); ++i) {
-			o.mesh->DrawLayer(i, toBuffer);
-		}
-	}
+	const VKQuick::UniqueMesh& m = o.mesh->GetMesh();
+
+	m->BindToCommandBuffer(toBuffer);
+	m->Draw(toBuffer);
 }
 
 VKQuick::VKQuickInitialisation VulkanTutorial::DefaultInitialisation() {
@@ -423,4 +417,25 @@ VulkanTutorial* VulkanTutorial::CreateTutorial(int& chainID, VKQuick::VKQuickIni
 	}
 
 	return nullptr;
+}
+
+vk::TransformMatrixKHR NCL::Rendering::Vulkan::ToVulkanMatrix(const NCL::Maths::Matrix4& mat4) {
+	vk::TransformMatrixKHR vkMat;
+
+	vkMat.matrix[0][0] = mat4.array[0][0];
+	vkMat.matrix[0][1] = mat4.array[1][0];
+	vkMat.matrix[0][2] = mat4.array[2][0];
+	vkMat.matrix[0][3] = mat4.array[3][0];
+						 
+	vkMat.matrix[1][0] = mat4.array[0][1];
+	vkMat.matrix[1][1] = mat4.array[1][1];
+	vkMat.matrix[1][2] = mat4.array[2][1];
+	vkMat.matrix[1][3] = mat4.array[3][1];
+						 
+	vkMat.matrix[2][0] = mat4.array[0][2];
+	vkMat.matrix[2][1] = mat4.array[1][2];
+	vkMat.matrix[2][2] = mat4.array[2][2];
+	vkMat.matrix[2][3] = mat4.array[3][2];
+
+	return vkMat;
 }
