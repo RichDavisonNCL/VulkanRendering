@@ -6,7 +6,9 @@ Contact:richgdavison@gmail.com
 License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #include "VulkanMesh.h"
+
 #include "../VKQuick/MemoryManager.h"
+#include "../VKQuick/MeshBuilder.h"
 
 using namespace NCL;
 using namespace Rendering;
@@ -45,29 +47,25 @@ VulkanMesh::~VulkanMesh()	{
 
 }
 
-void VulkanMesh::UploadToGPU(vk::CommandBuffer cmdBuffer, VKQuick::MemoryManager* memManager, vk::BufferUsageFlags extraUses) {
-	assert(ValidateMeshData());
-	
-	size_t allocationSize = CalculateGPUAllocationSize();
-	
-	m_indexType = GetIndexCount() > 0 ? vk::IndexType::eUint32 : vk::IndexType::eNoneKHR;
-	
-	m_usedAttributes.clear();
-	m_attributeBindings.clear();
-	m_attributeDescriptions.clear();
-	
-	std::vector<const char*> attributeDataSources;//Pointer for each attribute in CPU memory
-	
-	size_t vSize = 0;
-	
+void	VulkanMesh::UploadAttributes(vk::CommandBuffer  to) {
+	void* allData = m_mesh->MapData();
+
 	auto atrributeFunc = [&](VertexAttribute::Type attribute, size_t count, const char* data) {
-		if (count > 0) {
-			m_usedAttributes.push_back(attribute);
-			m_usedFormats.push_back(attributeFormats[attribute]);
-			attributeDataSources.push_back(data);
-			vSize += attributeSizes[attribute];
+		if (count == 0) {
+			return;
 		}
-		};
+		uint32_t offset = 0;
+		size_t	size	= 0;
+		if (!m_mesh->GetOffsetForAttribute((int)attribute,offset, size)) {
+			return;
+		}
+		char* gpuData = (char*)allData + offset;
+
+		//TODO: check that returned size equals full attribute size!
+		memcpy(gpuData, data, size);
+
+		m_attributeMask |= (1 << attribute);
+	};
 	
 	atrributeFunc(VertexAttribute::Positions, GetPositionData().size(), (const char*)GetPositionData().data());
 	atrributeFunc(VertexAttribute::Colours, GetColourData().size(), (const char*)GetColourData().data());
@@ -80,88 +78,47 @@ void VulkanMesh::UploadToGPU(vk::CommandBuffer cmdBuffer, VKQuick::MemoryManager
 	atrributeFunc(VertexAttribute::General_Vec4, GetGeneralVec4Data().size(), (const char*)GetGeneralVec4Data().data());
 	atrributeFunc(VertexAttribute::General_Integer, GetGeneralIntegerData().size(), (const char*)GetGeneralIntegerData().data());
 
-	for (uint32_t i = 0; i < m_usedAttributes.size(); ++i) {
-		//Which vertex attribute slot should Vulkan buffer index i map to?
-		int attributeType = m_usedAttributes[i];
-		//Describes the vertex attribute state
-		m_attributeBindings.emplace_back(i, (unsigned int)attributeSizes[attributeType], vk::VertexInputRate::eVertex);
-		//Describes the vertex attribute data type and offset
-		m_attributeDescriptions.emplace_back(attributeType, i, attributeFormats[attributeType], 0);
-	
-		m_attributeMask |= (1 << attributeType);
-	}
-	
-	m_vertexInputState = vk::PipelineVertexInputStateCreateInfo(
-		{
-			.flags = {},
-			.vertexBindingDescriptionCount		= (uint32_t)m_attributeBindings.size(),
-			.pVertexBindingDescriptions			= &m_attributeBindings[0],
-			.vertexAttributeDescriptionCount	= (uint32_t)m_attributeDescriptions.size(),
-			.pVertexAttributeDescriptions		= &m_attributeDescriptions[0]
+
+	if (GetIndexCount() > 0) {
+		uint32_t	offset	= 0;
+		size_t		size	= 0;
+		if (!m_mesh->GetOffsetForIndices(offset, size)) {
+			return;
 		}
-	);
-	
-	size_t vertexDataSize		= vSize * GetVertexCount();
-	size_t indexDataSize		= sizeof(int) * GetIndexCount();
-	size_t totalAllocationSize	= vertexDataSize + indexDataSize;
+		char* gpuData = (char*)allData + offset;
 
-	VKQuick::Buffer stagingBuffer = memManager->CreateStagingBuffer(totalAllocationSize);
+		memcpy(gpuData, GetIndexData().data(), size);
+	}
 
-	m_gpuBuffer = memManager->CreateBuffer(
-		{
-			.size	= totalAllocationSize,
-			.usage	=   vk::BufferUsageFlagBits::eIndexBuffer	|
-						vk::BufferUsageFlagBits::eVertexBuffer	|
-						vk::BufferUsageFlagBits::eTransferDst	|
-						extraUses
-		},
-		vk::MemoryPropertyFlagBits::eDeviceLocal,
-		"Vertex / Index Buffer"
-	);
 
-	assert(stagingBuffer.size >= (totalAllocationSize));
-	
-	//need to now copy vertex data to device memory
-	char* dataPtr = (char*)stagingBuffer.Map();
-	size_t offset = 0;
-	for (size_t i = 0; i < m_usedAttributes.size(); ++i) {
-		//We're going to use the same buffer for every attribute
-		m_usedBuffers.push_back(m_gpuBuffer.buffer);
-		//But each attribute starts at a different offset
-		m_usedOffsets.push_back(offset);
-		//Copy the data from CPU to GPU-visible memory
-		size_t copySize = GetVertexCount() * attributeSizes[m_usedAttributes[i]];
-		memcpy(dataPtr + offset, attributeDataSources[i], copySize);
-		offset += copySize;
-	}
-	
-	if (GetIndexCount() > 0) {
-		memcpy(dataPtr + offset, GetIndexData().data(), indexDataSize);
-		m_indexType = vk::IndexType::eUint32;
-		m_indexDataOffset = offset;
-	}
-	stagingBuffer.Unmap();
-	
-	{//Now to transfer the mesh data from the staging buffer to the gpu-only buffer
-		vk::BufferCopy copyRegion;
-		copyRegion.size = vertexDataSize + indexDataSize;
-		cmdBuffer.copyBuffer(stagingBuffer.buffer, m_gpuBuffer.buffer, copyRegion);
-	}
-	
-	//Shove in a semaphore
-	memManager->DiscardBuffer(stagingBuffer);
+	m_mesh->UnmapData(to);
 }
 
-void VulkanMesh::UploadToGPU(RendererBase* r)  {
-//	UploadToGPU(r, {});
-}
+void	VulkanMesh::InitialiseGPUState(vk::Device device, VKQuick::MemoryManager& memManager) {
+	VKQuick::MeshBuilder builder = VKQuick::MeshBuilder(device, memManager)
+		.WithVertexCount(GetVertexCount())
+		.WithIndexCount(GetIndexCount(), vk::IndexType::eUint32)
+		.WithHostVisibleBuffers();
+		;
 
-void VulkanMesh::BindToCommandBuffer(vk::CommandBuffer  buffer) const {
-	buffer.bindVertexBuffers(0, m_usedBuffers.size(), &m_usedBuffers[0], &m_usedOffsets[0]);
+	auto atrributeFunc = [&](VertexAttribute::Type attribute, size_t count, const char* data) {
+		if (count > 0) {
+			builder.WithVertexAttribute((int)attribute, attributeFormats[attribute], attributeSizes[attribute]);
+		}
+	};
 
-	if (GetIndexCount() > 0) {
-		buffer.bindIndexBuffer(m_gpuBuffer.buffer, m_indexDataOffset, m_indexType);
-	}
+	atrributeFunc(VertexAttribute::Positions, GetPositionData().size(), (const char*)GetPositionData().data());
+	atrributeFunc(VertexAttribute::Colours, GetColourData().size(), (const char*)GetColourData().data());
+	atrributeFunc(VertexAttribute::TextureCoords, GetTextureCoordData().size(), (const char*)GetTextureCoordData().data());
+	atrributeFunc(VertexAttribute::Normals, GetNormalData().size(), (const char*)GetNormalData().data());
+	atrributeFunc(VertexAttribute::Tangents, GetTangentData().size(), (const char*)GetTangentData().data());
+	atrributeFunc(VertexAttribute::JointWeights, GetSkinWeightData().size(), (const char*)GetSkinWeightData().data());
+	atrributeFunc(VertexAttribute::JointIndices, GetSkinIndexData().size(), (const char*)GetSkinIndexData().data());
+
+	atrributeFunc(VertexAttribute::General_Vec4, GetGeneralVec4Data().size(), (const char*)GetGeneralVec4Data().data());
+	atrributeFunc(VertexAttribute::General_Integer, GetGeneralIntegerData().size(), (const char*)GetGeneralIntegerData().data());
+
+	m_mesh = builder.Build();
 }
 
 void VulkanMesh::DrawLayer(unsigned int layer, vk::CommandBuffer  to, int instanceCount) {
@@ -198,7 +155,6 @@ void VulkanMesh::DrawAllLayers(vk::CommandBuffer  to, int instanceCount) {
 	}
 }
 
-
 vk::PrimitiveTopology VulkanMesh::GetVulkanTopology() const {
 	assert((uint32_t)primType < GeometryPrimitive::MAX_PRIM);
 
@@ -215,64 +171,4 @@ vk::PrimitiveTopology VulkanMesh::GetVulkanTopology() const {
 
 uint32_t VulkanMesh::GetAttributeMask() const {
 	return m_attributeMask;
-}
-
-size_t VulkanMesh::CalculateGPUAllocationSize() const {
-	size_t vSize = 0;
-	auto atrributeSizeFunc = [&](VertexAttribute::Type attribute, size_t count) {
-		if (count > 0) {
-			vSize += (int)attributeSizes[attribute];
-		}
-	};
-
-	atrributeSizeFunc(VertexAttribute::Positions, GetPositionData().size());
-	atrributeSizeFunc(VertexAttribute::Colours, GetColourData().size());
-	atrributeSizeFunc(VertexAttribute::TextureCoords, GetTextureCoordData().size());
-	atrributeSizeFunc(VertexAttribute::Normals, GetNormalData().size());
-	atrributeSizeFunc(VertexAttribute::Tangents, GetTangentData().size());
-	atrributeSizeFunc(VertexAttribute::JointWeights, GetSkinWeightData().size());
-	atrributeSizeFunc(VertexAttribute::JointIndices, GetSkinIndexData().size());
-	atrributeSizeFunc(VertexAttribute::General_Vec4, GetGeneralVec4Data().size());
-	atrributeSizeFunc(VertexAttribute::General_Integer, GetGeneralIntegerData().size());
-
-	size_t vertexDataSize = vSize * GetVertexCount();
-	size_t indexDataSize = 0;
-
-	if (GetIndexCount() > 0) {
-		int elementSize = (m_indexType == vk::IndexType::eUint32) ? 4 : 2;
-		indexDataSize = elementSize * GetIndexCount();
-	}
-	return vertexDataSize + indexDataSize;
-}
-
-bool VulkanMesh::GetIndexInformation(vk::Buffer& outBuffer, uint32_t& outOffset, uint32_t& outRange, vk::IndexType& outType) {
-	if (m_indexType == vk::IndexType::eNoneKHR) {
-		return false;
-	}
-
-	int elementSize = (m_indexType == vk::IndexType::eUint32) ? 4: 2;
-	
-	outBuffer	= m_gpuBuffer.buffer;
-	outOffset	= m_indexDataOffset;
-	outRange	= elementSize * GetIndexCount();
-	outType		= m_indexType;
-
-	return true;
-}
-
-bool VulkanMesh::GetAttributeInformation(VertexAttribute::Type v, vk::Buffer& outBuffer, uint32_t& outOffset, uint32_t& outRange, vk::Format& outFormat) const {
-	for (uint32_t i = 0; i < m_usedAttributes.size(); ++i) {
-		if (m_usedAttributes[i] != v) {
-			continue;
-		}
-
-		outBuffer	= m_usedBuffers[i];
-		outOffset	= m_usedOffsets[i];
-		outRange	= attributeSizes[v] * GetVertexCount();
-		outFormat	= m_usedFormats[i];
-
-		return true;
-	}
-
-	return false;
 }

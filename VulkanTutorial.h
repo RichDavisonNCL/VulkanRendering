@@ -21,22 +21,6 @@ namespace NCL::Rendering::Vulkan {
 		vk::UniqueDescriptorSet descriptorSet;
 	};
 
-	struct Light {
-		Vector3 position;
-		float	radius;
-		Vector4 colour;
-
-		Light() {
-			radius = 10.0f;
-			colour = Vector4(1, 1, 1, 1);
-		}
-		Light(const Vector3& inPos, float inRadius, const Vector4& inColour) {
-			position	= inPos;
-			radius		= inRadius;
-			colour		= inColour;
-		}
-	};
-
 	struct CameraState {
 		vk::UniqueDescriptorSet descriptor;
 		VKQuick::Buffer			buffer;
@@ -51,8 +35,6 @@ namespace NCL::Rendering::Vulkan {
 			m_runTime += dt;
 			UpdateCamera(dt);
 			UploadCameraUniform();
-
-			//m_vkQuick->Update(dt);
 		}
 
 		virtual void RunFrame(float dt);
@@ -70,7 +52,7 @@ namespace NCL::Rendering::Vulkan {
 	protected:
 		virtual void RenderFrame(float dt) = 0;
 		virtual void OnWindowResize(uint32_t width, uint32_t height) {
-
+			//Only tutorials that do off-screen rendering will care
 		}
 		void Initialise();
 
@@ -97,7 +79,7 @@ namespace NCL::Rendering::Vulkan {
 
 		VKQuick::VKQuickInitialisation	m_vkInit;
 		VKQuick::Instance*				m_vkQuick;
-		VKQuick::MemoryManager*			m_memoryManager;
+		VKQuick::MemoryManager*			m_memoryManager = nullptr;
 
 		KeyboardMouseController m_controller;
 		PerspectiveCamera		m_camera;

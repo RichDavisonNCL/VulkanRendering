@@ -6,21 +6,22 @@ Contact:richgdavison@gmail.com
 License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #include "VulkanTutorial.h"
+#ifdef _WIN32
+#include "../NCLCoreClasses/Win32Window.h"
+#endif
+
 #include "../VKQuick/Utils.h"
 #include "../VKQuick/VMAMemoryManager.h"
 #include "../VKQuick/TextureBuilder.h"
 #include "../VKQuick/DescriptorSetLayoutBuilder.h"
-
 #include "../VKQuick/Texture.h"
+
 #include "MshLoader.h"
+
 #include "../GLTFLoader/GLTFLoader.h"
 
 #include "Shaders/VK/glslInterop.h"
 #include "Shaders/VK/Camera.glslh"
-
-#ifdef _WIN32
-#include "../NCLCoreClasses/Win32Window.h"
-#endif
 
 using namespace NCL;
 using namespace Rendering;
@@ -254,7 +255,9 @@ void VulkanTutorial::UploadMeshWait(VulkanMesh& m, vk::BufferUsageFlags flags) {
 
 	vk::UniqueCommandBuffer cmdBuffer = VKQuick::CmdBufferCreateBegin(context.device, context.commandPools[VKQuick::CommandType::Graphics], "VulkanMesh upload");
 
-	m.UploadToGPU(*cmdBuffer, m_memoryManager, flags);
+	m.InitialiseGPUState(context.device, *m_memoryManager);
+
+	m.UploadAttributes(*cmdBuffer);
 
 	VKQuick::CmdBufferSubmit(
 		{
@@ -319,7 +322,7 @@ void VulkanTutorial::RenderSingleObject(RenderObject& o, vk::CommandBuffer  toBu
 	toBuffer.pushConstants(*toPipeline.layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(Matrix4), (void*)&o.transform);
 	toBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *toPipeline.layout, descriptorSet, 1, &*o.descriptorSet, 0, nullptr);
 	
-	o.mesh->BindToCommandBuffer(toBuffer);
+	o.mesh->GetMesh()->BindToCommandBuffer(toBuffer);
 	
 	if (o.mesh->GetSubMeshCount() == 0) {
 		o.mesh->Draw(toBuffer);
