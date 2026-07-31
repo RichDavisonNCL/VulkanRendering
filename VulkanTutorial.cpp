@@ -62,7 +62,7 @@ VulkanTutorial::~VulkanTutorial() {
 	m_vkQuick->GetDevice().waitIdle();
 	for (auto& state : m_cameraStates) {
 		state.descriptor.reset();
-		m_memoryManager->DiscardBuffer(state.buffer, VKQuick::DiscardMode::Immediate);
+		m_vkQuick->GetMemoryManager().DiscardBuffer(state.buffer, VKQuick::DiscardMode::Immediate);
 	}
 	m_cameraLayout.reset();
 	m_defaultSampler.reset();
@@ -73,7 +73,6 @@ VulkanTutorial::~VulkanTutorial() {
 	m_cubeMesh.reset();
 	m_sphereMesh.reset();
 
-	delete m_memoryManager;
 	delete m_vkQuick;
 }
 
@@ -85,14 +84,13 @@ void VulkanTutorial::Initialise() {
 #ifdef _WIN32
 	Win32Code::Win32Window* hostWindow = (Win32Code::Win32Window*)Window::GetWindow();
 	m_vkInit.win32Handle	= hostWindow->GetHandle();
-	m_vkInit.win32Instance = hostWindow->GetInstance();
-#endif
+	m_vkInit.win32Instance  = hostWindow->GetInstance();
 
 	m_vkInit.initialWidth	= hostWindow->GetScreenSize().x;
 	m_vkInit.initialHeight	= hostWindow->GetScreenSize().y;
+#endif
 
 	m_vkQuick		= new VKQuick::Instance(m_vkInit);
-	m_memoryManager = new VKQuick::VMAMemoryManager(m_vkQuick->GetDevice(), m_vkQuick->GetPhysicalDevice(), m_vkQuick->GetVulkanInstance(), m_vkInit);
 	BuildCamera();
 
 	VKQuick::FrameContext const& context = m_vkQuick->GetFrameContext();
@@ -117,7 +115,7 @@ void VulkanTutorial::Initialise() {
 
 	for (auto& state : m_cameraStates) {
 		state.descriptor	= VKQuick::CreateDescriptorSet(device, context.descriptorPool, *m_cameraLayout);
-		state.buffer		= m_memoryManager->CreateBuffer(
+		state.buffer		= m_vkQuick->GetMemoryManager().CreateBuffer(
 			{
 				.size	= sizeof(ShaderCamera),
 				.usage	= vk::BufferUsageFlagBits::eUniformBuffer,
@@ -182,8 +180,6 @@ void VulkanTutorial::RunFrame(float dt) {
 	m_vkQuick->BeginFrame();
 
 	Update(dt);
-
-	m_memoryManager->Update();
 
 	UploadCameraUniform();
 	RenderFrame(dt);
@@ -255,7 +251,7 @@ void VulkanTutorial::UploadMeshWait(VulkanMesh& m, vk::BufferUsageFlags flags) {
 
 	vk::UniqueCommandBuffer cmdBuffer = VKQuick::CmdBufferCreateBegin(context.device, context.commandPools[VKQuick::CommandType::Graphics], "VulkanMesh upload");
 
-	m.InitialiseGPUState(context.device, *m_memoryManager, flags);
+	m.InitialiseGPUState(context.device, m_vkQuick->GetMemoryManager(), flags);
 
 	m.UploadAttributes(*cmdBuffer);
 
@@ -273,7 +269,7 @@ VKQuick::UniqueTexture VulkanTutorial::LoadTexture(const std::string& filename) 
 	VKQuick::FrameContext const& context = m_vkQuick->GetFrameContext();
 	vk::UniqueCommandBuffer cmdBuffer = VKQuick::CmdBufferCreateBegin(context.device, context.commandPools[VKQuick::CommandType::Graphics], "VulkanTexture upload");
 	
-	VKQuick::UniqueTexture tex = VKQuick::TextureBuilder(context.device, *m_memoryManager)
+	VKQuick::UniqueTexture tex = VKQuick::TextureBuilder(context.device, m_vkQuick->GetMemoryManager())
 	.WithCommandBuffer(*cmdBuffer)
 	.BuildFromFile(filename);
 
@@ -298,7 +294,7 @@ VKQuick::UniqueTexture VulkanTutorial::LoadCubemap(
 	VKQuick::FrameContext const& context = m_vkQuick->GetFrameContext();
 	vk::UniqueCommandBuffer cmdBuffer = VKQuick::CmdBufferCreateBegin(context.device, context.commandPools[VKQuick::CommandType::Graphics], "VulkanTexture upload");
 
-	VKQuick::UniqueTexture tex = VKQuick::TextureBuilder(context.device, *m_memoryManager)
+	VKQuick::UniqueTexture tex = VKQuick::TextureBuilder(context.device, m_vkQuick->GetMemoryManager())
 		.WithCommandBuffer(*cmdBuffer)
 		.BuildCubemapFromFile(negativeXFile, positiveXFile,
 			negativeYFile, positiveYFile,

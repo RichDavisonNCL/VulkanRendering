@@ -81,8 +81,7 @@ namespace NCL::Rendering::Vulkan {
 
 		VKQuick::VKQuickInitialisation	m_vkInit;
 		VKQuick::Instance*				m_vkQuick;
-		VKQuick::MemoryManager*			m_memoryManager = nullptr;
-
+		
 		KeyboardMouseController m_controller;
 		PerspectiveCamera		m_camera;
 
