@@ -54,17 +54,15 @@ void	VulkanMesh::UploadAttributes(vk::CommandBuffer  to) {
 		if (count == 0) {
 			return;
 		}
-		uint32_t	offset	= 0;
-		size_t		size	= 0;
-		vk::Format  format;
-		size_t		stride	= 0;
-		if (!m_mesh->GeAttributeData((int)attribute, offset, size, format, stride)) {
+		VKQuick::AttributeData	attributeData;
+
+		if (!m_mesh->GeAttributeData((int)attribute, attributeData)) {
 			return;
 		}
-		char* gpuData = (char*)allData + offset;
+		char* gpuData = (char*)allData + attributeData.offset;
 
 		//TODO: check that returned size equals full attribute size!
-		memcpy(gpuData, data, size);		
+		memcpy(gpuData, data, attributeData.size);
 		};
 
 	atrributeFunc(VertexAttribute::Positions, GetPositionData().size(), (const char*)GetPositionData().data());
@@ -79,15 +77,13 @@ void	VulkanMesh::UploadAttributes(vk::CommandBuffer  to) {
 	atrributeFunc(VertexAttribute::General_Integer, GetGeneralIntegerData().size(), (const char*)GetGeneralIntegerData().data());
 
 	if (GetIndexCount() > 0) {
-		uint32_t	offset = 0;
-		size_t		size = 0;
-		vk::IndexType type;
-		if (!m_mesh->GetIndexData(offset, size, type)) {
+		VKQuick::IndexData indexData;
+		if (!m_mesh->GetIndexData(indexData)) {
 			return;
 		}
-		char* gpuData = (char*)allData + offset;
+		char* gpuData = (char*)allData + indexData.offset;
 
-		memcpy(gpuData, GetIndexData().data(), size);
+		memcpy(gpuData, GetIndexData().data(), indexData.size);
 	}
 
 	m_mesh->UnmapData(to);
