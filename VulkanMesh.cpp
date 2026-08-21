@@ -98,23 +98,23 @@ void	VulkanMesh::InitialiseGPUState(vk::Device device, VKQuick::MemoryManager& m
 
 	m_attributeMask = 0;
 
-	auto atrributeFunc = [&](VertexAttribute::Type attribute, size_t count, const char* data) {
+	auto atrributeFunc = [&](VKQuick::AttributeType attributeType, int attributeIndex, size_t count, const char* data) {
 		if (count > 0) {
-			m_attributeMask |= (1 << attribute);
-			builder.WithVertexAttribute((int)attribute, attributeFormats[attribute], attributeSizes[attribute]);
+			m_attributeMask |= (1 << attributeIndex);
+			builder.WithVertexAttribute((int)attributeIndex, attributeFormats[attributeIndex], attributeSizes[attributeIndex], attributeType);
 		}
 	};
 
-	atrributeFunc(VertexAttribute::Positions, GetPositionData().size(), (const char*)GetPositionData().data());
-	atrributeFunc(VertexAttribute::Colours, GetColourData().size(), (const char*)GetColourData().data());
-	atrributeFunc(VertexAttribute::TextureCoords, GetTextureCoordData().size(), (const char*)GetTextureCoordData().data());
-	atrributeFunc(VertexAttribute::Normals, GetNormalData().size(), (const char*)GetNormalData().data());
-	atrributeFunc(VertexAttribute::Tangents, GetTangentData().size(), (const char*)GetTangentData().data());
-	atrributeFunc(VertexAttribute::JointWeights, GetSkinWeightData().size(), (const char*)GetSkinWeightData().data());
-	atrributeFunc(VertexAttribute::JointIndices, GetSkinIndexData().size(), (const char*)GetSkinIndexData().data());
+	atrributeFunc(VKQuick::AttributeType::Position, VertexAttribute::Positions, GetPositionData().size(), (const char*)GetPositionData().data());
+	atrributeFunc(VKQuick::AttributeType::Colour, VertexAttribute::Colours, GetColourData().size(), (const char*)GetColourData().data());
+	atrributeFunc(VKQuick::AttributeType::TexCoord, VertexAttribute::TextureCoords, GetTextureCoordData().size(), (const char*)GetTextureCoordData().data());
+	atrributeFunc(VKQuick::AttributeType::Normals, VertexAttribute::Normals, GetNormalData().size(), (const char*)GetNormalData().data());
+	atrributeFunc(VKQuick::AttributeType::Tangents, VertexAttribute::Tangents, GetTangentData().size(), (const char*)GetTangentData().data());
+	atrributeFunc(VKQuick::AttributeType::UserData, VertexAttribute::JointWeights, GetSkinWeightData().size(), (const char*)GetSkinWeightData().data());
+	atrributeFunc(VKQuick::AttributeType::UserData, VertexAttribute::JointIndices, GetSkinIndexData().size(), (const char*)GetSkinIndexData().data());
 
-	atrributeFunc(VertexAttribute::General_Vec4, GetGeneralVec4Data().size(), (const char*)GetGeneralVec4Data().data());
-	atrributeFunc(VertexAttribute::General_Integer, GetGeneralIntegerData().size(), (const char*)GetGeneralIntegerData().data());
+	atrributeFunc(VKQuick::AttributeType::UserData, VertexAttribute::General_Vec4, GetGeneralVec4Data().size(), (const char*)GetGeneralVec4Data().data());
+	atrributeFunc(VKQuick::AttributeType::UserData, VertexAttribute::General_Integer, GetGeneralIntegerData().size(), (const char*)GetGeneralIntegerData().data());
 
 	for(const SubMesh& sm : subMeshes) {
 		builder.WithMeshRange(sm.start, sm.count, sm.base);
