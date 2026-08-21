@@ -7,6 +7,7 @@ set(Header_Files
     "VulkanMesh.h"
 	"VulkanTexture.h"
 	"VulkanTutorial.h"
+    "BindlessManager.h"
 )
 source_group("Header Files" FILES ${Header_Files})
 
@@ -14,6 +15,7 @@ set(Source_Files
     "VulkanMesh.cpp"
 	"VulkanTexture.cpp"
 	"VulkanTutorial.cpp"
+    "BindlessManager.cpp"
 )
 source_group("Source Files" FILES ${Source_Files})
 

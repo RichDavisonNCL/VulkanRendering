@@ -8,6 +8,9 @@ License: MIT (see LICENSE file at the top of the source tree)
 #include "BindlessManager.h"
 
 #include "../VKQuick/DescriptorSetBuilder.h"
+#include "../VKQuick/DescriptorSetLayoutBuilder.h"
+#include "../VKQuick/MemoryManager.h"
+#include "../VKQuick/Mesh.h"
 
 #include "./Shaders/VK/GLSLInterop.h"
 
